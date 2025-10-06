@@ -85,7 +85,7 @@ const ApplicationForm = () => {
       //   },
       // });
 
-      const response= await axios.post('http://localhost:8000/api/createIntern',formData)
+      const response= await axios.post('/api/createIntern',formData)
 
       // Response data is automatically parsed as JSON
       console.log(response.data); // Optional: Log the response for debugging

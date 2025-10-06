@@ -47,8 +47,6 @@ export const createIntern = async (req, res) => {
     } catch (error) {
         console.log('error while creating intern', error);
         res.status(500).json({ message: "Server Error" });
-
-
     }
 };
 
