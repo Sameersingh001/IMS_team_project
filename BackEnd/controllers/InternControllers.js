@@ -1,4 +1,5 @@
 import Intern from "../models/InternDatabase.js";
+import sendWhatsApp from "../Services/WhatsappService.js"
 
 export const createIntern = async (req, res) => {
     try {
@@ -38,9 +39,22 @@ export const createIntern = async (req, res) => {
             duration: internData.duration,
             prevInternship: internData.prevInternship,
 
-
+            
         });
+        
         await newIntern.save();
+        
+        const msg = `Hello ${newIntern.fullName} 👋 
+Thank you for applying to Graphura. 
+📌 Department/Domain: ${newIntern.domain}  
+📌 Internship Duration: ${newIntern.duration}  
+We have received your application and our team will review it shortly. You will be contacted soon with further updates. Best regards,
+Graphura Team`;
+        
+        await sendWhatsApp(newIntern.mobile, msg)
+        
+
+
         res.status(201).json({ message: "Intern created successfully", intern: newIntern });
 
 

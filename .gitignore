@@ -7,7 +7,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-
+# Build output
 dist
 dist-ssr
 *.local
@@ -23,7 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-
-#env files
+# Node modules
 node_modules
-.env
+
+# Env files in BackEnd
+BackEnd/.env

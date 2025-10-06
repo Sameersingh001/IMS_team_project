@@ -18,73 +18,72 @@ const internSchema = new mongoose.Schema({
     dob: {
         type: String,
         required: true,
-        unique: true
     },
     gender: {
         type: String,
         required: true,
-        unique: true
     },
     state: {
         type: String,
         required: true,
-        unique: true
     },
     city: {
         type: String,
         required: true,
-        unique: true
     },
     address: {
         type: String,
         required: true,
-        unique: true
     },
     pinCode: {
         type: String,
         required: true,
-        unique: true
     },
     college: {
         type: String,
         required: true,
-        unique: true
     },
     course: {
         type: String,
         required: true,
-        unique: true
     },
     educationLevel: {
         type: String,
         required: true,
-        unique: true
     },
     domain: {
         type: String,
         required: true,
-        unique: true
     },
     contactMethod: {
         type: String,
         required: true,
-        unique: true
     },
     resumeUrl: {
         type: String,
         required: true,
-        unique: true
     },
     duration: {
         type: String,
         required: true,
-        unique: true
     },
     prevInternship: {
         type: String,
         required: true,
-        unique: true
+        enums: ['Yes', 'No'],
+        default: 'No'
     },
+    Performance: {
+        type: String,
+        enums: ['Excellent', 'Good', 'Average'],
+        default: 'Average'
+    },
+    status: {
+        type: String,
+        enums: ["Selected", "Rejected", "Applied"],
+        default: 'Applied'
+    }
+
 }, { timestamps: true });
 
 const Intern = mongoose.model('Intern', internSchema);

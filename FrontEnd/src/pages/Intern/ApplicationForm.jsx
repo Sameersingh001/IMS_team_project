@@ -1,5 +1,5 @@
 // InternshipForm.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import Graphura from "../../../public/Graphura.jpg"
 
@@ -27,6 +27,14 @@ const ApplicationForm = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setError("");
+      setSuccess("");
+    }, 3000); // Clear messages after 3 seconds
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
