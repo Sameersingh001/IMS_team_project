@@ -79,11 +79,13 @@ const ApplicationForm = () => {
     }
 
     try {
-      const response = await axios.post("/api/intern/applications/form", formData, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      // const response = await axios.post("/api/intern/applications/form", formData, {
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+
+      const response= await axios.post('http://localhost:8000/api/createIntern',formData)
 
       // Response data is automatically parsed as JSON
       console.log(response.data); // Optional: Log the response for debugging
@@ -115,6 +117,7 @@ const ApplicationForm = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-blue-900 p-4">
