@@ -32,9 +32,10 @@ const ApplicationForm = () => {
     const timer = setTimeout(() => {
       setError("");
       setSuccess("");
-    }, 3000); // Clear messages after 3 seconds
+    }, 3000);
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [error, success]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
