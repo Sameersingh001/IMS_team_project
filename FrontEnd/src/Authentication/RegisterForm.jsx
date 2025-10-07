@@ -48,7 +48,7 @@ const RegisterPage = () => {
       // API call to register user
       const response = await axios.post(
         "/api/register", // Replace with your actual backend endpoint
-        JSON.stringify({ ...formData, secretKey: undefined }), // Exclude secretKey
+        formData,
         {
           headers: {
             "Content-Type": "application/json",
@@ -59,8 +59,8 @@ const RegisterPage = () => {
 
       if (response.status === 201 || response.status === 200) {
         setSuccess(true);
-        if (role === "Admin") navigate("/admin-dashboard");
-        else navigate("/hr-dashboard");
+        if (role === "Admin") navigate("/Admin-Login");
+        else navigate("/HR-Login");
       }
     } catch (err) {
       if (err.response?.status === 409) {

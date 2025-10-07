@@ -2,7 +2,10 @@ import express from "express";
 import ConnectDB from "./config/DB.js";
 import dotenv from "dotenv";
 import cors from "cors";
+
+// routers
 import internRoutes from "./routers/internRoutes.js";
+import authRoutes from "./routers/AuthRoutes.js";
 
 dotenv.config();
 
@@ -21,8 +24,9 @@ app.use(express.json());
 ConnectDB();
 
 // routers
-
+app.use('/api', authRoutes);
 app.use('/api', internRoutes);
+
 
 
 app.listen(PORT, () => {
