@@ -1,16 +1,21 @@
 import express from "express";
+const app = express();
 import ConnectDB from "./config/DB.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-const app = express();
-const PORT = process.env.PORT || 8000;
-app.use(express.json());
-
 import cors from "cors";
 app.use(cors());
+const PORT = process.env.PORT || 8000;
 
-import ConnectDB from "./config/DB.js";
+app.use(express.json());
+
+// import authRoutes from "./routers/authRoutes.js";
+// import internRoutes from "./routes/internRoutes.js";
+
+import authRoutes from './routers/AuthRoutes.js'
+import internRoutes from './routers/InternRoutes.js'
+
 
 // app.get("/", (req, res) => {
 //   res.send("Welcome to the Intern Management System API");
@@ -20,8 +25,9 @@ import ConnectDB from "./config/DB.js";
 ConnectDB();
 
 // routers
-
+app.use('/api', authRoutes);
 app.use('/api', internRoutes);
+
 
 
 app.listen(PORT, () => {
