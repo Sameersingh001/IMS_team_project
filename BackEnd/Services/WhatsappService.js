@@ -6,7 +6,7 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
 
-const fromWhatsappNumber = process.env.TWILIO_NUMBER;
+const fromWhatsappNumber = "whatsapp:+14155238886";
 
 async function sendWhatsApp(toNumber, message) {
   try {
