@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Graphura from "../../../public/GraphuraLogo.jpg"
+import Graphura from "/GraphuraLogo.jpg"
 
 const HomePage = () => {
   return (

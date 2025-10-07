@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Eye, EyeOff } from "lucide-react"; // 👁 import Lucide icons
-import loginPng from "../../public/loginPNG.webp";
+import loginPng from "/loginPNG.webp";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -59,8 +59,8 @@ const RegisterPage = () => {
 
       if (response.status === 201 || response.status === 200) {
         setSuccess(true);
-        if (role === "Admin") navigate("/Admin-Login");
-        else navigate("/HR-Login");
+        if (role === "Admin") navigate("/Login");
+        else navigate("/Login");
       }
     } catch (err) {
       if (err.response?.status === 409) {
