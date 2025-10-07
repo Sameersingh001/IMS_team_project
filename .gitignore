@@ -26,5 +26,3 @@ dist-ssr
 # Node modules
 node_modules
 
-# Env files in BackEnd
-BackEnd/.env
