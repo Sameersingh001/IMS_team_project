@@ -27,6 +27,4 @@ dist-ssr
 node_modules
 
 
-# Environment variables
-BackEnd/.env
 
