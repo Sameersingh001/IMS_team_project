@@ -46,6 +46,11 @@ const LoginPage = () => {
 
       if (response.status === 200) {
         setSuccess(true);
+        console.log("Login Response:", response.data);
+        // Store token in localStorage
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.user[0]));
+
         // Navigate based on role
         if (formData.role === "Admin") navigate("/Admin-Dashboard");
         else navigate("/HR-Dashboard");
