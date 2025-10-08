@@ -15,6 +15,7 @@ app.use(express.json());
 
 import authRoutes from './routers/AuthRoutes.js'
 import internRoutes from './routers/InternRoutes.js'
+import hrRoutes from './routers/HrRoutes.js'
 
 
 // app.get("/", (req, res) => {
@@ -27,6 +28,7 @@ ConnectDB();
 // routers
 app.use('/api', authRoutes);
 app.use('/api', internRoutes);
+app.use('/api', hrRoutes);
 
 
 

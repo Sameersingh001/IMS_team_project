@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react"; // 👁 icons
+import { Eye, EyeOff } from "lucide-react";
 import loginPng from "/loginPNG.webp";
 
 const LoginPage = () => {
@@ -9,23 +9,39 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "HR", // Default role
+    role: "HR", // default role
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Handle input change
+  // ✅ Check if already logged in via cookie
+  useEffect(() => {
+    const checkUserAuth = async () => {
+      try {
+        const res = await axios.get("/api/check-auth", {
+          withCredentials: true, // important for cookies
+        });
+        if (res.status === 200 && res.data.user) {
+          const role = res.data.user.role;
+          if (role === "Admin") navigate("/Admin-Dashboard");
+          else navigate("/HR-Dashboard");
+        }
+      } catch (err) {
+        console.log("No active session, stay on login.", err);
+      }
+    };
+    checkUserAuth();
+  }, [navigate]);
+
+  // ✅ Handle input change
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-    setError(""); // Clear error on change
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
   };
 
-  // Handle form submit
+  // ✅ Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -34,34 +50,31 @@ const LoginPage = () => {
 
     try {
       const response = await axios.post(
-        "/api/login", // Replace with your backend endpoint
+        "/api/login",
         formData,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true, // send cookie from backend
         }
       );
 
       if (response.status === 200) {
         setSuccess(true);
-        console.log("Login Response:", response.data);
-        // Store token in localStorage
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user[0]));
+        const { user } = response.data;
 
-        // Navigate based on role
-        if (formData.role === "Admin") navigate("/Admin-Dashboard");
-        else navigate("/HR-Dashboard");
+        // Optional: Save user info locally
+        localStorage.setItem("user", JSON.stringify(user));
+
+        // Redirect based on role
+        setTimeout(() => {
+          if (user.role === "Admin") navigate("/Admin-Dashboard");
+          else navigate("/HR-Dashboard");
+        }, 1000);
       }
     } catch (err) {
-      if (err.response?.status === 401) {
+      if (err.response?.status === 401)
         setError("Invalid email or password!");
-      } else {
-        setError("Login failed. Please try again.");
-      }
-      console.error("Login Error:", err);
+      else setError("Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -69,16 +82,15 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex justify-around items-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8 sm:py-12">
-      {/* Left side image */}
+      {/* Left image */}
       <img
         src={loginPng}
         alt="Login Illustration"
         className="w-1/3 h-full object-cover rounded-3xl shadow-lg"
       />
 
-      {/* Form container */}
+      {/* Login form */}
       <div className="bg-white/80 backdrop-blur-lg shadow-xl rounded-3xl p-6 sm:p-8 w-full max-w-md sm:max-w-lg">
-        {/* Header */}
         <div className="text-center mb-8">
           <h2 className="text-3xl sm:text-4xl font-bold text-indigo-700 mb-2">
             Welcome Back
@@ -86,7 +98,7 @@ const LoginPage = () => {
           <p className="text-gray-600 text-sm">Login to your account</p>
         </div>
 
-        {/* Error / Success Messages */}
+        {/* Error / Success */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm">
             {error}
@@ -143,7 +155,7 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Role Selection */}
+          {/* Role */}
           <div>
             <label className="block text-gray-700 font-semibold mb-2 text-sm">
               Login As
@@ -152,7 +164,7 @@ const LoginPage = () => {
               name="role"
               value={formData.role}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50 appearance-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
               disabled={loading}
             >
               <option value="HR">HR</option>
@@ -160,11 +172,11 @@ const LoginPage = () => {
             </select>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg"
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
           >
             {loading ? "Logging in..." : "Login"}
           </button>

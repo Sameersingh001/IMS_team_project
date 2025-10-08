@@ -5,17 +5,19 @@ import HomePage from "./pages/Landing/Home";
 import RegisterPage from "./Authentication/RegisterForm";
 import LoginPage from "./Authentication/LoginForm";
 import HrDashboard from "./pages/HR/HrDashboard"
+import InternDetail from "./pages/Intern/InternProfile";
 
 function App() {
   return (
+    
     <Router>
-      
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/apply" element={<ApplicationForm />} />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/apply" element={<ApplicationForm />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/HR-Dashboard" element={<HrDashboard />} />
+          <Route path="/HR-Dashboard/intern/:id" element={<InternDetail />} />
 
         </Routes>
     
