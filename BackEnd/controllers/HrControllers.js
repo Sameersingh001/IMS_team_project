@@ -100,3 +100,22 @@ export const updatePerformance = async (req, res) => {
     res.status(500).json({ message: "Failed to update performance" });
   }
 };
+
+// Update intern domain
+export const updateDomain = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { domain } = req.body;
+    const intern = await Intern.findByIdAndUpdate(
+      id,
+      { domain },
+      { new: true }
+    );
+    if (!intern) return res.status(404).json({ message: "Intern not found" });
+
+    res.status(200).json({ message: "Domain updated successfully", intern });
+  } catch (err) {
+    console.error("Error updating domain:", err);
+    res.status(500).json({ message: "Failed to update domain" });
+  }
+};

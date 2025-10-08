@@ -69,6 +69,22 @@ const HRDashboard = () => {
     setUpdating(null);
   };
 
+  const handleDomainUpdate = async (internId, newDomain) => {
+    setUpdating(internId);
+    try {
+      await axios.put(
+        `/api/hr/interns/${internId}/domain`,
+        { domain: newDomain },
+        { withCredentials: true }
+      );
+      await fetchInterns(); // Refresh the list
+    } catch (err) {
+      console.error("Error updating domain:", err);
+      setError("Failed to update domain");
+    }
+    setUpdating(null);
+  };
+
   const handleLogout = async () => {
     try {
       await axios.post("/api/logout", {}, { withCredentials: true });
@@ -80,7 +96,7 @@ const HRDashboard = () => {
 
   const handlePrint = () => {
     const printContent = printRef.current;
-    if (!printContent) return;    
+    if (!printContent) return;
     // Create print-friendly content
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -189,10 +205,10 @@ const HRDashboard = () => {
         </body>
       </html>
     `);
-    
+
     printWindow.document.close();
     printWindow.focus();
-    
+
     // Wait for content to load before printing
     setTimeout(() => {
       printWindow.print();
@@ -201,10 +217,10 @@ const HRDashboard = () => {
   };
 
   const getSelectedInternsEmails = () => {
-    const selectedInterns = showSelectedOnly 
+    const selectedInterns = showSelectedOnly
       ? interns.filter(intern => intern.status === "Selected")
       : interns.filter(intern => intern.status === "Selected");
-    
+
     return selectedInterns
       .map(intern => intern.email)
       .filter(email => email)
@@ -258,7 +274,7 @@ const HRDashboard = () => {
     }
   };
 
-  const filteredInterns = showSelectedOnly 
+  const filteredInterns = showSelectedOnly
     ? interns.filter(intern => intern.status === "Selected")
     : interns;
 
@@ -279,7 +295,7 @@ const HRDashboard = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={handlePrint}
@@ -344,7 +360,7 @@ const HRDashboard = () => {
                   </div>
                   <div className="text-sm text-yellow-800">Pending</div>
                 </div>
-                <div 
+                <div
                   className="bg-indigo-50 rounded-lg p-4 text-center cursor-pointer hover:bg-indigo-100 transition-colors border-2 border-indigo-200"
                   onClick={() => setShowEmailCopy(!showEmailCopy)}
                 >
@@ -393,7 +409,7 @@ const HRDashboard = () => {
                   className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                 />
               </div>
-              
+
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
@@ -418,11 +434,10 @@ const HRDashboard = () => {
 
               <button
                 onClick={() => setShowSelectedOnly(!showSelectedOnly)}
-                className={`border rounded-xl px-4 py-3 font-medium transition-all duration-200 ${
-                  showSelectedOnly 
-                    ? 'bg-green-100 text-green-800 border-green-300' 
+                className={`border rounded-xl px-4 py-3 font-medium transition-all duration-200 ${showSelectedOnly
+                    ? 'bg-green-100 text-green-800 border-green-300'
                     : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {showSelectedOnly ? '✅ Showing Selected' : '👥 Show All'}
               </button>
@@ -472,6 +487,7 @@ const HRDashboard = () => {
                     <th className="p-4 text-left font-semibold">Domain & Duration</th>
                     <th className="p-4 text-left font-semibold">Status</th>
                     <th className="p-4 text-left font-semibold">Performance</th>
+                    <th className="p-4 text-left font-semibold">Domain</th>
                     <th className="p-4 text-left font-semibold no-print">Actions</th>
                   </tr>
                 </thead>
@@ -488,14 +504,14 @@ const HRDashboard = () => {
                           <div className="text-sm text-gray-600">{intern.email}</div>
                         </div>
                       </td>
-                      
+
                       {/* Mobile Number */}
                       <td className="p-4">
                         <div className="text-gray-700">
                           📞 {intern.mobile || "Not provided"}
                         </div>
                       </td>
-                      
+
                       {/* Domain & Duration */}
                       <td className="p-4">
                         <div className="space-y-1">
@@ -507,7 +523,7 @@ const HRDashboard = () => {
                           </div>
                         </div>
                       </td>
-                      
+
                       {/* Status with Update */}
                       <td className="p-4">
                         <div className="print-only">
@@ -526,7 +542,7 @@ const HRDashboard = () => {
                           <option value="Rejected">Rejected</option>
                         </select>
                       </td>
-                      
+
                       {/* Performance with Update */}
                       <td className="p-4">
                         <div className="print-only">
@@ -545,7 +561,33 @@ const HRDashboard = () => {
                           <option value="Excellent">Excellent</option>
                         </select>
                       </td>
-                      
+
+                      <td className="p-4">
+                        <div className="print-only">
+                          <span>
+                            {intern.domain}
+                          </span>
+                        </div>
+                        <select
+                          value={intern.domain}
+                          onChange={(e) => handleDomainUpdate(intern._id, e.target.value)}
+                          disabled={updating === intern._id}
+                          className={` px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print`}
+                        >
+                          <option>Sales & Marketing</option>
+                          <option>Email Outreaching</option>
+                          <option>Journalism and Mass communication</option>
+                          <option>Social Media Management</option>
+                          <option>Graphic Design</option>
+                          <option>Digital Marketing</option>
+                          <option>Video Editing</option>
+                          <option>Content Writing</option>
+                          <option>UI/UX Designing</option>
+                          <option>Front-end Developer</option>
+                          <option>Back-end Developer</option>
+                        </select>
+                      </td>
+
                       {/* Actions */}
                       <td className="p-4 no-print">
                         <div className="flex gap-2">
@@ -571,8 +613,8 @@ const HRDashboard = () => {
                 {showSelectedOnly ? "No selected interns found" : "No interns found"}
               </h3>
               <p className="text-gray-500">
-                {showSelectedOnly 
-                  ? "There are no interns with 'Selected' status" 
+                {showSelectedOnly
+                  ? "There are no interns with 'Selected' status"
                   : "Try adjusting your search or filters"
                 }
               </p>

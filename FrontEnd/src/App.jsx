@@ -6,6 +6,7 @@ import RegisterPage from "./Authentication/RegisterForm";
 import LoginPage from "./Authentication/LoginForm";
 import HrDashboard from "./pages/HR/HrDashboard"
 import InternDetail from "./pages/Intern/InternProfile";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
 
 function App() {
   return (
@@ -17,7 +18,9 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/HR-Dashboard" element={<HrDashboard />} />
-          <Route path="/HR-Dashboard/intern/:id" element={<InternDetail />} />
+          <Route path="/HR-Dashboard/intern/:id" element={<InternDetail role="HR" />} />
+          <Route path="/Admin-Dashboard/intern/:id" element={<InternDetail role="Admin" />} />
+          <Route path="/Admin-Dashboard" element={<AdminDashboard />} />
 
         </Routes>
     
