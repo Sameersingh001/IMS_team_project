@@ -3,6 +3,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import Intern from "../models/InternDatabase.js"
+import nodemailer from "nodemailer"
 
 
 
@@ -18,6 +19,7 @@ export const getAllInterns = async (req, res) => {
         { email: { $regex: search, $options: "i" } },
         { domain: { $regex: search, $options: "i" } },
       ],
+      performance: { $nin: ["Average", "Rejected"] }
     };
 
     if (search.trim() === "") {
@@ -133,16 +135,14 @@ export const deleteIntern = async (req, res) => {
     const intern = await Intern.findByIdAndDelete(id);
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ message: "Intern deleted successfully" });
-    } catch (err) {
+  } catch (err) {
     console.error("Error deleting intern:", err);
     res.status(500).json({ message: "Failed to delete intern" });
-    }
+  }
 };
 
 
 export const generateOfferLetterWithPNG = async (req, res) => {
-
-
   try {
     const { id } = req.params;
 
@@ -158,11 +158,25 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       });
     }
 
-    // 2️⃣ Create a new PDF
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
+    // 2️⃣ Use existing uniqueId if available, otherwise generate a new one
+    let uniqueId = intern.uniqueId;
+    const currentDate = new Date();
 
-    // 3️⃣ Load and embed PNG background
+    if (!uniqueId) {
+      uniqueId = `GRAPHURA/${currentDate.getFullYear().toString().slice(2)}/${(
+        currentDate.getMonth() + 1
+      )
+        .toString()
+        .padStart(2, "0")}/${Math.floor(100 + Math.random() * 900)}`;
+
+      intern.uniqueId = uniqueId;
+      await intern.save();
+    }
+
+    // 3️⃣ Create PDF
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+
     const backgroundPath = path.join(
       process.cwd(),
       "public",
@@ -177,7 +191,6 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     const backgroundImageBytes = fs.readFileSync(backgroundPath);
     const backgroundImage = await pdfDoc.embedPng(backgroundImageBytes);
 
-    // Draw background image on full page
     page.drawImage(backgroundImage, {
       x: 0,
       y: 0,
@@ -185,8 +198,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       height: 841.89,
     });
 
-    // 4️⃣ Dynamic details
-    const currentDate = new Date();
+    // Text
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() + 1);
     const formattedStartDate = startDate.toLocaleDateString("en-GB", {
@@ -195,44 +207,28 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       year: "numeric",
     });
 
-    const uniqueId = `GRAPHURA/${currentDate.getFullYear().toString().slice(2)}/${(
-      currentDate.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")}/${Math.floor(100 + Math.random() * 900)}`;
-
     const font = await pdfDoc.embedFont("Helvetica");
     const fontBold = await pdfDoc.embedFont("Helvetica-Bold");
 
-    // 5️⃣ Write content over PNG - Matching exact sample PDF format
-    
-    // Company Header - Centered at top
+    let y = 630;
     page.drawText("GRAPHURA INDIA PRIVATE LIMITED", {
       x: 60,
-      y: 630,
+      y,
       size: 15,
       font: fontBold,
       color: rgb(0, 0, 0),
     });
-
+    y -= 20;
     page.drawText("Gurgaon, Haryana.", {
       x: 60,
-      y: 610,
+      y,
       size: 14,
-      font: font,
+      font,
       color: rgb(0, 0, 0),
     });
 
-    // To Section
-    let y = 550;
-    page.drawText("To,", { 
-      x: 60, 
-      y, 
-      size: 13, 
-      font: font, 
-      color: rgb(0, 0, 0) 
-    });
-
+    y -= 60;
+    page.drawText(`To,`, { x: 60, y, size: 13, font, color: rgb(0, 0, 0) });
     y -= 20;
     page.drawText(`${intern.fullName}`, {
       x: 60,
@@ -241,37 +237,30 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       font: fontBold,
       color: rgb(0, 0, 0),
     });
-
     y -= 15;
     page.drawText(`${intern.domain} Department`, {
       x: 60,
       y,
       size: 13,
-      font: font,
+      font,
       color: rgb(0, 0, 0),
     });
 
-    // Subject
     y -= 40;
-    page.drawText("Subject: Offer of Internship at Graphura India Private Limited", {
-      x: 60, 
-      y, 
-      size: 13, 
-      font: font, 
-      color: rgb(0, 0, 0) 
-    });
+    page.drawText(
+      "Subject: Offer of Internship at Graphura India Private Limited",
+      { x: 60, y, size: 13, font, color: rgb(0, 0, 0) }
+    );
 
-    // Salutation
     y -= 35;
     page.drawText(`Dear ${intern.fullName},`, {
       x: 60,
       y,
       size: 13,
-      font: font,
+      font,
       color: rgb(0, 0, 0),
     });
 
-    // Main Content - Exact same text as sample PDF
     y -= 20;
     const textLines = [
       `We are delighted to offer you the position of Intern at Graphura India Private`,
@@ -281,81 +270,35 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       "We look forward to welcoming you aboard and are excited about the journey",
       "ahead. Please feel free to reach out if you have any questions before your start",
       "date. Together, let's create impactful work and grow as a team. Once again,",
-      "congratulations and welcome to Graphura India Private Limited."
+      "congratulations and welcome to Graphura India Private Limited.",
     ];
 
     textLines.forEach((line) => {
-      page.drawText(line, {
-        x: 60,
-        y,
-        size: 13,
-        font: font,
-        color: rgb(0, 0, 0),
-      });
+      page.drawText(line, { x: 60, y, size: 13, font, color: rgb(0, 0, 0) });
       y -= 15;
     });
 
-    // Closing Section
     y -= 20;
-    page.drawText("Thank you", { 
-      x: 60, 
-      y, 
-      size: 13, 
-      font: fontBold, 
-      color: rgb(0, 0, 0) 
-    });
-
+    page.drawText("Thank you", { x: 60, y, size: 13, font: fontBold });
     y -= 15;
-    page.drawText("Team Graphura.", {
-      x: 60,
-      y,
-      size: 13,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    });
+    page.drawText("Team Graphura.", { x: 60, y, size: 13, font: fontBold });
 
-    // Footer with Unique ID and Date
     y -= 95;
-    page.drawText("Unique ID:", {
-      x: 75,
-      y,
-      size: 13,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    });
-
+    page.drawText("Unique ID:", { x: 75, y, size: 13, font: fontBold });
     y -= 15;
-
-    page.drawText(uniqueId, {
-      x: 75,
-      y,
-      size: 14,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    });
-
+    page.drawText(uniqueId, { x: 75, y, size: 14, font: fontBold });
     y -= 15;
-    page.drawText(`Date:`, {
-      x: 75,
-      y,
-      size: 14,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    });
-    y-=0
-    page.drawText(formattedStartDate, {
-      x: 115,
-      y,
-      size: 14,
-      font: font,
-      color: rgb(0, 0, 0),
-    });
+    page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
+    page.drawText(formattedStartDate, { x: 115, y, size: 14, font });
 
-    // 6️⃣ Save the file to /public/generated/offerletters/
-    const outputDir = path.join(process.cwd(), "public", "generated", "offerletters");
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
+    // 6️⃣ Save PDF
+    const outputDir = path.join(
+      process.cwd(),
+      "public",
+      "generated",
+      "offerletters"
+    );
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
     const filePath = path.join(outputDir, fileName);
@@ -363,14 +306,48 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     const pdfBytes = await pdfDoc.save();
     fs.writeFileSync(filePath, pdfBytes);
 
-    // 7️⃣ Send file as download response
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(Buffer.from(pdfBytes));
+    // 7️⃣ Send email with attachment
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // Gmail App Password
+      },
+    });
 
+    await transporter.sendMail({
+      from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
+      to: intern.email,
+      subject: "Internship Offer Latter – Graphura India Private Limited",
+      text: `Dear ${intern.fullName},
+
+It is our pleasure to offer you the position of intern at Graphura India Private Limited.
+This internship is scheduled to commence on 1 October 2025. During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
+
+We kindly request you to review the attached document carefully.
+We look forward to welcoming you to Graphura and are confident that this internship will provide you with a rewarding and enriching experience.
+
+Best regards,
+HR Department
+Graphura India Private Limited
+🌐 www.graphura.online`,
+      attachments: [
+        {
+          filename: fileName, // OfferLetter-Sameer_Singh.pdf
+          path: filePath,     // Path to saved PDF
+        },
+      ],
+    });
+
+
+    // 8️⃣ Send PDF as response
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.send(Buffer.from(pdfBytes));
   } catch (error) {
     console.error("Error generating offer letter:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 

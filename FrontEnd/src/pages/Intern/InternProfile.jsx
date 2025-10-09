@@ -11,13 +11,22 @@ const InternDetail = ({ role }) => {
   const [updating, setUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState("");
   const [generatingOffer, setGeneratingOffer] = useState(false);
+  const [hrComment, setHrComment] = useState("");
+  const [editingComment, setEditingComment] = useState(false);
   const navigate = useNavigate();
 
   const isAdmin = role === "Admin";
+  const isHR = role === "HR";
 
   useEffect(() => {
     fetchIntern();
   }, [id]);
+
+  useEffect(() => {
+    if (intern && intern.comment) {
+      setHrComment(intern.comment);
+    }
+  }, [intern]);
 
   const fetchIntern = async () => {
     setLoading(true);
@@ -37,7 +46,7 @@ const InternDetail = ({ role }) => {
 
   const handleStatusUpdate = async (newStatus) => {
     if (!isAdmin) return;
-    
+
     setUpdating(true);
     try {
       await axios.put(
@@ -45,7 +54,7 @@ const InternDetail = ({ role }) => {
         { status: newStatus },
         { withCredentials: true }
       );
-      
+
       setIntern(prev => ({ ...prev, status: newStatus }));
       setUpdateSuccess("Status updated successfully!");
       setTimeout(() => setUpdateSuccess(""), 3000);
@@ -58,7 +67,7 @@ const InternDetail = ({ role }) => {
 
   const handlePerformanceUpdate = async (newPerformance) => {
     if (!isAdmin) return;
-    
+
     setUpdating(true);
     try {
       await axios.put(
@@ -66,7 +75,7 @@ const InternDetail = ({ role }) => {
         { performance: newPerformance },
         { withCredentials: true }
       );
-      
+
       setIntern(prev => ({ ...prev, performance: newPerformance }));
       setUpdateSuccess("Performance updated successfully!");
       setTimeout(() => setUpdateSuccess(""), 3000);
@@ -79,7 +88,7 @@ const InternDetail = ({ role }) => {
 
   const handleDomainUpdate = async (newDomain) => {
     if (!isAdmin) return;
-    
+
     setUpdating(true);
     try {
       await axios.put(
@@ -87,7 +96,7 @@ const InternDetail = ({ role }) => {
         { domain: newDomain },
         { withCredentials: true }
       );
-      
+
       setIntern(prev => ({ ...prev, domain: newDomain }));
       setUpdateSuccess("Domain updated successfully!");
       setTimeout(() => setUpdateSuccess(""), 3000);
@@ -98,16 +107,38 @@ const InternDetail = ({ role }) => {
     setUpdating(false);
   };
 
+  const handleCommentUpdate = async () => {
+    if (!isHR) return;
+
+    setUpdating(true);
+    try {
+      await axios.put(
+        `/api/hr/interns/${id}/comment`,
+        { comment: hrComment },
+        { withCredentials: true }
+      );
+
+      setIntern(prev => ({ ...prev, comment: hrComment }));
+      setEditingComment(false);
+      setUpdateSuccess("Comment updated successfully!");
+      setTimeout(() => setUpdateSuccess(""), 3000);
+    } catch (err) {
+      console.error("Error updating comment:", err);
+      setError("Failed to update comment");
+    }
+    setUpdating(false);
+  };
+
   const generateOfferLetter = async () => {
     if (!isAdmin) return;
-    
+
     setGeneratingOffer(true);
     try {
       const response = await axios.post(
         `/api/admin/interns/${id}/generate`,
         {},
-        { 
-          withCredentials: true,  
+        {
+          withCredentials: true,
           responseType: 'blob'
         }
       );
@@ -248,9 +279,9 @@ const InternDetail = ({ role }) => {
         <div className="bg-white rounded-2xl shadow-xl mb-6 p-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
-              <img 
-                src={Graphura} 
-                alt="Graphura Logo" 
+              <img
+                src={Graphura}
+                alt="Graphura Logo"
                 className="h-12 sm:h-16 rounded-lg"
               />
               <div>
@@ -260,7 +291,7 @@ const InternDetail = ({ role }) => {
                 </p>
               </div>
             </div>
-            
+
             <button
               onClick={() => navigate(`/${role}-Dashboard`)}
               className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg flex items-center gap-2"
@@ -297,11 +328,17 @@ const InternDetail = ({ role }) => {
                     <option value="Applied">Applied</option>
                     <option value="Selected">Selected</option>
                     <option value="Rejected">Rejected</option>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Completed">Completed</option>
                   </select>
                   <div className="text-center text-sm text-gray-600">
                     {intern.status === 'Applied' && 'Application under review'}
                     {intern.status === 'Selected' && 'Candidate selected'}
                     {intern.status === 'Rejected' && 'Application rejected'}
+                    {intern.status === 'Active' && 'Candidate Now Working'}
+                    {intern.status === 'Inactive' && 'Candidate Now Terminated'}
+                    {intern.status === 'Completed' && 'Candidate Successfully Completed Internship'}
                   </div>
                 </div>
               ) : (
@@ -330,7 +367,6 @@ const InternDetail = ({ role }) => {
                     disabled={updating}
                     className={`w-full border-2 rounded-xl p-3 text-center font-bold capitalize cursor-pointer transition-all ${getPerformanceColor(intern.performance)} focus:ring-2 focus:ring-indigo-500`}
                   >
-                    <option value="Average">Average</option>
                     <option value="Good">Good</option>
                     <option value="Excellent">Excellent</option>
                   </select>
@@ -362,11 +398,10 @@ const InternDetail = ({ role }) => {
                 <button
                   onClick={generateOfferLetter}
                   disabled={generatingOffer || intern.status !== "Selected"}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                    intern.status === "Selected" 
-                      ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg" 
+                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${intern.status === "Selected"
+                      ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  } ${generatingOffer ? "opacity-50" : ""}`}
+                    } ${generatingOffer ? "opacity-50" : ""}`}
                 >
                   {generatingOffer ? (
                     <>
@@ -492,6 +527,100 @@ const InternDetail = ({ role }) => {
                 </div>
               </div>
             </div>
+
+            {/* Comment Section */}
+            <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                💬 HR Comments
+                {isHR && (
+                  <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full ml-2">
+                    HR Only
+                  </span>
+                )}
+              </h3>
+              
+              {/* HR - Edit Comment */}
+              {isHR && (
+                <div className="mb-6">
+                  {!editingComment ? (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="font-medium text-gray-700">Current Comment:</span>
+                        <button
+                          onClick={() => setEditingComment(true)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          ✏️ Edit
+                        </button>
+                      </div>
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {intern.comment || "No comment added yet."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <textarea
+                        value={hrComment}
+                        onChange={(e) => setHrComment(e.target.value)}
+                        placeholder="Add your comments about this intern..."
+                        className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                        rows="4"
+                      />
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-500">
+                          {hrComment.length}/500 characters
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingComment(false);
+                              setHrComment(intern.comment || "");
+                            }}
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleCommentUpdate}
+                            disabled={updating}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {updating ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                Saving...
+                              </>
+                            ) : (
+                              "Save Comment"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Admin - View Comment Only */}
+              {isAdmin && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="font-medium text-gray-700">HR Comment:</span>
+                    <span className="text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded-full">
+                      HR
+                    </span>
+                  </div>
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {intern.comment || "No HR comment available."}
+                  </p>
+                  {!intern.comment && (
+                    <p className="text-gray-500 text-sm mt-2">
+                      HR hasn't added any comments yet.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -517,11 +646,10 @@ const InternDetail = ({ role }) => {
               <button
                 onClick={generateOfferLetter}
                 disabled={generatingOffer || intern.status !== "Selected"}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
-                  intern.status === "Selected" 
-                    ? "bg-purple-600 hover:bg-purple-700 text-white" 
+                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected"
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "bg-gray-400 text-gray-600 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {generatingOffer ? "⏳ Generating..." : "📝 Offer Letter"}
               </button>

@@ -16,6 +16,9 @@ const ApplicationForm = () => {
     pinCode: "",
     college: "",
     course: "",
+    TpoName: "",
+    TpoEmail: "",
+    TpoNumber: "",
     educationLevel: "",
     domain: "",
     contactMethod: "",
@@ -44,8 +47,8 @@ const ApplicationForm = () => {
 
   const validateForm = () => {
     const requiredFields = [
-      "fullName", "mobile", "email", "dob", "gender", "state", "city", "address", 
-      "pinCode", "college", "course", "educationLevel", "domain", "contactMethod", 
+      "fullName", "mobile", "email", "dob", "gender", "state", "city", "address",
+      "pinCode", "college", "course", "educationLevel", "domain", "contactMethod",
       "resumeUrl", "duration", "prevInternship"
     ];
     const newErrors = {};
@@ -94,7 +97,7 @@ const ApplicationForm = () => {
       //   },
       // });
 
-      const response= await axios.post('/api/createIntern',formData)
+      const response = await axios.post('/api/createIntern', formData)
 
       // Response data is automatically parsed as JSON
       console.log(response.data); // Optional: Log the response for debugging
@@ -110,6 +113,9 @@ const ApplicationForm = () => {
         address: "",
         pinCode: "",
         college: "",
+        TpoName: "",
+        TpoEmail: "",
+        TpoNumber: "",
         course: "",
         educationLevel: "",
         domain: "",
@@ -126,7 +132,7 @@ const ApplicationForm = () => {
       setLoading(false);
     }
   };
-  
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-blue-900 p-4">
@@ -416,7 +422,7 @@ const ApplicationForm = () => {
                 className="p-3 rounded-xl bg-white/10 border border-white/30 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/50 transition-all duration-300 text-white w-full"
                 required
                 disabled={loading}
-                
+
               >
                 <option value="">Select Education Level</option>
                 <option>High School</option>
@@ -427,6 +433,36 @@ const ApplicationForm = () => {
               </select>
             </div>
           </div>
+          {/* ✨ New TPO Fields */}
+          <div className="space-y-1">
+            <label htmlFor="TpoName" className="block text-sm font-medium text-white">
+              TPO Name <span className="text-red-500"></span>
+            </label>
+            <input id="TpoName" name="TpoName" value={formData.TpoName} onChange={handleChange}
+              className="p-3 rounded-xl bg-white/10 border border-white/30 focus:ring-2 focus:ring-blue-400/50 text-white w-full"
+              placeholder="Training & Placement Officer Name" disabled={loading} />
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="TpoEmail" className="block text-sm font-medium text-white">
+              TPO Email <span className="text-red-500"></span>
+            </label>
+            <input id="TpoEmail" name="TpoEmail" value={formData.TpoEmail} onChange={handleChange}
+              type="email"
+              className="p-3 rounded-xl bg-white/10 border border-white/30 focus:ring-2 focus:ring-blue-400/50 text-white w-full"
+              placeholder="tpo@college.edu" disabled={loading} />
+          </div>
+
+          <div className="space-y-1 sm:col-span-2">
+            <label htmlFor="TpoNumber" className="block text-sm font-medium text-white">
+              TPO Contact Number <span className="text-red-500"></span>
+            </label>
+            <input id="TpoNumber" name="TpoNumber" value={formData.TpoNumber} onChange={handleChange}
+              type="tel"
+              className="p-3 rounded-xl bg-white/10 border border-white/30 focus:ring-2 focus:ring-blue-400/50 text-white w-full"
+              placeholder="10-digit contact number" disabled={loading} />
+          </div>
+
         </fieldset>
 
         {/* Internship Details */}

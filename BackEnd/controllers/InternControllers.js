@@ -38,8 +38,10 @@ export const createIntern = async (req, res) => {
             resumeUrl: internData.resumeUrl,
             duration: internData.duration,
             prevInternship: internData.prevInternship,
+            TpoEmail:internData.TpoEmail,
+            TpoNumber:internData.TpoNumber,
+            TpoName:internData.TpoName,
 
-            
         });
         
         await newIntern.save();

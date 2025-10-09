@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const internSchema = new mongoose.Schema({
     fullName: {
@@ -82,6 +83,21 @@ const internSchema = new mongoose.Schema({
         type: String,
         enums: ["Selected", "Rejected", "Applied"],
         default: 'Applied'
+    },
+    uniqueId: {
+        type:String
+    },
+    comment: {
+        type:String
+    },
+    TpoName : {
+        type:String
+    },
+    TpoEmail : {
+        type:String
+    },
+    TpoNumber : {
+        type:String
     }
 
 }, { timestamps: true });
