@@ -1,25 +1,22 @@
-import Intern from "../models/InternDatabase.js";
-import sendWhatsApp from "../Services/WhatsappService.js"
-
+import Intern from '../models/InternDatabase.js';
+import {transporter} from "../config/emailConfig.js"
 export const createIntern = async (req, res) => {
     try {
         const internData = req.body;
-        // Check if intern with the same email or mobile already exists
 
+        // Validate required fields
         if (!internData.fullName || !internData.email || !internData.mobile) {
             return res.status(400).json({ message: "Full Name, Email and Mobile are required" });
         }
 
-        const intern = await Intern.findOne({ email: internData.email });
-        if (intern) {
-            return res.status(400).json({ message: "Intern Application already exists" });
-        }
+        // Check for existing email or mobile
+        const existingEmail = await Intern.findOne({ email: internData.email });
+        if (existingEmail) return res.status(400).json({ message: "Intern Application already exists" });
 
-        const internWithMobile = await Intern.findOne({ mobile: internData.mobile });
-        if (internWithMobile) {
-            return res.status(400).json({ message: "Intern Application already exists" });
-        }
+        const existingMobile = await Intern.findOne({ mobile: internData.mobile });
+        if (existingMobile) return res.status(400).json({ message: "Intern Application already exists" });
 
+        // Create new intern
         const newIntern = new Intern({
             fullName: internData.fullName,
             email: internData.email,
@@ -38,31 +35,44 @@ export const createIntern = async (req, res) => {
             resumeUrl: internData.resumeUrl,
             duration: internData.duration,
             prevInternship: internData.prevInternship,
-            TpoEmail:internData.TpoEmail,
-            TpoNumber:internData.TpoNumber,
-            TpoName:internData.TpoName,
-
+            TpoEmail: internData.TpoEmail,
+            TpoNumber: internData.TpoNumber,
+            TpoName: internData.TpoName,
         });
-        
-        await newIntern.save();
-        
-        const msg = `Hello ${newIntern.fullName} 👋 
-Thank you for applying to Graphura. 
-📌 Department/Domain: ${newIntern.domain}  
-📌 Internship Duration: ${newIntern.duration}  
-We have received your application and our team will review it shortly. You will be contacted soon with further updates. Best regards,
-Graphura Team`;
-        
-        await sendWhatsApp(newIntern.mobile, msg)
-        
 
+        await newIntern.save();
+
+        // Email message (same as WhatsApp style)
+const emailMsg = `Dear ${newIntern.fullName},
+
+Thank you for your interest in joining Graphura and submitting your application for the ${newIntern.domain} internship position.
+
+📌 Internship Domain: ${newIntern.domain}
+📌 Duration: ${newIntern.duration}
+
+We have successfully received your application and our recruitment team will carefully review your qualifications. We appreciate the time and effort you've invested in your application.
+
+You can expect to hear back from us within the next 2-3 business days regarding the status of your application.
+
+Should you have any questions in the meantime, please don't hesitate to reach out.
+
+Best regards,
+The Graphura Team
+🌐 www.graphura.online`;
+
+        const mailOptions = {
+            from: '"Graphura Team" <no-reply@graphura.com>', // replace with your sender email
+            to: newIntern.email,
+            subject: "Internship Application Received",
+            text: emailMsg, // plain text email
+        };
+
+        await transporter.sendMail(mailOptions);
 
         res.status(201).json({ message: "Intern created successfully", intern: newIntern });
 
-
     } catch (error) {
-        console.log('error while creating intern', error);
+        console.log('Error while creating intern:', error);
         res.status(500).json({ message: "Server Error" });
     }
 };
-

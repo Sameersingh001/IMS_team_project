@@ -37,7 +37,13 @@ const HRDashboard = () => {
     setLoading(false);
   };
 
-  const handleStatusUpdate = async (internId, newStatus) => {
+  const handleStatusUpdate = async (internId, newStatus, hasUniqueId) => {
+    if (hasUniqueId) {
+      setError("Cannot update status - Unique ID already generated");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    
     setUpdating(internId);
     try {
       await axios.put(
@@ -53,7 +59,13 @@ const HRDashboard = () => {
     setUpdating(null);
   };
 
-  const handlePerformanceUpdate = async (internId, newPerformance) => {
+  const handlePerformanceUpdate = async (internId, newPerformance, hasUniqueId) => {
+    if (hasUniqueId) {
+      setError("Cannot update performance - Unique ID already generated");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    
     setUpdating(internId);
     try {
       await axios.put(
@@ -69,7 +81,13 @@ const HRDashboard = () => {
     setUpdating(null);
   };
 
-  const handleDomainUpdate = async (internId, newDomain) => {
+  const handleDomainUpdate = async (internId, newDomain, hasUniqueId) => {
+    if (hasUniqueId) {
+      setError("Cannot update domain - Unique ID already generated");
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
+    
     setUpdating(internId);
     try {
       await axios.put(
@@ -176,6 +194,23 @@ const HRDashboard = () => {
             .performance-Average { background-color: #fef3c7; color: #92400e; }
             .performance-Good { background-color: #dcfce7; color: #166534; }
             .performance-Excellent { background-color: #e0e7ff; color: #3730a3; }
+            .unique-id {
+              background-color: #f3e8ff;
+              color: #7c3aed;
+              padding: 4px 8px;
+              border-radius: 6px;
+              font-size: 11px;
+              font-weight: bold;
+              font-family: monospace;
+            }
+            .locked-badge {
+              background-color: #fef3c7;
+              color: #92400e;
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-size: 10px;
+              margin-left: 4px;
+            }
             .print-footer {
               margin-top: 30px;
               text-align: center;
@@ -312,6 +347,13 @@ const HRDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative animate-fade-in">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
 
         {/* Email Copy Success Message */}
         {copySuccess && (
@@ -485,6 +527,7 @@ const HRDashboard = () => {
                     <th className="p-4 text-left font-semibold">Intern Details</th>
                     <th className="p-4 text-left font-semibold">Contact Info</th>
                     <th className="p-4 text-left font-semibold">Domain & Duration</th>
+                    <th className="p-4 text-left font-semibold">Unique ID</th>
                     <th className="p-4 text-left font-semibold">Status</th>
                     <th className="p-4 text-left font-semibold">Performance</th>
                     <th className="p-4 text-left font-semibold">Domain</th>
@@ -492,115 +535,164 @@ const HRDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredInterns.map((intern) => (
-                    <tr
-                      key={intern._id}
-                      className="hover:bg-indigo-50 transition-colors duration-150"
-                    >
-                      {/* Name & Email */}
-                      <td className="p-4">
-                        <div>
-                          <div className="font-semibold text-gray-800">{intern.fullName}</div>
-                          <div className="text-sm text-gray-600">{intern.email}</div>
-                        </div>
-                      </td>
-
-                      {/* Mobile Number */}
-                      <td className="p-4">
-                        <div className="text-gray-700">
-                          📞 {intern.mobile || "Not provided"}
-                        </div>
-                      </td>
-
-                      {/* Domain & Duration */}
-                      <td className="p-4">
-                        <div className="space-y-1">
-                          <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
-                            {intern.domain || "Not specified"}
-                          </span>
-                          <div className="text-sm text-gray-600">
-                            ⏱️ {intern.duration || "Not specified"}
+                  {filteredInterns.map((intern) => {
+                    const hasUniqueId = !!intern.uniqueId;
+                    const isLocked = hasUniqueId;
+                    
+                    return (
+                      <tr
+                        key={intern._id}
+                        className={`hover:bg-indigo-50 transition-colors duration-150 ${
+                          isLocked ? 'bg-yellow-50' : ''
+                        }`}
+                      >
+                        {/* Name & Email */}
+                        <td className="p-4">
+                          <div>
+                            <div className="font-semibold text-gray-800 flex items-center gap-2">
+                              {intern.fullName}
+                              {isLocked && (
+                                <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-medium">
+                                  🔒 Locked
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600">{intern.email}</div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Status with Update */}
-                      <td className="p-4">
-                        <div className="print-only">
-                          <span className={`status-badge status-${intern.status}`}>
-                            {intern.status}
-                          </span>
-                        </div>
-                        <select
-                          value={intern.status}
-                          onChange={(e) => handleStatusUpdate(intern._id, e.target.value)}
-                          disabled={updating === intern._id}
-                          className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print`}
-                        >
-                          <option value="Applied">Applied</option>
-                          <option value="Selected">Selected</option>
-                          <option value="Rejected">Rejected</option>
-                        </select>
-                      </td>
+                        {/* Mobile Number */}
+                        <td className="p-4">
+                          <div className="text-gray-700">
+                            📞 {intern.mobile || "Not provided"}
+                          </div>
+                        </td>
 
-                      {/* Performance with Update */}
-                      <td className="p-4">
-                        <div className="print-only">
-                          <span className={`performance-badge performance-${intern.performance}`}>
-                            {intern.performance}
-                          </span>
-                        </div>
-                        <select
-                          value={intern.performance}
-                          onChange={(e) => handlePerformanceUpdate(intern._id, e.target.value)}
-                          disabled={updating === intern._id}
-                          className={`${getPerformanceColor(intern.performance)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print`}
-                        >
-                          <option value="Average">Average</option>
-                          <option value="Good">Good</option>
-                          <option value="Excellent">Excellent</option>
-                        </select>
-                      </td>
+                        {/* Domain & Duration */}
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
+                              {intern.domain || "Not specified"}
+                            </span>
+                            <div className="text-sm text-gray-600">
+                              ⏱️ {intern.duration || "Not specified"}
+                            </div>
+                          </div>
+                        </td>
 
-                      <td className="p-4">
-                        <div className="print-only">
-                          <span>
-                            {intern.domain}
-                          </span>
-                        </div>
-                        <select
-                          value={intern.domain}
-                          onChange={(e) => handleDomainUpdate(intern._id, e.target.value)}
-                          disabled={updating === intern._id}
-                          className={` px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print`}
-                        >
-                          <option>Sales & Marketing</option>
-                          <option>Email Outreaching</option>
-                          <option>Journalism and Mass communication</option>
-                          <option>Social Media Management</option>
-                          <option>Graphic Design</option>
-                          <option>Digital Marketing</option>
-                          <option>Video Editing</option>
-                          <option>Content Writing</option>
-                          <option>UI/UX Designing</option>
-                          <option>Front-end Developer</option>
-                          <option>Back-end Developer</option>
-                        </select>
-                      </td>
+                        {/* Unique ID */}
+                        <td className="p-4">
+                          {hasUniqueId ? (
+                            <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-mono font-bold">
+                              {intern.uniqueId}
+                            </div>
+                          ) : (
+                            <div className="text-gray-400 text-sm italic">
+                              Not generated
+                            </div>
+                          )}
+                        </td>
 
-                      {/* Actions */}
-                      <td className="p-4 no-print">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => navigate(`/HR-Dashboard/intern/${intern._id}`)}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium text-sm"
+                        {/* Status with Update */}
+                        <td className="p-4">
+                          <div className="print-only">
+                            <span className={`status-badge status-${intern.status}`}>
+                              {intern.status}
+                            </span>
+                          </div>
+                          <select
+                            value={intern.status}
+                            onChange={(e) => handleStatusUpdate(intern._id, e.target.value, hasUniqueId)}
+                            disabled={updating === intern._id || isLocked}
+                            className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${
+                              isLocked ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                           >
-                            View Details
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            <option value="Applied">Applied</option>
+                            <option value="Selected">Selected</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                          {isLocked && (
+                            <div className="text-xs text-yellow-600 mt-1 no-print">
+                              🔒 Cannot update
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Performance with Update */}
+                        <td className="p-4">
+                          <div className="print-only">
+                            <span className={`performance-badge performance-${intern.performance}`}>
+                              {intern.performance}
+                            </span>
+                          </div>
+                          <select
+                            value={intern.performance}
+                            onChange={(e) => handlePerformanceUpdate(intern._id, e.target.value, hasUniqueId)}
+                            disabled={updating === intern._id || isLocked}
+                            className={`${getPerformanceColor(intern.performance)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${
+                              isLocked ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            <option value="Average">Average</option>
+                            <option value="Good">Good</option>
+                            <option value="Excellent">Excellent</option>
+                          </select>
+                          {isLocked && (
+                            <div className="text-xs text-yellow-600 mt-1 no-print">
+                              🔒 Cannot update
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Domain Update */}
+                        <td className="p-4">
+                          <div className="print-only">
+                            <span>
+                              {intern.domain}
+                            </span>
+                          </div>
+                          <select
+                            value={intern.domain}
+                            onChange={(e) => handleDomainUpdate(intern._id, e.target.value, hasUniqueId)}
+                            disabled={updating === intern._id || isLocked}
+                            className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${
+                              isLocked ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            <option>Sales & Marketing</option>
+                            <option>Email Outreaching</option>
+                            <option>Journalism and Mass communication</option>
+                            <option>Social Media Management</option>
+                            <option>Graphic Design</option>
+                            <option>Digital Marketing</option>
+                            <option>Video Editing</option>
+                            <option>Content Writing</option>
+                            <option>UI/UX Designing</option>
+                            <option>Front-end Developer</option>
+                            <option>Back-end Developer</option>
+                          </select>
+                          {isLocked && (
+                            <div className="text-xs text-yellow-600 mt-1 no-print">
+                              🔒 Cannot update
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Actions */}
+                        <td className="p-4 no-print">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => navigate(`/HR-Dashboard/intern/${intern._id}`)}
+                              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium text-sm"
+                            >
+                              View Details
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

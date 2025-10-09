@@ -13,6 +13,8 @@ const InternDetail = ({ role }) => {
   const [generatingOffer, setGeneratingOffer] = useState(false);
   const [hrComment, setHrComment] = useState("");
   const [editingComment, setEditingComment] = useState(false);
+  const [editingJoiningDate, setEditingJoiningDate] = useState(false);
+  const [joiningDate, setJoiningDate] = useState("");
   const navigate = useNavigate();
 
   const isAdmin = role === "Admin";
@@ -23,8 +25,13 @@ const InternDetail = ({ role }) => {
   }, [id]);
 
   useEffect(() => {
-    if (intern && intern.comment) {
-      setHrComment(intern.comment);
+    if (intern) {
+      if (intern.comment) {
+        setHrComment(intern.comment);
+      }
+      if (intern.joiningDate) {
+        setJoiningDate(intern.joiningDate);
+      }
     }
   }, [intern]);
 
@@ -107,6 +114,28 @@ const InternDetail = ({ role }) => {
     setUpdating(false);
   };
 
+  const handleJoiningDateUpdate = async () => {
+    if (!isAdmin) return;
+
+    setUpdating(true);
+    try {
+      await axios.put(
+        `/api/admin/interns/${id}/joining-date`,
+        { joiningDate: joiningDate },
+        { withCredentials: true }
+      );
+
+      setIntern(prev => ({ ...prev, joiningDate: joiningDate }));
+      setEditingJoiningDate(false);
+      setUpdateSuccess("Joining date updated successfully!");
+      setTimeout(() => setUpdateSuccess(""), 3000);
+    } catch (err) {
+      console.error("Error updating joining date:", err);
+      setError("Failed to update joining date");
+    }
+    setUpdating(false);
+  };
+
   const handleCommentUpdate = async () => {
     if (!isHR) return;
 
@@ -132,11 +161,18 @@ const InternDetail = ({ role }) => {
   const generateOfferLetter = async () => {
     if (!isAdmin) return;
 
+    // Check if joining date is set
+    if (!joiningDate) {
+      setError("Please set a joining date before generating offer letter");
+      setTimeout(() => setError(""), 5000);
+      return;
+    }
+
     setGeneratingOffer(true);
     try {
       const response = await axios.post(
         `/api/admin/interns/${id}/generate`,
-        {},
+        { joiningDate: joiningDate },
         {
           withCredentials: true,
           responseType: 'blob'
@@ -389,6 +425,69 @@ const InternDetail = ({ role }) => {
               )}
             </div>
 
+            {/* Joining Date Card - Admin Only */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  📅 Joining Date
+                </h3>
+                {!editingJoiningDate ? (
+                  <div className="space-y-3">
+                    <div className={`border-2 rounded-xl p-4 text-center ${joiningDate ? "bg-blue-50 border-blue-200" : "bg-yellow-50 border-yellow-200"}`}>
+                      <div className="text-3xl mb-2">📅</div>
+                      <div className="text-xl font-bold">
+                        {joiningDate ? new Date(joiningDate).toLocaleDateString() : "Not Set"}
+                      </div>
+                      <div className="text-sm opacity-75 mt-1">
+                        {joiningDate ? "Joining date set" : "Required for offer letter"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setEditingJoiningDate(true)}
+                      className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      ✏️ {joiningDate ? "Edit Date" : "Set Date"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <input
+                      type="date"
+                      value={joiningDate}
+                      onChange={(e) => setJoiningDate(e.target.value)}
+                      className="w-full border-2 border-gray-300 rounded-xl p-3 text-center font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingJoiningDate(false);
+                          setJoiningDate(intern.joiningDate || "");
+                        }}
+                        className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleJoiningDateUpdate}
+                        disabled={updating || !joiningDate}
+                        className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {updating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Date"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Admin Only - Offer Letter */}
             {isAdmin && (
               <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -397,11 +496,12 @@ const InternDetail = ({ role }) => {
                 </h3>
                 <button
                   onClick={generateOfferLetter}
-                  disabled={generatingOffer || intern.status !== "Selected"}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${intern.status === "Selected"
+                  disabled={generatingOffer || intern.status !== "Selected" || !joiningDate}
+                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                    intern.status === "Selected" && joiningDate
                       ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    } ${generatingOffer ? "opacity-50" : ""}`}
+                  } ${generatingOffer ? "opacity-50" : ""}`}
                 >
                   {generatingOffer ? (
                     <>
@@ -414,6 +514,11 @@ const InternDetail = ({ role }) => {
                     </>
                   )}
                 </button>
+                {!joiningDate && (
+                  <p className="text-sm text-yellow-600 mt-2 text-center">
+                    Please set joining date first
+                  </p>
+                )}
                 {intern.status !== "Selected" && (
                   <p className="text-sm text-gray-600 mt-2 text-center">
                     Available only for selected interns
@@ -645,11 +750,12 @@ const InternDetail = ({ role }) => {
             {isAdmin && (
               <button
                 onClick={generateOfferLetter}
-                disabled={generatingOffer || intern.status !== "Selected"}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected"
+                disabled={generatingOffer || intern.status !== "Selected" || !joiningDate}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
+                  intern.status === "Selected" && joiningDate
                     ? "bg-purple-600 hover:bg-purple-700 text-white"
                     : "bg-gray-400 text-gray-600 cursor-not-allowed"
-                  }`}
+                }`}
               >
                 {generatingOffer ? "⏳ Generating..." : "📝 Offer Letter"}
               </button>

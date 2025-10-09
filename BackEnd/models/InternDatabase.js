@@ -98,6 +98,9 @@ const internSchema = new mongoose.Schema({
     },
     TpoNumber : {
         type:String
+    },
+    joiningDate : {
+        type:String
     }
 
 }, { timestamps: true });

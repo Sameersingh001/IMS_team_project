@@ -135,7 +135,7 @@ export const updateComment = async (req, res) =>{
     res.status(200).json({ message: "Comment updated successfully", intern });
 
   }catch(err){
-    console.error("Error updating domain:", err);
+    console.error("Error updating Comment:", err);
     res.status(500).json({ message: "Failed to update domain" });
   }
 }

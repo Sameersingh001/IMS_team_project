@@ -145,6 +145,7 @@ export const deleteIntern = async (req, res) => {
 export const generateOfferLetterWithPNG = async (req, res) => {
   try {
     const { id } = req.params;
+    const { joiningDate } = req.body; // Get joining date from request body
 
     // 1️⃣ Find the intern
     const intern = await Intern.findById(id);
@@ -158,6 +159,16 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       });
     }
 
+    // Validate joining date
+    if (!joiningDate) {
+      return res.status(400).json({
+        error: "Joining date is required to generate offer letter",
+      });
+    }
+
+    // Update intern's joining date in database
+    intern.joiningDate = new Date(joiningDate);
+    
     // 2️⃣ Use existing uniqueId if available, otherwise generate a new one
     let uniqueId = intern.uniqueId;
     const currentDate = new Date();
@@ -170,8 +181,9 @@ export const generateOfferLetterWithPNG = async (req, res) => {
         .padStart(2, "0")}/${Math.floor(100 + Math.random() * 900)}`;
 
       intern.uniqueId = uniqueId;
-      await intern.save();
     }
+
+    await intern.save();
 
     // 3️⃣ Create PDF
     const pdfDoc = await PDFDocument.create();
@@ -199,9 +211,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     });
 
     // Text
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() + 1);
-    const formattedStartDate = startDate.toLocaleDateString("en-GB", {
+    const formattedJoiningDate = new Date(joiningDate).toLocaleDateString("en-GB", {
       day: "numeric",
       month: "long",
       year: "numeric",
@@ -264,7 +274,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     y -= 20;
     const textLines = [
       `We are delighted to offer you the position of Intern at Graphura India Private`,
-      `Limited, starting from ${formattedStartDate}. We were impressed with your skills and`,
+      `Limited, starting from ${formattedJoiningDate}. We were impressed with your skills and`,
       "believe that your contribution will add value to our team.",
       "",
       "We look forward to welcoming you aboard and are excited about the journey",
@@ -286,10 +296,11 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     y -= 95;
     page.drawText("Unique ID:", { x: 75, y, size: 13, font: fontBold });
     y -= 15;
-    page.drawText(uniqueId, { x: 75, y, size: 14, font: fontBold });
+    page.drawText(uniqueId, { x: 75, y, size: 14, font: fontBold });    
+    // Add Joining Date to PDF
     y -= 15;
     page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
-    page.drawText(formattedStartDate, { x: 115, y, size: 14, font });
+    page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
 
     // 6️⃣ Save PDF
     const outputDir = path.join(
@@ -318,11 +329,11 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     await transporter.sendMail({
       from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
       to: intern.email,
-      subject: "Internship Offer Latter – Graphura India Private Limited",
+      subject: "Internship Offer Letter – Graphura India Private Limited",
       text: `Dear ${intern.fullName},
 
 It is our pleasure to offer you the position of intern at Graphura India Private Limited.
-This internship is scheduled to commence on 1 October 2025. During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
+This internship is scheduled to commence on ${formattedJoiningDate}. During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
 
 We kindly request you to review the attached document carefully.
 We look forward to welcoming you to Graphura and are confident that this internship will provide you with a rewarding and enriching experience.
@@ -339,14 +350,33 @@ Graphura India Private Limited
       ],
     });
 
-
     // 8️⃣ Send PDF as response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.send(Buffer.from(pdfBytes));
+    
   } catch (error) {
     console.error("Error generating offer letter:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
+export const updateJoiningDate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { joiningDate } = req.body;
+    const intern = await Intern.findByIdAndUpdate(
+      id,
+      { joiningDate },
+      { new: true }
+    );
+    if (!intern) return res.status(404).json({ message: "Intern not found" });
+
+    res.status(200).json({ message: "Joining Date updated successfully", intern });
+  } catch (err) {
+    console.error("Error updating JoiningDate:", err);
+    res.status(500).json({ message: "Failed to update domain" });
   }
 };
 
