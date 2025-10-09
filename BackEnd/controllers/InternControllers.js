@@ -63,7 +63,7 @@ The Graphura Team
         const mailOptions = {
             from: '"Graphura Team" <no-reply@graphura.com>', // replace with your sender email
             to: newIntern.email,
-            subject: "Internship Application Received",
+            subject: "Graphura - Internship Application Received",
             text: emailMsg, // plain text email
         };
 
