@@ -12,7 +12,7 @@ const InternInchargeRegister = () => {
         password: "",
         confirmPassword: "",
         mobile: "",
-        department: "",
+        department: "", // Single department for registration
         gender: "",
         address: "",
         city: "",
@@ -61,6 +61,10 @@ const InternInchargeRegister = () => {
             setError("Please enter a valid 6-digit pin code");
             return false;
         }
+        if (!formData.department) {
+            setError("Please select a department");
+            return false;
+        }
         return true;
     };
 
@@ -75,7 +79,11 @@ const InternInchargeRegister = () => {
         }
 
         try {
-            const { ...submitData } = formData;
+            // Convert to array format for backend (single department in array)
+            const submitData = {
+                ...formData,
+                department: [formData.department] // Convert to array for backend
+            };
 
             const response = await axios.post(
                 "/api/intern-incharge/register",
@@ -185,7 +193,7 @@ const InternInchargeRegister = () => {
                             />
                         </div>
 
-                        {/* Department */}
+                        {/* Department - Single Selection */}
                         <div>
                             <label className="block text-gray-700 font-semibold mb-2 text-sm">
                                 Department *
@@ -205,6 +213,9 @@ const InternInchargeRegister = () => {
                                     </option>
                                 ))}
                             </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                                You can be assigned more departments by admin later
+                            </p>
                         </div>
 
                         {/* Gender */}

@@ -54,6 +54,13 @@ const InternDetail = ({ role }) => {
   const handleStatusUpdate = async (newStatus) => {
     if (!isAdmin) return;
 
+    // Check if trying to set to Active/Inactive/Completed without unique ID
+    if (["Active", "Inactive", "Completed"].includes(newStatus) && !intern.uniqueId) {
+      setError("Cannot set status to Active/Inactive/Completed without generating Unique ID first. Please generate offer letter to create Unique ID.");
+      setTimeout(() => setError(""), 5000);
+      return;
+    }
+
     setUpdating(true);
     try {
       await axios.put(
@@ -67,7 +74,7 @@ const InternDetail = ({ role }) => {
       setTimeout(() => setUpdateSuccess(""), 3000);
     } catch (err) {
       console.error("Error updating status:", err);
-      setError("Failed to update status");
+      setError(err.response?.data?.message || "Failed to update status");
     }
     setUpdating(false);
   };
@@ -171,7 +178,7 @@ const InternDetail = ({ role }) => {
     setGeneratingOffer(true);
     try {
       const response = await axios.post(
-        `/api/admin/interns/${id}/generate`,
+        `/api/admin/interns/${id}/generate-offer-letter`,
         { joiningDate: joiningDate },
         {
           withCredentials: true,
@@ -190,11 +197,14 @@ const InternDetail = ({ role }) => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      setUpdateSuccess("Offer letter generated successfully!");
-      setTimeout(() => setUpdateSuccess(""), 3000);
+      // Fetch updated intern data to get the generated unique ID
+      await fetchIntern();
+      
+      setUpdateSuccess("Offer letter generated successfully! Unique ID has been created.");
+      setTimeout(() => setUpdateSuccess(""), 4000);
     } catch (err) {
       console.error("Error generating offer letter:", err);
-      setError("Failed to generate offer letter");
+      setError(err.response?.data?.message || "Failed to generate offer letter");
     }
     setGeneratingOffer(false);
   };
@@ -204,6 +214,9 @@ const InternDetail = ({ role }) => {
       case "Selected": return "bg-green-100 text-green-800 border-green-200";
       case "Rejected": return "bg-red-100 text-red-800 border-red-200";
       case "Applied": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Active": return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      case "Inactive": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "Completed": return "bg-purple-100 text-purple-800 border-purple-200";
       default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
@@ -222,6 +235,9 @@ const InternDetail = ({ role }) => {
       case "Selected": return "✅";
       case "Rejected": return "❌";
       case "Applied": return "⏳";
+      case "Active": return "🟢";
+      case "Inactive": return "🟡";
+      case "Completed": return "🟣";
       default: return "📄";
     }
   };
@@ -233,6 +249,11 @@ const InternDetail = ({ role }) => {
       case "Average": return "📊";
       default: return "➖";
     }
+  };
+
+  // Check if status can be changed to Active/Inactive/Completed
+  const canChangeToWorkStatus = (status) => {
+    return ["Active", "Inactive", "Completed"].includes(status) && !intern.uniqueId;
   };
 
   if (loading) {
@@ -295,6 +316,7 @@ const InternDetail = ({ role }) => {
     { label: "Full Name", value: intern.fullName, icon: "👤" },
     { label: "Email", value: intern.email, icon: "📧", isLink: true, href: `mailto:${intern.email}` },
     { label: "Mobile", value: intern.mobile, icon: "📱" },
+    { label: "Unique ID", value: intern.uniqueId, icon: "🆔" },
   ];
 
   const educationDetails = [
@@ -325,6 +347,11 @@ const InternDetail = ({ role }) => {
                 <p className="text-gray-600 text-sm sm:text-base">
                   {isAdmin ? "Admin - Full Management Access" : "HR - View Only Access"}
                 </p>
+                {intern.uniqueId && (
+                  <p className="text-sm text-green-600 font-medium mt-1">
+                    Unique ID: {intern.uniqueId}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -344,6 +371,13 @@ const InternDetail = ({ role }) => {
           </div>
         )}
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative animate-fade-in">
+            <span className="block sm:inline">{error}</span>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Status Cards */}
@@ -359,7 +393,9 @@ const InternDetail = ({ role }) => {
                     value={intern.status}
                     onChange={(e) => handleStatusUpdate(e.target.value)}
                     disabled={updating}
-                    className={`w-full border-2 rounded-xl p-3 text-center font-bold capitalize cursor-pointer transition-all ${getStatusColor(intern.status)} focus:ring-2 focus:ring-indigo-500`}
+                    className={`w-full border-2 rounded-xl p-3 text-center font-bold capitalize cursor-pointer transition-all ${getStatusColor(intern.status)} focus:ring-2 focus:ring-indigo-500 ${
+                      canChangeToWorkStatus(intern.status) ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
                     <option value="Applied">Applied</option>
                     <option value="Selected">Selected</option>
@@ -368,6 +404,11 @@ const InternDetail = ({ role }) => {
                     <option value="Inactive">Inactive</option>
                     <option value="Completed">Completed</option>
                   </select>
+                  {canChangeToWorkStatus(intern.status) && (
+                    <p className="text-xs text-red-600 text-center">
+                      Generate offer letter first to create Unique ID and enable Active/Inactive/Completed status
+                    </p>
+                  )}
                   <div className="text-center text-sm text-gray-600">
                     {intern.status === 'Applied' && 'Application under review'}
                     {intern.status === 'Selected' && 'Candidate selected'}
@@ -385,10 +426,40 @@ const InternDetail = ({ role }) => {
                     {intern.status === 'Applied' && 'Application under review'}
                     {intern.status === 'Selected' && 'Candidate selected'}
                     {intern.status === 'Rejected' && 'Application rejected'}
+                    {intern.status === 'Active' && 'Candidate Now Working'}
+                    {intern.status === 'Inactive' && 'Candidate Now Terminated'}
+                    {intern.status === 'Completed' && 'Candidate Successfully Completed Internship'}
                   </div>
                 </div>
               )}
             </div>
+
+            {/* Unique ID Card - Admin Only */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  🆔 Unique ID
+                </h3>
+                {intern.uniqueId ? (
+                  <div className={`border-2 rounded-xl p-4 text-center bg-green-50 border-green-200`}>
+                    <div className="text-3xl mb-2">✅</div>
+                    <div className="text-xl font-bold font-mono">{intern.uniqueId}</div>
+                    <div className="text-sm opacity-75 mt-1">Generated with Offer Letter</div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className={`border-2 rounded-xl p-4 text-center bg-yellow-50 border-yellow-200`}>
+                      <div className="text-3xl mb-2">⚠️</div>
+                      <div className="text-lg font-bold text-yellow-800">Not Generated</div>
+                      <div className="text-sm opacity-75 mt-1">Will be created with offer letter</div>
+                    </div>
+                    <div className="text-xs text-gray-600 text-center p-2 bg-gray-50 rounded-lg">
+                      Unique ID will be automatically generated when you create the offer letter
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Performance Card */}
             <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -509,9 +580,7 @@ const InternDetail = ({ role }) => {
                       Generating...
                     </>
                   ) : (
-                    <>
-                      📄 Generate Offer Letter
-                    </>
+                    "📄 Generate Offer Letter"
                   )}
                 </button>
                 {!joiningDate && (
@@ -522,6 +591,11 @@ const InternDetail = ({ role }) => {
                 {intern.status !== "Selected" && (
                   <p className="text-sm text-gray-600 mt-2 text-center">
                     Available only for selected interns
+                  </p>
+                )}
+                {intern.uniqueId && (
+                  <p className="text-sm text-green-600 mt-2 text-center">
+                    Unique ID generated: {intern.uniqueId}
                   </p>
                 )}
               </div>
@@ -553,7 +627,9 @@ const InternDetail = ({ role }) => {
                               {value}
                             </a>
                           ) : (
-                            <div className="text-gray-800 font-medium">{value || "Not provided"}</div>
+                            <div className={`text-gray-800 font-medium ${!value ? 'text-gray-400' : ''}`}>
+                              {value || "Not provided"}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -574,7 +650,9 @@ const InternDetail = ({ role }) => {
                         <span className="text-lg">{icon}</span>
                         <div>
                           <div className="text-sm font-medium text-gray-600">{label}</div>
-                          <div className="text-gray-800 font-medium">{value || "Not provided"}</div>
+                          <div className={`text-gray-800 font-medium ${!value ? 'text-gray-400' : ''}`}>
+                            {value || "Not provided"}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -623,7 +701,9 @@ const InternDetail = ({ role }) => {
                               <option>Back-end Developer</option>
                             </select>
                           ) : (
-                            <div className="text-gray-800 font-medium">{value || "Not specified"}</div>
+                            <div className={`text-gray-800 font-medium ${!value ? 'text-gray-400' : ''}`}>
+                              {value || "Not specified"}
+                            </div>
                           )}
                         </div>
                       </div>

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { 
-  Users, 
-  LogOut, 
-  User, 
-  Mail, 
-  Phone, 
-  BarChart3, 
+import {
+  Users,
+  LogOut,
+  User,
+  Mail,
+  Phone,
+  BarChart3,
   Filter,
   Search,
   Menu,
@@ -21,7 +21,7 @@ const InternInchargeDashboard = () => {
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterDepartment, setFilterDepartment] = useState("");
+  const [filterDomain, setFilterDomain] = useState("");
 
   useEffect(() => {
     checkAuthAndFetchData();
@@ -36,6 +36,7 @@ const InternInchargeDashboard = () => {
       if (authRes.status === 200 && authRes.data.user) {
         setUser(authRes.data.user);
         fetchAssignedInterns();
+        console.log(authRes.data.user)
       }
     } catch (err) {
       console.log("Not authenticated, redirecting to login", err);
@@ -66,23 +67,23 @@ const InternInchargeDashboard = () => {
     }
   };
 
-  // Filter interns based on search and department
+  // Filter interns based on search and domain
   const filteredInterns = interns.filter(intern => {
     const matchesSearch = intern.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         intern.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         intern.uniqueID?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesDepartment = !filterDepartment || intern.department === filterDepartment;
-    
-    return matchesSearch && matchesDepartment;
+      intern.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      intern.uniqueId?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesDomain = !filterDomain || intern.domain === filterDomain;
+
+    return matchesSearch && matchesDomain;
   });
 
-  // Get unique departments for filter
-  const departments = [...new Set(interns.map(intern => intern.department))];
+  // Get unique domains for filter
+  const domains = [...new Set(interns.map(intern => intern.domain).filter(domain => domain))];
 
   const PerformanceBadge = ({ performance }) => {
     const getPerformanceColor = (perf) => {
-      switch(perf?.toLowerCase()) {
+      switch (perf?.toLowerCase()) {
         case "excellent": return "bg-green-100 text-green-800";
         case "good": return "bg-blue-100 text-blue-800";
         case "average": return "bg-yellow-100 text-yellow-800";
@@ -118,7 +119,7 @@ const InternInchargeDashboard = () => {
             <h1 className="text-xl font-bold text-gray-800">InternHerd</h1>
             <p className="text-sm text-gray-600">Intern Incharge</p>
           </div>
-          <button 
+          <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
           >
@@ -156,7 +157,7 @@ const InternInchargeDashboard = () => {
         <header className="bg-white shadow-sm border-b">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center space-x-4">
-              <button 
+              <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
               >
@@ -164,7 +165,7 @@ const InternInchargeDashboard = () => {
               </button>
               <h1 className="text-2xl font-bold text-gray-800">Intern Dashboard</h1>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Welcome, {user?.fullName}</span>
               <button
@@ -209,8 +210,8 @@ const InternInchargeDashboard = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Departments</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">{departments.length}</p>
+                <p className="text-sm font-medium text-gray-600">Domains</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{domains.length}</p>
               </div>
               <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
                 <BarChart3 className="text-purple-600" size={24} />
@@ -249,18 +250,18 @@ const InternInchargeDashboard = () => {
                 </div>
               </div>
 
-              {/* Department Filter */}
+              {/* Domain Filter */}
               <div className="w-full md:w-64">
                 <div className="relative">
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <select
-                    value={filterDepartment}
-                    onChange={(e) => setFilterDepartment(e.target.value)}
+                    value={filterDomain}
+                    onChange={(e) => setFilterDomain(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white"
                   >
-                    <option value="">All Departments</option>
-                    {departments.map(dept => (
-                      <option key={dept} value={dept}>{dept}</option>
+                    <option value="">All Domains</option>
+                    {domains.map(domain => (
+                      <option key={domain} value={domain}>{domain}</option>
                     ))}
                   </select>
                 </div>
@@ -283,7 +284,7 @@ const InternInchargeDashboard = () => {
                       Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Department
+                      Domain
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Performance
@@ -314,7 +315,7 @@ const InternInchargeDashboard = () => {
                               </div>
                               <div>
                                 <p className="font-medium text-gray-900">{intern.fullName}</p>
-                                <p className="text-sm text-gray-500">ID: {intern.uniqueID}</p>
+                                <p className="text-sm text-gray-500">ID: {intern.uniqueId}</p>
                               </div>
                             </div>
                           </div>
@@ -333,29 +334,27 @@ const InternInchargeDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                            {intern.department}
+                            {intern.domain}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <PerformanceBadge performance={intern.performance} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            intern.gender === "Male" 
-                              ? "bg-blue-100 text-blue-800" 
-                              : intern.gender === "Female" 
-                              ? "bg-pink-100 text-pink-800" 
-                              : "bg-purple-100 text-purple-800"
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${intern.gender === "Male"
+                              ? "bg-blue-100 text-blue-800"
+                              : intern.gender === "Female"
+                                ? "bg-pink-100 text-pink-800"
+                                : "bg-purple-100 text-purple-800"
+                            }`}>
                             {intern.gender}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            intern.status === "Active" 
-                              ? "bg-green-100 text-green-800" 
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${intern.status === "Active"
+                              ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
-                          }`}>
+                            }`}>
                             {intern.status}
                           </span>
                         </td>
@@ -371,8 +370,8 @@ const InternInchargeDashboard = () => {
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+        <div
+          className="fixed inset-0 bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}

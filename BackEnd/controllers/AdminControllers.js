@@ -3,7 +3,9 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import Intern from "../models/InternDatabase.js"
+import InternIncharge from '../models/InternHead.js';
 import nodemailer from "nodemailer"
+
 
 
 
@@ -380,4 +382,15 @@ export const updateJoiningDate = async (req, res) => {
   }
 };
 
+
+
+export const InternIncharges = async (req, res)=>{
+    try {
+    const incharges = await InternIncharge.find().select("-password"); // exclude password
+    res.status(200).json({ success: true, incharges });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+}
 

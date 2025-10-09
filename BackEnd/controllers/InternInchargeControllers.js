@@ -1,4 +1,5 @@
 import InternIncharge from "../models/InternHead.js"
+import Intern from "../models/InternDatabase.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 
@@ -37,7 +38,7 @@ export const registerInternIncharge = async (req, res) => {
       email,
       password: hashedPassword,
       mobile,
-      department,
+      departments : department,
       gender,
       address,
       city,
@@ -104,7 +105,7 @@ export const loginInternIncharge = async (req, res) => {
       fullName: internIncharge.fullName,
       email: internIncharge.email,
       mobile: internIncharge.mobile,
-      department: internIncharge.department,
+      department: internIncharge.departments,
       gender: internIncharge.gender,
       role: internIncharge.role || "InternIncharge",
       status: internIncharge.status || "Active",
@@ -180,7 +181,7 @@ export const checkInternInchargeAuth = async (req, res) => {
         fullName: internIncharge.fullName,
         email: internIncharge.email,
         mobile: internIncharge.mobile,
-        department: internIncharge.department,
+        department: internIncharge.departments,
         gender: internIncharge.gender,
         role: internIncharge.role,
         status: internIncharge.status,
@@ -197,9 +198,29 @@ export const checkInternInchargeAuth = async (req, res) => {
   }
 };
 
-// @desc    Logout Intern Incharge
-// @route   POST /api/intern-incharge/logout
-// @access  Private
+export const DomainWiseInterns = async (req,res)=>{
+    try {
+    const incharge = await InternIncharge.findById(req.user._id);
+
+    if (!incharge) {
+      return res.status(404).json({ error: "Incharge not found" });
+    }
+
+    // Fetch interns that match ANY of the incharge’s departments
+    
+    const interns = await Intern.find({status : ["Active", "Inactive"], domain : incharge.departments})
+
+    res.json({ interns});
+
+  } catch (error) {
+    console.error("Error fetching assigned interns:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+}
+
+
+
+
 export const logoutInternIncharge = async (req, res) => {
   try {
     res.clearCookie("internIncharge_token");

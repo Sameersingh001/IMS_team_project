@@ -150,12 +150,12 @@ const AdminDashboard = () => {
   const handlePrint = () => {
     const printContent = printRef.current;
     if (!printContent) return;
-    
+
     const printWindow = window.open('', '_blank');
-    const title = activeTab === "interns" 
-      ? "Admin Dashboard - Interns Report" 
+    const title = activeTab === "interns"
+      ? "Admin Dashboard - Interns Report"
       : "Admin Dashboard - Department Incharges Report";
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -371,7 +371,7 @@ const AdminDashboard = () => {
           <tr>
             <th className="p-4 text-left font-semibold">Name</th>
             <th className="p-4 text-left font-semibold">Email</th>
-            <th className="p-4 text-left font-semibold">Department</th>
+            <th className="p-4 text-left font-semibold">Departments</th>
             <th className="p-4 text-left font-semibold">Mobile</th>
             <th className="p-4 text-left font-semibold">Status</th>
             <th className="p-4 text-left font-semibold no-print">Actions</th>
@@ -388,18 +388,17 @@ const AdminDashboard = () => {
               </td>
               <td className="p-4">
                 <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
-                  {incharge.department || "Not specified"}
+                  {incharge.departments || "Not specified"}
                 </span>
               </td>
               <td className="p-4">
                 <div className="text-gray-700">📞 {incharge.mobile || "Not provided"}</div>
               </td>
               <td className="p-4">
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  incharge.status === "Active" 
-                    ? "bg-green-100 text-green-800" 
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${incharge.status === "Active"
+                    ? "bg-green-100 text-green-800"
                     : "bg-gray-100 text-gray-800"
-                }`}>
+                  }`}>
                   {incharge.status || "Active"}
                 </span>
               </td>
@@ -507,21 +506,19 @@ const AdminDashboard = () => {
             <div className="flex border-b border-gray-200">
               <button
                 onClick={() => setActiveTab("interns")}
-                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === "interns"
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "interns"
                     ? "border-purple-600 text-purple-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 👥 Intern Management
               </button>
               <button
                 onClick={() => setActiveTab("incharges")}
-                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-                  activeTab === "incharges"
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "incharges"
                     ? "border-blue-600 text-blue-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 🏢 Department Incharges
               </button>
@@ -640,11 +637,10 @@ const AdminDashboard = () => {
 
                   <button
                     onClick={() => setShowSelectedOnly(!showSelectedOnly)}
-                    className={`border rounded-xl px-4 py-3 font-medium transition-all duration-200 ${
-                      showSelectedOnly
+                    className={`border rounded-xl px-4 py-3 font-medium transition-all duration-200 ${showSelectedOnly
                         ? 'bg-green-100 text-green-800 border-green-300'
                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {showSelectedOnly ? '✅ Showing Selected' : '👥 Show All'}
                   </button>
@@ -729,7 +725,10 @@ const AdminDashboard = () => {
                             <select
                               value={intern.status}
                               onChange={(e) => handleStatusUpdate(intern._id, e.target.value)}
-                              disabled={updating === intern._id}
+                              disabled={
+                                updating === intern._id ||
+                                ["Active", "Inactive", "Completed"].includes(intern.status)
+                              }
                               className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
                             >
                               <option value="Applied">Applied</option>
@@ -740,6 +739,7 @@ const AdminDashboard = () => {
                               <option value="Completed">Completed</option>
                             </select>
                           </td>
+
                           <td className="p-4">
                             <div className="print-only">
                               <span className={`performance-badge performance-${intern.performance}`}>
@@ -846,15 +846,15 @@ const AdminDashboard = () => {
                   </div>
                   <div className="bg-purple-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-purple-600">
-                      {[...new Set(departmentIncharges.map(i => i.department))].length}
+                      {[...new Set(departmentIncharges.map(i => i.departments))].length}
                     </div>
                     <div className="text-sm text-purple-800">Departments</div>
                   </div>
                   <div className="bg-orange-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-orange-600">
-                      {departmentIncharges.filter(i => !i.status || i.status === 'Pending').length}
+                      {departmentIncharges.filter(i => !i.status || i.status === 'Inactive').length}
                     </div>
-                    <div className="text-sm text-orange-800">Pending</div>
+                    <div className="text-sm text-orange-800">Inactive</div>
                   </div>
                 </div>
               )}

@@ -25,23 +25,25 @@ const InternHeadSchema = new mongoose.Schema(
       required: true,
       match: [/^[0-9]{10}$/, "Please enter a valid 10-digit mobile number"],
     },
-    department: {
-      type: String,
+    departments: {
+      type: [String], // Array of departments
       required: true,
       enum: [
-      "Sales & Marketing",
-      "Email Outreaching",
-      "Journalism and Mass communication",
-      "Social Media Management",
-      "Graphic Design",
-      "Digital Marketing",
-      "Video Editing",
-      "Content Writing",
-      "UI/UX Designing",
-      "Front-end Developer",
-      "Back-end Developer",
+        "Sales & Marketing",
+        "Email Outreaching",
+        "Journalism and Mass communication",
+        "Social Media Management",
+        "Graphic Design",
+        "Digital Marketing",
+        "Video Editing",
+        "Content Writing",
+        "UI/UX Designing",
+        "Front-end Developer",
+        "Back-end Developer",
       ],
+      default: [],
     },
+
     gender: {
       type: String,
       enum: ["Male", "Female", "Other"],
