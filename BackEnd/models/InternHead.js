@@ -29,15 +29,17 @@ const InternHeadSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: [
-        "Human Resources",
-        "Marketing",
-        "Web Development",
-        "UI/UX Design",
-        "Data Science",
-        "Finance",
-        "Cyber Security",
-        "Operations",
-        "Other",
+      "Sales & Marketing",
+      "Email Outreaching",
+      "Journalism and Mass communication",
+      "Social Media Management",
+      "Graphic Design",
+      "Digital Marketing",
+      "Video Editing",
+      "Content Writing",
+      "UI/UX Designing",
+      "Front-end Developer",
+      "Back-end Developer",
       ],
     },
     gender: {
@@ -45,13 +47,9 @@ const InternHeadSchema = new mongoose.Schema(
       enum: ["Male", "Female", "Other"],
       required: true,
     },
-    profileImage: {
-      type: String,
-      default: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-    },
     role: {
       type: String,
-      default: "DepartmentHead",
+      default: "InternHead",
     },
     address: {
       type: String,
@@ -69,13 +67,6 @@ const InternHeadSchema = new mongoose.Schema(
       type: String,
       match: [/^[1-9][0-9]{5}$/, "Please enter a valid 6-digit pin code"],
     },
-    // Interns assigned to this department head
-    assignedInterns: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Intern",
-      },
-    ],
     // Active / Inactive status
     status: {
       type: String,

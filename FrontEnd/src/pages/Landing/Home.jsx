@@ -12,8 +12,7 @@ const HomePage = () => {
 
       {/* Navbar */}
       <nav className="backdrop-blur-md bg-white/60 border-b border-white/20 flex justify-between items-center px-8 py-4 shadow-sm sticky top-0 z-50">
-            {/* screen logo */}
-            <img src={Graphura} alt="Graphura Logo" className="h-12" />
+        <img src={Graphura} alt="Graphura Logo" className="h-12" />
        
         <div className="space-x-4">
           <Link
@@ -43,7 +42,8 @@ const HomePage = () => {
           A centralized platform to onboard, track, and evaluate interns seamlessly — built for modern organizations.
         </p>
 
-        <div className="flex flex-wrap justify-center gap-6">
+        {/* Main CTA Buttons */}
+        <div className="flex flex-wrap justify-center gap-6 mb-8">
           <Link
             to="/register"
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-full text-lg font-medium shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300"
@@ -57,14 +57,31 @@ const HomePage = () => {
             Login
           </Link>
         </div>
+
+        {/* InternIncharge Specific Links */}
+        <div className="mt-8 p-6 bg-white/40 backdrop-blur-sm rounded-2xl border border-white/30">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Are you an Intern Incharge?</h3>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link
+              to="/intern-incharge-login"
+              className="px-6 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-300"
+            >
+              Intern Incharge Login
+            </Link>
+            <Link
+              to="/intern-incharge-register"
+              className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-300"
+            >
+              Register as Intern Incharge
+            </Link>
+          </div>
+        </div>
       </main>
 
       {/* Footer */}
       <footer className="bg-white/50 backdrop-blur-md text-center py-4 text-gray-600 text-sm border-t border-white/30">
         © {new Date().getFullYear()} <span className="font-semibold">Intern Management System</span>. All rights reserved.
       </footer>
-
-      
     </div>
   );
 };

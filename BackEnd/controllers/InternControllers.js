@@ -1,5 +1,8 @@
 import Intern from '../models/InternDatabase.js';
 import {transporter} from "../config/emailConfig.js"
+
+
+
 export const createIntern = async (req, res) => {
     try {
         const internData = req.body;
