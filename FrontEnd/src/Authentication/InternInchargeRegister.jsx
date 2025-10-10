@@ -17,7 +17,8 @@ const InternInchargeRegister = () => {
         address: "",
         city: "",
         state: "",
-        pinCode: ""
+        pinCode: "",
+        Secret_Key: "" // Secret Key field
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -63,6 +64,10 @@ const InternInchargeRegister = () => {
         }
         if (!formData.department) {
             setError("Please select a department");
+            return false;
+        }
+        if (!formData.Secret_Key) {
+            setError("Secret Key is required");
             return false;
         }
         return true;
@@ -288,6 +293,26 @@ const InternInchargeRegister = () => {
                                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Secret Key */}
+                        <div>
+                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                Secret Key *
+                            </label>
+                            <input
+                                type="text"
+                                name="Secret_Key"
+                                value={formData.Secret_Key}
+                                onChange={handleChange}
+                                placeholder="Enter secret key"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                required
+                                disabled={loading}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Contact admin to get your secret key
+                            </p>
                         </div>
 
                         {/* Address */}

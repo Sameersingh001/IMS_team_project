@@ -563,15 +563,15 @@ const HRDashboard = () => {
 
                         {/* Mobile Number */}
                         <td className="p-4">
-                          <div className="text-gray-700">
-                            📞 {intern.mobile || "Not provided"}
+                          <div className="text-gray-700 text-sm">
+                            {intern.mobile || "Not provided"}
                           </div>
                         </td>
 
                         {/* Domain & Duration */}
                         <td className="p-4">
                           <div className="space-y-1">
-                            <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
+                            <span className="inline-block bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full">
                               {intern.domain || "Not specified"}
                             </span>
                             <div className="text-sm text-gray-600">
@@ -646,7 +646,7 @@ const HRDashboard = () => {
                         </td>
 
                         {/* Domain Update */}
-                        <td className="p-4">
+                        <td className="p-3">
                           <div className="print-only">
                             <span>
                               {intern.domain}
@@ -684,7 +684,7 @@ const HRDashboard = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => navigate(`/HR-Dashboard/intern/${intern._id}`)}
-                              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium text-sm"
+                              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium text-xs"
                             >
                               View Details
                             </button>

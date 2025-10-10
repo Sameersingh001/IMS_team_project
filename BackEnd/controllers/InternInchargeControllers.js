@@ -16,6 +16,7 @@ export const registerInternIncharge = async (req, res) => {
       city,
       state,
       pinCode,
+      Secret_Key
     } = req.body;
 
     // 1️⃣ Check required fields
@@ -27,6 +28,10 @@ export const registerInternIncharge = async (req, res) => {
     const existingUser = await InternIncharge.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
+    }
+
+    if(Secret_Key !== process.env.INCHARGE_SECRET_KEY){
+      return res.status(400).json({ message: "Invalid Secret Key Please Contact to Admin" });
     }
 
     // 3️⃣ Hash password
