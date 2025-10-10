@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff } from "lucide-react";
-import Graphura from "../../public/loginPNG.webp"
+import { Eye, EyeOff, Mail, ArrowLeft } from "lucide-react";
+import Graphura from "../../public/loginPNG.webp";
 
 const InternInchargeLogin = () => {
     const navigate = useNavigate();
@@ -14,6 +14,17 @@ const InternInchargeLogin = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+
+    // Forgot Password States
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+    const [otp, setOtp] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [countdown, setCountdown] = useState(0);
 
     // ✅ Check if already logged in
     useEffect(() => {
@@ -31,6 +42,14 @@ const InternInchargeLogin = () => {
         };
         checkInternInchargeAuth();
     }, [navigate]);
+
+    // Countdown timer for OTP resend
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [countdown]);
 
     // ✅ Handle input change
     const handleChange = (e) => {
@@ -57,6 +76,7 @@ const InternInchargeLogin = () => {
 
             if (response.status === 200) {
                 setSuccess(true);
+                setSuccess("Incharge Login Successfully");
                 const { user } = response.data;
 
                 // Save user info locally (optional)
@@ -80,9 +100,127 @@ const InternInchargeLogin = () => {
         }
     };
 
+    // ✅ Handle Forgot Password - Send OTP
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        setForgotPasswordLoading(true);
+        setError("");
+
+        try {
+            const response = await axios.post("/api/incharge/forgot-password", {
+                email: forgotPasswordEmail,
+            });
+
+            if (response.status === 200) {
+                setOtpSent(true);
+                setCountdown(60); // 60 seconds countdown
+                setSuccess("OTP sent to your email!");
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to send OTP. Please try again.");
+        } finally {
+            setForgotPasswordLoading(false);
+        }
+    };
+
+    // ✅ Verify OTP
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        setForgotPasswordLoading(true);
+        setError("");
+
+        try {
+            const response = await axios.post("/api/incharge/verify-otp", {
+                email: forgotPasswordEmail,
+                otp: otp
+            });
+
+            if (response.status === 200) {
+                setOtpVerified(true);
+                setSuccess("OTP verified! Please set your new password.");
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Invalid OTP. Please try again.");
+        } finally {
+            setForgotPasswordLoading(false);
+        }
+    };
+
+    // ✅ Reset Password
+    const handleResetPassword = async (e) => {
+        e.preventDefault();
+        setForgotPasswordLoading(true);
+        setError("");
+
+        if (newPassword !== confirmPassword) {
+            setError("Passwords do not match!");
+            setForgotPasswordLoading(false);
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setError("Password must be at least 6 characters long!");
+            setForgotPasswordLoading(false);
+            return;
+        }
+
+        try {
+            const response = await axios.post("/api/incharge/reset-password", {
+                email: forgotPasswordEmail,
+                otp: otp,
+                newPassword: newPassword
+            });
+
+            if (response.status === 200) {
+                setSuccess("Password reset successfully! You can now login with your new password.");
+                setTimeout(() => {
+                    resetForgotPasswordStates();
+                }, 2000);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to reset password. Please try again.");
+        } finally {
+            setForgotPasswordLoading(false);
+        }
+    };
+
+    // ✅ Reset forgot password states
+    const resetForgotPasswordStates = () => {
+        setShowForgotPassword(false);
+        setForgotPasswordEmail("");
+        setOtp("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setOtpSent(false);
+        setOtpVerified(false);
+        setCountdown(0);
+        setError("");
+        setSuccess(false);
+    };
+
+    // ✅ Resend OTP
+    const handleResendOtp = async () => {
+        if (countdown > 0) return;
+
+        setForgotPasswordLoading(true);
+        try {
+            const response = await axios.post("/api/incharge/resend-otp", {
+                email: forgotPasswordEmail
+            });
+
+            if (response.status === 200) {
+                setCountdown(60);
+                setSuccess("OTP resent to your email!");
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to resend OTP. Please try again.");
+        } finally {
+            setForgotPasswordLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen flex items-center justify-around bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8">
-
             <img
                 src={Graphura}
                 alt="Login Illustration"
@@ -90,14 +228,26 @@ const InternInchargeLogin = () => {
             />
 
             <div className="bg-white/80 backdrop-blur-lg shadow-xl rounded-3xl p-6 sm:p-8 w-full max-w-md">
-
+                {/* Back Button for Forgot Password */}
+                {showForgotPassword && (
+                    <button
+                        onClick={resetForgotPasswordStates}
+                        className="flex items-center text-gray-600 hover:text-gray-800 mb-4 transition duration-200"
+                    >
+                        <ArrowLeft size={20} className="mr-1" />
+                        Back to Login
+                    </button>
+                )}
 
                 <div className="text-center mb-8">
                     <h2 className="text-3xl sm:text-4xl font-bold text-indigo-700 mb-2">
-                        Intern Incharge Login
+                        {showForgotPassword ? "Reset Password" : "Intern Incharge Login"}
                     </h2>
                     <p className="text-gray-600 text-sm">
-                        Access your intern management dashboard
+                        {showForgotPassword 
+                            ? "Enter your email to reset your password" 
+                            : "Access your intern management dashboard"
+                        }
                     </p>
                 </div>
 
@@ -109,97 +259,237 @@ const InternInchargeLogin = () => {
                 )}
                 {success && (
                     <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6 text-sm">
-                        Login successful! Redirecting to dashboard...
+                        {success}
                     </div>
                 )}
 
-                {/* Login Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Email */}
-                    <div>
-                        <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                            Email Address
-                        </label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="Enter your registered email"
-                            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
-                            required
-                            disabled={loading}
-                        />
-                    </div>
+                {/* Forgot Password Flow */}
+                {showForgotPassword ? (
+                    <div className="space-y-6">
+                        {/* Step 1: Email Input */}
+                        {!otpSent && (
+                            <form onSubmit={handleForgotPassword} className="space-y-6">
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                        Email Address
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type="email"
+                                            value={forgotPasswordEmail}
+                                            onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                                            placeholder="Enter your registered email"
+                                            className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                            required
+                                            disabled={forgotPasswordLoading}
+                                        />
+                                        <Mail size={18} className="absolute left-3 top-3.5 text-gray-400" />
+                                    </div>
+                                </div>
+                                
+                                <button
+                                    type="submit"
+                                    disabled={forgotPasswordLoading}
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
+                                >
+                                    {forgotPasswordLoading ? "Sending OTP..." : "Send OTP"}
+                                </button>
+                            </form>
+                        )}
 
-                    {/* Password */}
-                    <div>
-                        <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                            Password
-                        </label>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                placeholder="Enter your password"
-                                className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
-                                required
-                                disabled={loading}
-                            />
+                        {/* Step 2: OTP Verification */}
+                        {otpSent && !otpVerified && (
+                            <form onSubmit={handleVerifyOtp} className="space-y-6">
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                        Enter OTP
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        placeholder="Enter 6-digit OTP"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50 text-center text-lg font-mono tracking-widest"
+                                        required
+                                        maxLength={6}
+                                        disabled={forgotPasswordLoading}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-2 text-center">
+                                        Check your email for the 6-digit OTP code
+                                    </p>
+                                </div>
+
+                                <div className="text-center">
+                                    <button
+                                        type="button"
+                                        onClick={handleResendOtp}
+                                        disabled={countdown > 0 || forgotPasswordLoading}
+                                        className="text-indigo-600 hover:text-indigo-800 text-sm disabled:opacity-50 font-medium"
+                                    >
+                                        {countdown > 0 ? `Resend OTP in ${countdown}s` : "Resend OTP"}
+                                    </button>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={forgotPasswordLoading || otp.length !== 6}
+                                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
+                                >
+                                    {forgotPasswordLoading ? "Verifying..." : "Verify OTP"}
+                                </button>
+                            </form>
+                        )}
+
+                        {/* Step 3: New Password */}
+                        {otpVerified && (
+                            <form onSubmit={handleResetPassword} className="space-y-6">
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                        New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        placeholder="Enter new password (min. 6 characters)"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                        required
+                                        minLength={6}
+                                        disabled={forgotPasswordLoading}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                        Confirm New Password
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        placeholder="Confirm new password"
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                        required
+                                        minLength={6}
+                                        disabled={forgotPasswordLoading}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={forgotPasswordLoading}
+                                    className="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-green-800 focus:ring-2 focus:ring-green-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
+                                >
+                                    {forgotPasswordLoading ? "Resetting..." : "Reset Password"}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+                ) : (
+                    /* Original Login Form */
+                    <>
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Email */}
+                            <div>
+                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                    Email Address
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="Enter your registered email"
+                                        className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                        required
+                                        disabled={loading}
+                                    />
+                                    <Mail size={18} className="absolute left-3 top-3.5 text-gray-400" />
+                                </div>
+                            </div>
+
+                            {/* Password */}
+                            <div>
+                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Enter your password"
+                                        className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                        required
+                                        disabled={loading}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-3 text-gray-500 hover:text-indigo-600"
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
+                                    >
+                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Forgot Password Link */}
+                            <div className="text-right">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowForgotPassword(true)}
+                                    className="text-indigo-600 hover:text-indigo-800 text-sm font-semibold transition duration-200"
+                                >
+                                    Forgot Password?
+                                </button>
+                            </div>
+
+                            {/* Submit Button */}
                             <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-3 text-gray-500 hover:text-indigo-600"
-                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
                             >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                {loading ? "Logging in..." : "Login as Intern Incharge"}
                             </button>
+                        </form>
+
+                        {/* Footer Links */}
+                        <div className="text-center mt-8 space-y-3">
+                            <p className="text-gray-600 text-sm">
+                                Don't have an account?{" "}
+                                <Link
+                                    to="/intern-incharge-register"
+                                    className="text-indigo-600 font-semibold hover:text-indigo-800 hover:underline transition duration-200"
+                                >
+                                    Register here
+                                </Link>
+                            </p>
+
+                            <p className="text-gray-600 text-sm">
+                                Are you HR or Admin?{" "}
+                                <Link
+                                    to="/login"
+                                    className="text-purple-600 font-semibold hover:text-purple-800 hover:underline transition duration-200"
+                                >
+                                    HR/Admin Login
+                                </Link>
+                            </p>
+
+                            <p className="text-gray-600 text-sm">
+                                <Link
+                                    to="/"
+                                    className="text-gray-500 hover:text-gray-700 transition duration-200"
+                                >
+                                    ← Back to Home
+                                </Link>
+                            </p>
                         </div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-xl font-semibold hover:from-green-700 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
-                    >
-                        {loading ? "Logging in..." : "Login as Intern Incharge"}
-                    </button>
-                </form>
-
-                {/* Footer Links */}
-                <div className="text-center mt-8 space-y-3">
-                    <p className="text-gray-600 text-sm">
-                        Don't have an account?{" "}
-                        <Link
-                            to="/intern-incharge-register"
-                            className="text-indigo-600 font-semibold hover:text-indigo-800 hover:underline transition duration-200"
-                        >
-                            Register here
-                        </Link>
-                    </p>
-
-                    <p className="text-gray-600 text-sm">
-                        Are you HR or Admin?{" "}
-                        <Link
-                            to="/login"
-                            className="text-purple-600 font-semibold hover:text-purple-800 hover:underline transition duration-200"
-                        >
-                            HR/Admin Login
-                        </Link>
-                    </p>
-
-                    <p className="text-gray-600 text-sm">
-                        <Link
-                            to="/"
-                            className="text-gray-500 hover:text-gray-700 transition duration-200"
-                        >
-                            ← Back to Home
-                        </Link>
-                    </p>
-                </div>
+                    </>
+                )}
             </div>
         </div>
     );

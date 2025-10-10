@@ -2,6 +2,7 @@ import InternIncharge from "../models/InternHead.js"
 import Intern from "../models/InternDatabase.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import {transporter} from "../config/emailConfig.js"
 
 export const registerInternIncharge = async (req, res) => {
   try {
@@ -240,6 +241,133 @@ export const logoutInternIncharge = async (req, res) => {
       success: false,
       message: "Server error during logout"
     });
+  }
+};
+
+
+// 🔹 In-memory OTP store
+const otpStore = new Map(); // key = email, value = { otp, expiresAt }
+
+// ✅ Step 1: Send OTP
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const incharge = await InternIncharge.findOne({ email });
+    if (!incharge) {
+      return res.status(404).json({ message: "No incharge found with this email." });
+    }
+
+    // Generate OTP and expiry
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 mins
+
+    otpStore.set(email, { otp, expiresAt });
+    setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
+
+    // Send OTP Email
+    await transporter.sendMail({
+      from: `"Graphura Intern System" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Password Reset OTP - Intern Incharge",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 16px; background:#f9fafb;">
+          <h2 style="color:#4f46e5;">Graphura Intern System</h2>
+          <p>Hello ${incharge.fullName || "Incharge"},</p>
+          <p>Your OTP for resetting password is:</p>
+          <h1 style="color:#16a34a; letter-spacing:4px;">${otp}</h1>
+          <p>This OTP will expire in <b>5 minutes</b>.</p>
+          <p>Please do not share this code with anyone.</p>
+        </div>
+      `,
+    });
+
+    res.status(200).json({ message: "OTP sent successfully to your email." });
+  } catch (error) {
+    console.error("Forgot Password Error:", error);
+    res.status(500).json({ message: "Error sending OTP. Please try again later." });
+  }
+};
+
+// ✅ Step 2: Verify OTP
+export const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const record = otpStore.get(email);
+
+    if (!record) return res.status(400).json({ message: "OTP not found or expired." });
+    if (record.expiresAt < Date.now()) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: "OTP has expired." });
+    }
+    if (record.otp !== otp) return res.status(400).json({ message: "Invalid OTP." });
+
+    res.status(200).json({ message: "OTP verified successfully." });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Error verifying OTP." });
+  }
+};
+
+// ✅ Step 3: Reset Password
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const record = otpStore.get(email);
+
+    if (!record) return res.status(400).json({ message: "OTP not found or expired." });
+    if (record.expiresAt < Date.now()) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: "OTP has expired." });
+    }
+    if (record.otp !== otp) return res.status(400).json({ message: "Invalid OTP." });
+
+    const incharge = await InternIncharge.findOne({ email });
+    if (!incharge) return res.status(404).json({ message: "Incharge not found." });
+
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(newPassword, salt);
+    incharge.password = hashed;
+    await incharge.save();
+
+    otpStore.delete(email);
+    res.status(200).json({ message: "Password reset successfully!" });
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ message: "Error resetting password." });
+  }
+};
+
+// ✅ Step 4: Resend OTP
+export const resendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const incharge = await InternIncharge.findOne({ email });
+    if (!incharge) return res.status(404).json({ message: "Incharge not found." });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    otpStore.set(email, { otp, expiresAt });
+    setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
+
+    await transporter.sendMail({
+      from: `"Graphura Intern System" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: "Resend OTP - Intern Incharge",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 16px;">
+          <p>Your new OTP is:</p>
+          <h2 style="color:#4f46e5;">${otp}</h2>
+          <p>Valid for 5 minutes.</p>
+        </div>
+      `,
+    });
+
+    res.status(200).json({ message: "OTP resent successfully." });
+  } catch (error) {
+    console.error("Resend OTP Error:", error);
+    res.status(500).json({ message: "Error resending OTP." });
   }
 };
 
