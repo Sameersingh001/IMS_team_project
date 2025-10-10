@@ -83,23 +83,31 @@ export const updatePerformance = async (req, res) => {
   try {
     const { id } = req.params;
     const { performance } = req.body;
+    const hrId = req.user.id; // assuming your auth middleware sets req.user
 
     const intern = await Intern.findByIdAndUpdate(
       id,
-      { performance },
+      {
+        performance,
+        updatedByHR: hrId, // track which HR updated performance
+      },
       { new: true }
-    );
+    ).populate("updatedByHR", "fullName email role"); // optional: show HR info
 
-    if (!intern) return res.status(404).json({ message: "Intern not found" });
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
 
-    res
-      .status(200)
-      .json({ message: "Performance updated successfully", intern });
+    res.status(200).json({
+      message: "Performance updated successfully",
+      intern,
+    });
   } catch (err) {
     console.error("Error updating performance:", err);
     res.status(500).json({ message: "Failed to update performance" });
   }
 };
+
 
 // Update intern domain
 export const updateDomain = async (req, res) => {
@@ -127,9 +135,14 @@ export const updateComment = async (req, res) =>{
     const {comment} =  req.body
     const intern = await Intern.findByIdAndUpdate(
       id,
-      { comment },
+      {
+        comment,
+        updatedByHR: hrId, // track which HR updated performance
+      },
       { new: true }
-    );
+    ).populate("updatedByHR", "fullName email role");
+
+
     if (!intern) return res.status(404).json({ message: "Intern not found" });
 
     res.status(200).json({ message: "Comment updated successfully", intern });

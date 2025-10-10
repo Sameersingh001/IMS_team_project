@@ -6,6 +6,7 @@ import Graphura from "../../../public/GraphuraLogo.jpg";
 const AdminDashboard = () => {
   const [interns, setInterns] = useState([]);
   const [departmentIncharges, setDepartmentIncharges] = useState([]);
+  const [hrManagers, setHrManagers] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [performance, setPerformance] = useState("");
@@ -16,7 +17,7 @@ const AdminDashboard = () => {
   const [showEmailCopy, setShowEmailCopy] = useState(false);
   const [copySuccess, setCopySuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [activeTab, setActiveTab] = useState("interns"); // "interns" or "incharges"
+  const [activeTab, setActiveTab] = useState("interns"); // "interns", "incharges", or "hr"
   const navigate = useNavigate();
   const printRef = useRef();
 
@@ -24,8 +25,10 @@ const AdminDashboard = () => {
     const timer = setTimeout(() => {
       if (activeTab === "interns") {
         fetchInterns();
-      } else {
+      } else if (activeTab === "incharges") {
         fetchDepartmentIncharges();
+      } else if (activeTab === "hr") {
+        fetchHRManagers();
       }
     }, 500);
     return () => clearTimeout(timer);
@@ -56,6 +59,20 @@ const AdminDashboard = () => {
     } catch (err) {
       console.error("Error fetching department incharges:", err);
       setError("Failed to load department incharges");
+    }
+    setLoading(false);
+  };
+
+  const fetchHRManagers = async () => {
+    setLoading(true);
+    try {
+      const { data } = await axios.get("/api/admin/hr-managers", {
+        withCredentials: true,
+      });
+      setHrManagers(data.hrManagers || []);
+    } catch (err) {
+      console.error("Error fetching HR managers:", err);
+      setError("Failed to load HR managers");
     }
     setLoading(false);
   };
@@ -138,6 +155,37 @@ const AdminDashboard = () => {
     setUpdating(null);
   };
 
+  const handleDeleteHR = async (hrId) => {
+    setUpdating(hrId);
+    try {
+      await axios.delete(`/api/admin/hr-managers/${hrId}`, {
+        withCredentials: true
+      });
+      setShowDeleteConfirm(null);
+      await fetchHRManagers();
+    } catch (err) {
+      console.error("Error deleting HR manager:", err);
+      setError("Failed to delete HR manager");
+    }
+    setUpdating(null);
+  };
+
+  const handleHRStatusUpdate = async (hrId, newStatus) => {
+    setUpdating(hrId);
+    try {
+      await axios.put(
+        `/api/admin/hr-managers/${hrId}/status`,
+        { status: newStatus },
+        { withCredentials: true }
+      );
+      await fetchHRManagers();
+    } catch (err) {
+      console.error("Error updating HR status:", err);
+      setError("Failed to update HR status");
+    }
+    setUpdating(null);
+  };
+
   const handleLogout = async () => {
     try {
       await axios.post("/api/admin/logout", {}, { withCredentials: true });
@@ -154,7 +202,9 @@ const AdminDashboard = () => {
     const printWindow = window.open('', '_blank');
     const title = activeTab === "interns"
       ? "Admin Dashboard - Interns Report"
-      : "Admin Dashboard - Department Incharges Report";
+      : activeTab === "incharges"
+        ? "Admin Dashboard - Department Incharges Report"
+        : "Admin Dashboard - HR Managers Report";
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -280,7 +330,7 @@ const AdminDashboard = () => {
         <body>
           <div class="print-header">
             <h1>Graphura - Admin Dashboard Report</h1>
-            <p>${activeTab === "interns" ? "Intern Applications and Performance Report" : "Department Incharges Management Report"}</p>
+            <p>${activeTab === "interns" ? "Intern Applications and Performance Report" : activeTab === "incharges" ? "Department Incharges Management Report" : "HR Managers Management Report"}</p>
             <p>Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
           </div>
           
@@ -344,6 +394,8 @@ const AdminDashboard = () => {
       case "Selected": return "bg-green-100 text-green-800";
       case "Rejected": return "bg-red-100 text-red-800";
       case "Applied": return "bg-blue-100 text-blue-800";
+      case "Active": return "bg-green-100 text-green-800";
+      case "Inactive": return "bg-gray-100 text-gray-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -388,16 +440,17 @@ const AdminDashboard = () => {
               </td>
               <td className="p-4">
                 <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
-                  {incharge.departments || "Not specified"}
+                  {incharge.departments?.join(" || ") || "Not specified"}
                 </span>
+
               </td>
               <td className="p-4">
                 <div className="text-gray-700">📞 {incharge.mobile || "Not provided"}</div>
               </td>
               <td className="p-4">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${incharge.status === "Active"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-gray-100 text-gray-800"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-gray-100 text-gray-800"
                   }`}>
                   {incharge.status || "Active"}
                 </span>
@@ -426,6 +479,70 @@ const AdminDashboard = () => {
     </div>
   );
 
+  // Render HR Managers Table
+  const renderHRTable = () => (
+    <div className="overflow-x-auto rounded-xl border border-gray-200">
+      <table className="min-w-full">
+        <thead className="bg-gradient-to-r from-pink-600 to-rose-600 text-white">
+          <tr>
+            <th className="p-4 text-left font-semibold">HR Manager Details</th>
+            <th className="p-4 text-left font-semibold">Contact Info</th>
+            <th className="p-4 text-left font-semibold">Department</th>
+            <th className="p-4 text-left font-semibold">Status</th>
+            <th className="p-4 text-left font-semibold no-print">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200">
+          {hrManagers.map((hr) => (
+            <tr key={hr._id} className="hover:bg-pink-50 transition-colors duration-150">
+              <td className="p-4">
+                <div>
+                  <div className="font-semibold text-gray-800">{hr.fullName}</div>
+                  <div className="text-sm text-gray-600">{hr.email}</div>
+                </div>
+              </td>
+              <td className="p-4">
+                <div className="text-gray-700">📞 {hr.mobile || "Not provided"}</div>
+              </td>
+              <td className="p-4">
+                <span className="inline-block bg-pink-100 text-pink-800 text-sm px-2 py-1 rounded-full">
+                  {hr.department || "HR"}
+                </span>
+              </td>
+              <td className="p-4">
+                <div className="print-only">
+                  <span className={`status-badge status-${hr.status}`}>
+                    {hr.status}
+                  </span>
+                </div>
+                <select
+                  value={hr.status}
+                  onChange={(e) => handleHRStatusUpdate(hr._id, e.target.value)}
+                  disabled={updating === hr._id}
+                  className={`${getStatusColor(hr.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-pink-500 cursor-pointer no-print`}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </td>
+              <td className="p-4 no-print">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(`hr-${hr._id}`)}
+                    disabled={updating === hr._id}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm disabled:opacity-50"
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-violet-100 p-4">
       <div className="max-w-8xl mx-auto">
@@ -437,7 +554,7 @@ const AdminDashboard = () => {
                 <img src={Graphura} alt="Graphura Logo" className="sm:h-12 h-8 mr-5" />
                 <div>
                   <h1 className="sm:text-2xl text-s font-bold text-gray-800">Admin Dashboard </h1>
-                  <p className="text-gray-600 sm:text-sm text-xs">Full control over intern and department incharge management</p>
+                  <p className="text-gray-600 sm:text-sm text-xs">Full control over intern, department incharge, and HR management</p>
                 </div>
               </div>
             </div>
@@ -472,7 +589,10 @@ const AdminDashboard = () => {
             <div className="bg-white rounded-2xl p-6 max-w-md w-full">
               <h3 className="text-xl font-bold text-gray-800 mb-2">Confirm Delete</h3>
               <p className="text-gray-600 mb-4">
-                Are you sure you want to delete this {showDeleteConfirm.includes('incharge-') ? 'department incharge' : 'intern'}? This action cannot be undone.
+                Are you sure you want to delete this {
+                  showDeleteConfirm.includes('incharge-') ? 'department incharge' :
+                    showDeleteConfirm.includes('hr-') ? 'HR manager' : 'intern'
+                }? This action cannot be undone.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
@@ -485,14 +605,16 @@ const AdminDashboard = () => {
                   onClick={() => {
                     if (showDeleteConfirm.includes('incharge-')) {
                       handleDeleteIncharge(showDeleteConfirm.replace('incharge-', ''));
+                    } else if (showDeleteConfirm.includes('hr-')) {
+                      handleDeleteHR(showDeleteConfirm.replace('hr-', ''));
                     } else {
                       handleDeleteIntern(showDeleteConfirm);
                     }
                   }}
-                  disabled={updating === showDeleteConfirm.replace('incharge-', '')}
+                  disabled={updating === showDeleteConfirm.replace(/^(incharge-|hr-)/, '')}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
-                  {updating === showDeleteConfirm.replace('incharge-', '') ? "Deleting..." : "Delete"}
+                  {updating === showDeleteConfirm.replace(/^(incharge-|hr-)/, '') ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
@@ -507,8 +629,8 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab("interns")}
                 className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "interns"
-                    ? "border-purple-600 text-purple-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-purple-600 text-purple-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
               >
                 👥 Intern Management
@@ -516,11 +638,20 @@ const AdminDashboard = () => {
               <button
                 onClick={() => setActiveTab("incharges")}
                 className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "incharges"
-                    ? "border-blue-600 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
                   }`}
               >
                 🏢 Department Incharges
+              </button>
+              <button
+                onClick={() => setActiveTab("hr")}
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "hr"
+                  ? "border-pink-600 text-pink-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                👨‍💼 HR Management
               </button>
             </div>
           </div>
@@ -638,8 +769,8 @@ const AdminDashboard = () => {
                   <button
                     onClick={() => setShowSelectedOnly(!showSelectedOnly)}
                     className={`border rounded-xl px-4 py-3 font-medium transition-all duration-200 ${showSelectedOnly
-                        ? 'bg-green-100 text-green-800 border-green-300'
-                        : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                      ? 'bg-green-100 text-green-800 border-green-300'
+                      : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                       }`}
                   >
                     {showSelectedOnly ? '✅ Showing Selected' : '👥 Show All'}
@@ -846,7 +977,8 @@ const AdminDashboard = () => {
                   </div>
                   <div className="bg-purple-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-purple-600">
-                      {[...new Set(departmentIncharges.map(i => i.departments))].length}
+                      {[...new Set(departmentIncharges.flatMap(i => i.departments))].length
+}
                     </div>
                     <div className="text-sm text-purple-800">Departments</div>
                   </div>
@@ -881,6 +1013,64 @@ const AdminDashboard = () => {
                   <div className="text-gray-400 text-6xl mb-4">🏢</div>
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">No Department Incharges Found</h3>
                   <p className="text-gray-500 mb-4">There are no department incharges registered yet.</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* HR Tab Content */}
+          {activeTab === "hr" && (
+            <>
+              {/* Stats for HR */}
+              {hrManagers.length > 0 && (
+                <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+                  <div className="bg-pink-50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-pink-600">{hrManagers.length}</div>
+                    <div className="text-sm text-pink-800">Total HR</div>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {hrManagers.filter(hr => hr.status === 'Active').length}
+                    </div>
+                    <div className="text-sm text-green-800">Active</div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-gray-600">
+                      {hrManagers.filter(hr => hr.status === 'Inactive').length}
+                    </div>
+                    <div className="text-sm text-gray-800">Inactive</div>
+                  </div>
+                  <div className="bg-blue-50 rounded-lg p-4 text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {[...new Set(hrManagers.map(hr => hr.department))].length}
+                    </div>
+                    <div className="text-sm text-blue-800">Departments</div>
+                  </div>
+                </div>
+              )}
+
+              {/* HR Table */}
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600"></div>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                  <p className="text-red-600">{error}</p>
+                  <button
+                    onClick={fetchHRManagers}
+                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 no-print"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : hrManagers.length > 0 ? (
+                renderHRTable()
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 text-6xl mb-4">👨‍💼</div>
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No HR Managers Found</h3>
+                  <p className="text-gray-500">There are no HR managers registered yet.</p>
                 </div>
               )}
             </>

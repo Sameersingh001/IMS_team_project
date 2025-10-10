@@ -5,8 +5,7 @@ import path from 'path';
 import Intern from "../models/InternDatabase.js"
 import InternIncharge from '../models/InternHead.js';
 import nodemailer from "nodemailer"
-
-
+import User from "../models/UserDB.js"
 
 
 
@@ -58,13 +57,20 @@ export const getAllInterns = async (req, res) => {
 
 export const getInternById = async (req, res) => {
   try {
-    const intern = await Intern.findById(req.params.id);
-    if (!intern) return res.status(404).json({ message: "Intern not found" });
+    const intern = await Intern.findById(req.params.id)
+      .populate("updatedByHR", "fullName email role"); // 👈 populate HR info
+
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
+
     res.status(200).json(intern);
   } catch (err) {
+    console.error("Error fetching intern:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
 
 
 
@@ -495,6 +501,35 @@ export const removeInchargeDepartment = async (req, res) => {
   }
 };
 
+
+
+export const ToggleInchargeStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the incharge by ID
+    const incharge = await InternIncharge.findById(id);
+
+    if (!incharge) {
+      return res.status(404).json({ message: "Incharge not found" });
+    }
+
+    // Toggle status
+    const newStatus = incharge.status === "Active" ? "Inactive" : "Active";
+    incharge.status = newStatus;
+
+    // Save the updated incharge
+    await incharge.save();
+
+    res.status(200).json({ message: `Incharge status updated to ${newStatus}`, incharge });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
 export const deleteIncharge = async (req, res) => {
   try {
     const { id } = req.params;
@@ -514,3 +549,70 @@ export const deleteIncharge = async (req, res) => {
     });
   }
 };
+
+export const getHRManagers = async (req, res) => {
+  try {
+    // Fetch all users with role HR
+    const hrUsers = await User.find({ role: "HR" });
+
+    res.status(200).json({
+      message: "HR Managers fetched successfully",
+      totalHR: hrUsers.length,
+      hrManagers: hrUsers // optional full data
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error fetching HR managers", error: error.message });
+  }
+};
+
+
+export const toggleHRStatus = async (req, res) => {
+  try {
+    const { hrId } = req.params;
+
+    // Find the HR user by ID and ensure role is HR
+    const hrUser = await User.findOne({ _id: hrId, role: "HR" });
+    if (!hrUser) {
+      return res.status(404).json({ message: "HR user not found" });
+    }
+
+    // Switch status
+    hrUser.status = hrUser.status === "Active" ? "Inactive" : "Active";
+
+    // Save changes
+    await hrUser.save();
+
+    res.status(200).json({
+      message: `HR status updated to ${hrUser.status}`,
+      hrUser
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error updating HR status", error: error.message });
+  }
+};
+
+
+
+export const deleteHR = async (req, res) => {
+  try {
+    const { hrId } = req.params;
+
+    // Find HR user by ID and ensure role is HR
+    const hrUser = await User.findOne({ _id: hrId, role: "HR" });
+
+    if (!hrUser) {
+      return res.status(404).json({ success: false, message: "HR user not found" });
+    }
+
+    // Delete HR user
+    await User.findByIdAndDelete(hrId);
+
+    res.status(200).json({ success: true, message: "HR user deleted successfully" });
+  } catch (error) {
+    console.error("Delete HR Error:", error);
+    res.status(500).json({ success: false, message: "Error deleting HR user", error: error.message });
+  }
+};
+

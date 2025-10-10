@@ -101,7 +101,11 @@ const internSchema = new mongoose.Schema({
     },
     joiningDate : {
         type:String
-    }
+    },
+    updatedByHR: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // reference to the HR (User collection)
+    },
 
 }, { timestamps: true });
 

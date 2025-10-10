@@ -9,7 +9,7 @@ import {transporter} from "../config/emailConfig.js"
 
 export const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password, role, secretKey } = req.body;
+    const { fullName, email, password, role, secretKey, mobile} = req.body;
 
     // ✅ Basic validation
     if (!fullName || !email || !password || !role || !secretKey) {
@@ -26,7 +26,11 @@ export const registerUser = async (req, res) => {
     // ✅ Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ message: "Email already exists." });
+      return res.status(409).json({ message: "User already exists." });
+    }
+    const existingMobile = await User.findOne({ mobile });
+    if (existingMobile) {
+      return res.status(409).json({ message: "User already exists." });
     }
 
     // ✅ Hash the password
@@ -36,6 +40,7 @@ export const registerUser = async (req, res) => {
     const newUser = new User({
       fullName,
       email,
+      mobile,
       password: hashedPassword,
       role,
     });
@@ -61,6 +66,10 @@ export const loginUser = async (req, res) => {
 
     const user = await User.findOne({ email, role });
     if (!user) return res.status(404).json({ message: "User not found." });
+
+    if(user.status !== "Active"){
+      return res.status(404).json({ message: "Your account is inactive please contact to Admin" })
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid)

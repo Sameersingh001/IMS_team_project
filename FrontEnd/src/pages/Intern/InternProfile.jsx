@@ -199,7 +199,7 @@ const InternDetail = ({ role }) => {
 
       // Fetch updated intern data to get the generated unique ID
       await fetchIntern();
-      
+
       setUpdateSuccess("Offer letter generated successfully! Unique ID has been created.");
       setTimeout(() => setUpdateSuccess(""), 4000);
     } catch (err) {
@@ -393,9 +393,8 @@ const InternDetail = ({ role }) => {
                     value={intern.status}
                     onChange={(e) => handleStatusUpdate(e.target.value)}
                     disabled={updating}
-                    className={`w-full border-2 rounded-xl p-3 text-center font-bold capitalize cursor-pointer transition-all ${getStatusColor(intern.status)} focus:ring-2 focus:ring-indigo-500 ${
-                      canChangeToWorkStatus(intern.status) ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                    className={`w-full border-2 rounded-xl p-3 text-center font-bold capitalize cursor-pointer transition-all ${getStatusColor(intern.status)} focus:ring-2 focus:ring-indigo-500 ${canChangeToWorkStatus(intern.status) ? 'opacity-50 cursor-not-allowed' : ''
+                      }`}
                   >
                     <option value="Applied">Applied</option>
                     <option value="Selected">Selected</option>
@@ -568,11 +567,10 @@ const InternDetail = ({ role }) => {
                 <button
                   onClick={generateOfferLetter}
                   disabled={generatingOffer || intern.status !== "Selected" || !joiningDate}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
-                    intern.status === "Selected" && joiningDate
-                      ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  } ${generatingOffer ? "opacity-50" : ""}`}
+                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${intern.status === "Selected" && joiningDate
+                    ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    } ${generatingOffer ? "opacity-50" : ""}`}
                 >
                   {generatingOffer ? (
                     <>
@@ -708,10 +706,21 @@ const InternDetail = ({ role }) => {
                         </div>
                       </div>
                     </div>
+
                   ))}
+
+                  {isAdmin && intern.updatedByHR && (
+                    <div className="mt-2 text-sm text-blue-600">
+                      Last updated by HR: <span className="font-medium text-gray-800">{intern.updatedByHR.fullName}</span> ({intern.updatedByHR.email})
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>
+
+
+
 
             {/* Comment Section */}
             <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
@@ -723,7 +732,7 @@ const InternDetail = ({ role }) => {
                   </span>
                 )}
               </h3>
-              
+
               {/* HR - Edit Comment */}
               {isHR && (
                 <div className="mb-6">
@@ -803,6 +812,12 @@ const InternDetail = ({ role }) => {
                       HR hasn't added any comments yet.
                     </p>
                   )}
+
+                  {isAdmin && intern.updatedByHR && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Last comment updated by: {intern.updatedByHR.fullName} ({intern.updatedByHR.email})
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -831,11 +846,10 @@ const InternDetail = ({ role }) => {
               <button
                 onClick={generateOfferLetter}
                 disabled={generatingOffer || intern.status !== "Selected" || !joiningDate}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${
-                  intern.status === "Selected" && joiningDate
-                    ? "bg-purple-600 hover:bg-purple-700 text-white"
-                    : "bg-gray-400 text-gray-600 cursor-not-allowed"
-                }`}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected" && joiningDate
+                  ? "bg-purple-600 hover:bg-purple-700 text-white"
+                  : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                  }`}
               >
                 {generatingOffer ? "⏳ Generating..." : "📝 Offer Letter"}
               </button>

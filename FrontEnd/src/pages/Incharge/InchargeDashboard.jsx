@@ -113,11 +113,11 @@ const InternInchargeDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
         <div className="flex items-center justify-between p-4 border-b">
           <div>
-            <h1 className="text-xl font-bold text-gray-800">InternHerd</h1>
-            <p className="text-sm text-gray-600">Intern Incharge</p>
+            <h1 className="font-bold text-xl text-gray-600">Intern Incharge</h1>
+            <p className=" text-gray-600 text-xs">Graphura</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -135,8 +135,14 @@ const InternInchargeDashboard = () => {
             </div>
             <div>
               <p className="font-semibold text-gray-800">{user?.fullName}</p>
-              <p className="text-sm text-gray-600">{user?.department}</p>
-            </div>
+              <div className="mt-1">
+                {user?.department?.map((dept, index) => (
+                  <p key={index} className="text-xs font-bold text-gray-800 truncate">
+                    {dept}
+                  </p>
+                ))}
+              </div>            
+              </div>
           </div>
         </div>
 
@@ -180,7 +186,7 @@ const InternInchargeDashboard = () => {
         </header>
 
         {/* Stats Cards */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl shadow-sm p-6 border">
             <div className="flex items-center justify-between">
               <div>
@@ -222,9 +228,14 @@ const InternInchargeDashboard = () => {
           <div className="bg-white rounded-xl shadow-sm p-6 border">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Your Department</p>
-                <p className="text-lg font-bold text-gray-800 mt-1 truncate">{user?.department}</p>
-              </div>
+                <p className="text-sm font-medium text-gray-600">Your Departments</p>
+                <div className="mt-1">
+                  {user?.department?.map((dept, index) => (
+                    <p key={index} className="text-xs  font-bold text-gray-800 truncate">
+                      {dept}
+                    </p>
+                  ))}
+                </div>              </div>
               <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
                 <Users className="text-orange-600" size={24} />
               </div>
@@ -342,18 +353,18 @@ const InternInchargeDashboard = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${intern.gender === "Male"
-                              ? "bg-blue-100 text-blue-800"
-                              : intern.gender === "Female"
-                                ? "bg-pink-100 text-pink-800"
-                                : "bg-purple-100 text-purple-800"
+                            ? "bg-blue-100 text-blue-800"
+                            : intern.gender === "Female"
+                              ? "bg-pink-100 text-pink-800"
+                              : "bg-purple-100 text-purple-800"
                             }`}>
                             {intern.gender}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${intern.status === "Active"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
                             }`}>
                             {intern.status}
                           </span>

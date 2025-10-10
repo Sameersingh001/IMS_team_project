@@ -13,6 +13,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
     },
+    mobile:{
+      type:String,
+      require:true
+    },
     password: {
       type: String,
       required: true,
@@ -22,6 +26,11 @@ const userSchema = new mongoose.Schema(
       enum: ["Admin", "HR"],
       default: "HR",
     },
+    status:{
+      type:String,
+      enum:["Active", "Inactive"],
+      default : "Active"
+    }
   },
   { timestamps: true }
 );

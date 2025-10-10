@@ -37,7 +37,11 @@ const LoginPage = () => {
         if (res.status === 200 && res.data.user) {
           const role = res.data.user.role;
           if (role === "Admin") navigate("/Admin-Dashboard");
-          else navigate("/HR-Dashboard");
+          else if (role === "HR") navigate("/HR-Dashboard");
+          else navigate("/login"); // fallback if role is unknown
+        }
+        else{
+          navigate("/login");
         }
       } catch (err) {
         console.log("No active session, stay on login.", err);
@@ -95,7 +99,7 @@ const LoginPage = () => {
     } catch (err) {
       if (err.response?.status === 401)
         setError("Invalid email or password!");
-      else setError("Login failed. Please try again.");
+      else setError(err.response.data.message);
     } finally {
       setLoading(false);
     }

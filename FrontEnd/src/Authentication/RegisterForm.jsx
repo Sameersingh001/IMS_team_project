@@ -9,6 +9,7 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    mobile: "",
     password: "",
     confirmPassword: "",
     role: "HR",
@@ -20,7 +21,6 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false); // 👁 state for password visibility
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Secret keys for client-side validation (ideally move to backend)
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -35,11 +35,19 @@ const RegisterPage = () => {
     setError("");
     setSuccess(false);
 
-    const { password, confirmPassword, role } = formData;
+    const { password, confirmPassword, mobile } = formData;
 
     // Client-side validations
     if (password !== confirmPassword) {
       setError("Passwords do not match!");
+      setLoading(false);
+      return;
+    }
+
+    // Mobile number validation
+    const mobileRegex = /^[0-9]{10}$/;
+    if (mobile && !mobileRegex.test(mobile)) {
+      setError("Please enter a valid 10-digit mobile number!");
       setLoading(false);
       return;
     }
@@ -59,7 +67,7 @@ const RegisterPage = () => {
 
       if (response.status === 201 || response.status === 200) {
         setSuccess(true);
-        if (role === "Admin") navigate("/Login");
+        if (formData.role === "Admin") navigate("/Login");
         else navigate("/Login");
       }
     } catch (err) {
@@ -138,6 +146,25 @@ const RegisterPage = () => {
               required
               disabled={loading}
             />
+          </div>
+
+          {/* Mobile Number */}
+          <div>
+            <label className="block text-gray-700 font-semibold mb-2 text-sm">
+              Mobile Number
+            </label>
+            <input
+              type="tel"
+              name="mobile"
+              value={formData.mobile}
+              onChange={handleChange}
+              placeholder="Enter your mobile number"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              (Optional - 10 digits without country code)
+            </p>
           </div>
 
           {/* Password */}
