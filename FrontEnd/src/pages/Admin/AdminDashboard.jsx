@@ -436,7 +436,7 @@ const AdminDashboard = () => {
               <div className="flex items-center gap-3">
                 <img src={Graphura} alt="Graphura Logo" className="sm:h-12 h-8 mr-5" />
                 <div>
-                  <h1 className="sm:text-2xl text-s font-bold text-gray-800">Admin Dashboard</h1>
+                  <h1 className="sm:text-2xl text-s font-bold text-gray-800">Admin Dashboard </h1>
                   <p className="text-gray-600 sm:text-sm text-xs">Full control over intern and department incharge management</p>
                 </div>
               </div>
@@ -881,12 +881,6 @@ const AdminDashboard = () => {
                   <div className="text-gray-400 text-6xl mb-4">🏢</div>
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">No Department Incharges Found</h3>
                   <p className="text-gray-500 mb-4">There are no department incharges registered yet.</p>
-                  <button
-                    onClick={() => navigate('/Admin-Dashboard/add-incharge')}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium no-print"
-                  >
-                    ➕ Add Department Incharge
-                  </button>
                 </div>
               )}
             </>

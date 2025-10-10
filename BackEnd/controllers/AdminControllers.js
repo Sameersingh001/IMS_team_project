@@ -394,3 +394,123 @@ export const InternIncharges = async (req, res)=>{
   }
 }
 
+export const InchargeProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // 1️⃣ Fetch incharge details
+    const incharge = await InternIncharge.findById(id);
+
+    if (!incharge) {
+      return res.status(404).json({ message: "Incharge not found" });
+    }
+
+    // 2️⃣ Fetch students assigned under same departments
+    const interns = await Intern.find({
+      status : ["Active", "Inactive"],
+      domain: { $in: incharge.departments },
+    }).select("fullName email domain status joinDate");
+
+    // 3️⃣ Respond
+    res.status(200).json({
+      message: "Incharge Fetched Successfully",
+      Incharge: incharge,
+      Interns: interns,
+    });
+  } catch (error) {
+    console.error("Error in fetching incharge profile:", error);
+    res.status(500).json({
+      message: "Error in fetching incharge profile",
+      error: error.message,
+    });
+  }
+};
+
+
+
+export const updateInchargeDepartments = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { departments } = req.body;
+
+    if (!Array.isArray(departments)) {
+      return res.status(400).json({ message: "Departments must be an array" });
+    }
+
+    const incharge = await InternIncharge.findByIdAndUpdate(
+      id,
+      { departments },
+      { new: true }
+    );
+
+    if (!incharge) {
+      return res.status(404).json({ message: "Incharge not found" });
+    }
+
+    res.status(200).json({
+      message: "Departments updated successfully",
+      incharge,
+    });
+  } catch (error) {
+    console.error("Error updating departments:", error);
+    res.status(500).json({ message: "Error updating incharge departments" });
+  }
+};
+
+
+
+export const removeInchargeDepartment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { departments } = req.body;
+
+    if (!Array.isArray(departments)) {
+      return res.status(400).json({ message: "Departments must be an array" });
+    }
+
+    // Update incharge with new department list
+    const incharge = await InternIncharge.findByIdAndUpdate(
+      id,
+      { departments },
+      { new: true }
+    );
+
+    if (!incharge) {
+      return res.status(404).json({ message: "Incharge not found" });
+    }
+
+    // Optionally unassign interns linked to the removed departments
+    await Intern.updateMany(
+      { domain: { $nin: incharge.departments } },
+      { $unset: { inchargeId: "" } } // removes the inchargeId field
+    );
+
+    res.status(200).json({
+      message: "Department removed successfully",
+      incharge,
+    });
+  } catch (error) {
+    console.error("Error removing department:", error);
+    res.status(500).json({ message: "Error removing department" });
+  }
+};
+
+export const deleteIncharge = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const incharge = await InternIncharge.findByIdAndDelete(id);
+
+    if (!incharge) {
+      return res.status(404).json({ message: "Incharge not found" });
+    }
+
+    res.status(200).json({ message: "Incharge deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting incharge:", err);
+    res.status(500).json({
+      message: "Error deleting incharge",
+      error: err.message,
+    });
+  }
+};
