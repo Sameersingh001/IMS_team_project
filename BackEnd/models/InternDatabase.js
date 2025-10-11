@@ -85,7 +85,8 @@ const internSchema = new mongoose.Schema({
         default: 'Applied'
     },
     uniqueId: {
-        type:String
+        type:String,
+        unique:true
     },
     comment: {
         type:String
@@ -106,6 +107,26 @@ const internSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "User", // reference to the HR (User collection)
     },
+    updatedByIncharge: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InternHead", // reference to the HR (User collection)
+    },
+    comments: [
+  {
+    text: {
+      type: String,
+      required: true,
+    },
+    commentedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "InternHead", // or "HR" / "Admin" / "Intern" depending on your logic
+    },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+],
 
 }, { timestamps: true });
 

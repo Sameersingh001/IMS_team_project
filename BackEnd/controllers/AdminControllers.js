@@ -176,7 +176,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
 
     // Update intern's joining date in database
     intern.joiningDate = new Date(joiningDate);
-    
+
     // 2️⃣ Use existing uniqueId if available, otherwise generate a new one
     let uniqueId = intern.uniqueId;
     const currentDate = new Date();
@@ -304,7 +304,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     y -= 95;
     page.drawText("Unique ID:", { x: 75, y, size: 13, font: fontBold });
     y -= 15;
-    page.drawText(uniqueId, { x: 75, y, size: 14, font: fontBold });    
+    page.drawText(uniqueId, { x: 75, y, size: 14, font: fontBold });
     // Add Joining Date to PDF
     y -= 15;
     page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
@@ -362,7 +362,7 @@ Graphura India Private Limited
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.send(Buffer.from(pdfBytes));
-    
+
   } catch (error) {
     console.error("Error generating offer letter:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -390,8 +390,8 @@ export const updateJoiningDate = async (req, res) => {
 
 
 
-export const updateDuration = async (req, res)=>{
-   try {
+export const updateDuration = async (req, res) => {
+  try {
     const { id } = req.params;
     const { duration } = req.body;
 
@@ -416,8 +416,8 @@ export const updateDuration = async (req, res)=>{
 }
 
 
-export const InternIncharges = async (req, res)=>{
-    try {
+export const InternIncharges = async (req, res) => {
+  try {
     const incharges = await InternIncharge.find().select("-password"); // exclude password
     res.status(200).json({ success: true, incharges });
   } catch (error) {
@@ -438,7 +438,7 @@ export const InchargeProfile = async (req, res) => {
 
     // 2️⃣ Fetch students assigned under same departments
     const interns = await Intern.find({
-      status : ["Active", "Inactive"],
+      status: ["Active", "Inactive"],
       domain: { $in: incharge.departments },
     }).select("fullName email domain status joinDate");
 
@@ -559,7 +559,7 @@ export const ToggleInchargeStatus = async (req, res) => {
 export const deleteIncharge = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const incharge = await InternIncharge.findByIdAndDelete(id);
 
     if (!incharge) {
@@ -642,3 +642,82 @@ export const deleteHR = async (req, res) => {
   }
 };
 
+export const InchargeComments = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verify the intern exists
+    const intern = await Intern.findById(id)
+    if (!intern) {
+      return res.status(404).json({
+        success: false,
+        message: 'Intern not found'
+      });
+    }
+    // Get comments from intern's comments array
+    const inchargeComments = intern.comments || [];
+
+    res.json({
+      success: true,
+      comments: inchargeComments
+    });
+  } catch (error) {
+    console.error('Get incharge comments error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching incharge comments'
+    });
+  }
+}
+
+
+
+export const InchargeCommentsDetails = async (req, res) => {
+  try {
+    const { inchargeId } = req.params;
+    const incharge = await InternIncharge.findById(inchargeId).select('fullName email');
+    if (!incharge) {
+      return res.status(404).json({
+        success: false,
+        message: 'Incharge not found'
+      });
+    }
+    res.json({
+      success: true,
+      incharge
+    });
+  } catch (error) {
+    console.error('Get incharge details error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching incharge details'
+    });
+  }
+}
+
+
+
+export const InchargeDeleteComments = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+
+    // Remove comment from intern's comments array
+    await Intern.findByIdAndUpdate(
+      id,
+      { $pull: { comments: { _id: commentId } } },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Comment deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete incharge comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while deleting comment'
+    });
+  }
+}

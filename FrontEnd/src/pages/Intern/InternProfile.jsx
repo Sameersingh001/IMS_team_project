@@ -17,6 +17,8 @@ const InternDetail = ({ role }) => {
   const [joiningDate, setJoiningDate] = useState("");
   const [editingDuration, setEditingDuration] = useState(false);
   const [duration, setDuration] = useState("");
+  const [inchargeComments, setInchargeComments] = useState([]);
+  const [showInchargeComments, setShowInchargeComments] = useState(false);
   const navigate = useNavigate();
 
   const isAdmin = role === "Admin";
@@ -24,6 +26,9 @@ const InternDetail = ({ role }) => {
 
   useEffect(() => {
     fetchIntern();
+    if (isAdmin) {
+      fetchInchargeComments();
+    }
   }, [id]);
 
   useEffect(() => {
@@ -54,6 +59,35 @@ const InternDetail = ({ role }) => {
       setError("Failed to load intern details");
     }
     setLoading(false);
+  };
+
+  const fetchInchargeComments = async () => {
+    try {
+      const response = await axios.get(`/api/admin/interns/${id}/incharge-comments`, {
+        withCredentials: true,
+      });
+      setInchargeComments(response.data.comments || []);
+    } catch (err) {
+      console.error("Error fetching incharge comments:", err);
+    }
+  };
+
+  const handleDeleteInchargeComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      await axios.delete(
+        `/api/admin/interns/${id}/incharge-comments/${commentId}`,
+        { withCredentials: true }
+      );
+
+      setInchargeComments(prev => prev.filter(comment => comment._id !== commentId));
+      setUpdateSuccess("Comment deleted successfully!");
+      setTimeout(() => setUpdateSuccess(""), 3000);
+    } catch (err) {
+      console.error("Error deleting incharge comment:", err);
+      setError("Failed to delete comment");
+    }
   };
 
   const handleStatusUpdate = async (newStatus) => {
@@ -293,6 +327,10 @@ const InternDetail = ({ role }) => {
     return ["Active", "Inactive", "Completed"].includes(status) && !intern.uniqueId;
   };
 
+  const getInchargeCommentCount = () => {
+    return inchargeComments.length;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -304,7 +342,7 @@ const InternDetail = ({ role }) => {
     );
   }
 
-  if (error) {
+  if (error && !intern) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
@@ -387,6 +425,11 @@ const InternDetail = ({ role }) => {
                 {intern.uniqueId && (
                   <p className="text-sm text-green-600 font-medium mt-1">
                     Unique ID: {intern.uniqueId}
+                  </p>
+                )}
+                {isAdmin && getInchargeCommentCount() > 0 && (
+                  <p className="text-sm text-blue-600 font-medium mt-1">
+                    {getInchargeCommentCount()} incharge comment{getInchargeCommentCount() !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>
@@ -661,6 +704,32 @@ const InternDetail = ({ role }) => {
               </div>
             )}
 
+            {/* Admin Only - Incharge Comments Quick View */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  💬 Incharge Comments
+                </h3>
+                <div className="space-y-3">
+                  <div className={`border-2 rounded-xl p-4 text-center ${getInchargeCommentCount() > 0 ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"}`}>
+                    <div className="text-3xl mb-2">👥</div>
+                    <div className="text-xl font-bold">
+                      {getInchargeCommentCount()} Comment{getInchargeCommentCount() !== 1 ? 's' : ''}
+                    </div>
+                    <div className="text-sm opacity-75 mt-1">
+                      {getInchargeCommentCount() > 0 ? "From intern incharges" : "No comments yet"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowInchargeComments(true)}
+                    className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    💬 View All Comments
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Admin Only - Offer Letter */}
             {isAdmin && (
               <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -836,7 +905,7 @@ const InternDetail = ({ role }) => {
               </div>
             </div>
 
-            {/* Comment Section */}
+            {/* Comment Section - HR Comments */}
             <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
               <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
                 💬 HR Comments
@@ -909,7 +978,7 @@ const InternDetail = ({ role }) => {
                 </div>
               )}
 
-              {/* Admin - View Comment Only */}
+              {/* Admin - View HR Comment Only */}
               {isAdmin && (
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
@@ -935,6 +1004,44 @@ const InternDetail = ({ role }) => {
                 </div>
               )}
             </div>
+
+            {/* Admin Only - Incharge Comments Section */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                  👥 Incharge Comments
+                  <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full ml-2">
+                    Admin View Only
+                  </span>
+                </h3>
+
+                {/* Incharge Comments List */}
+                <div>
+                  <h4 className="font-medium text-gray-800 mb-3">
+                    Comments from Intern Incharges ({getInchargeCommentCount()})
+                  </h4>
+
+                  {inchargeComments.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50 rounded-lg">
+                      <div className="text-4xl mb-3">💬</div>
+                      <p className="text-gray-500">No incharge comments yet.</p>
+                      <p className="text-gray-400 text-sm mt-1">Incharges will add comments from their dashboard.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {inchargeComments.map((comment) => (
+                        <InchargeCommentCard 
+                          key={comment._id} 
+                          comment={comment} 
+                          internId={intern._id}
+                          onDelete={handleDeleteInchargeComment}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -957,16 +1064,26 @@ const InternDetail = ({ role }) => {
               📄 View Resume
             </a>
             {isAdmin && (
-              <button
-                onClick={generateOfferLetter}
-                disabled={generatingOffer || intern.status !== "Selected" || !joiningDate || !duration}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected" && joiningDate && duration
-                  ? "bg-purple-600 hover:bg-purple-700 text-white"
-                  : "bg-gray-400 text-gray-600 cursor-not-allowed"
-                  }`}
-              >
-                {generatingOffer ? "⏳ Generating..." : "📝 Offer Letter"}
-              </button>
+              <>
+                <button
+                  onClick={generateOfferLetter}
+                  disabled={generatingOffer || intern.status !== "Selected" || !joiningDate || !duration}
+                  className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected" && joiningDate && duration
+                    ? "bg-purple-600 hover:bg-purple-700 text-white"
+                    : "bg-gray-400 text-gray-600 cursor-not-allowed"
+                    }`}
+                >
+                  {generatingOffer ? "⏳ Generating..." : "📝 Offer Letter"}
+                </button>
+                {getInchargeCommentCount() > 0 && (
+                  <button
+                    onClick={() => setShowInchargeComments(true)}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
+                  >
+                    💬 Incharge Comments ({getInchargeCommentCount()})
+                  </button>
+                )}
+              </>
             )}
             <button
               onClick={() => navigate(`/${role}-Dashboard`)}
@@ -977,6 +1094,129 @@ const InternDetail = ({ role }) => {
           </div>
         </div>
       </div>
+
+      {/* Incharge Comments Modal */}
+      {showInchargeComments && isAdmin && (
+        <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-lg bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Incharge Comments</h3>
+                <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
+              </div>
+              <button 
+                onClick={() => setShowInchargeComments(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <div className="space-y-4">
+                {inchargeComments.map((comment) => (
+                  <InchargeCommentCard 
+                    key={comment._id} 
+                    comment={comment} 
+                    internId={intern._id}
+                    onDelete={handleDeleteInchargeComment}
+                    isModal={true}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Incharge Comment Card Component
+const InchargeCommentCard = ({ comment, onDelete, isModal = false }) => {
+  const [inchargeDetails, setInchargeDetails] = useState(null);
+  const [loadingIncharge, setLoadingIncharge] = useState(false);
+
+  useEffect(() => {
+    if (comment.commentedBy) {
+      fetchInchargeDetails();
+    }
+  }, [comment.commentedBy]);
+
+
+
+  const fetchInchargeDetails = async () => {
+    try {
+      setLoadingIncharge(true);
+      const response = await axios.get(`/api/admin/intern-head/${comment.commentedBy}`, {
+        withCredentials: true,
+      });
+      setInchargeDetails(response.data.incharge);
+    } catch (err) {
+      console.error('Error fetching incharge details:', err);
+    } finally {
+      setLoadingIncharge(false);
+    }
+  };
+
+  const getInchargeInitials = (name) => {
+    if (!name) return 'IC';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getInchargeName = () => {
+    if (inchargeDetails) {
+      return inchargeDetails.fullName;
+    }
+    return 'Loading...';
+  };
+
+  const getInchargeEmail = () => {
+    if (inchargeDetails) {
+      return inchargeDetails.email;
+    }
+    return '';
+  };
+
+  return (
+    <div className={`bg-gray-50 rounded-lg p-4 border border-gray-200 ${isModal ? 'border-2 border-blue-200' : ''}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {getInchargeInitials(getInchargeName())}
+          </div>
+          <div>
+            <h5 className="font-medium text-gray-900 text-sm">
+              {loadingIncharge ? 'Loading...' : getInchargeName()}
+            </h5>
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <span>📅</span>
+              {new Date(comment.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+            {inchargeDetails && (
+              <div className="text-xs text-gray-400 mt-1">
+                {getInchargeEmail()}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <button
+          onClick={() => onDelete(comment._id)}
+          className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50"
+          title="Delete comment"
+        >
+          🗑️
+        </button>
+      </div>
+      
+      <p className="text-gray-700 text-sm">{comment.text}</p>
     </div>
   );
 };

@@ -137,7 +137,7 @@ export const updateComment = async (req, res) =>{
       id,
       {
         comment,
-        updatedByHR: hrId, // track which HR updated performance
+        updatedByHR: id, // track which HR updated performance
       },
       { new: true }
     ).populate("updatedByHR", "fullName email role");

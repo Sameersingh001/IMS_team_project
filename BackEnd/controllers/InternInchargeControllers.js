@@ -371,3 +371,103 @@ export const resendOtp = async (req, res) => {
   }
 };
 
+
+
+
+export const InternComments = async (req, res) =>{
+      try {
+    const { internId } = req.params;
+    const { comment } = req.body;
+
+    if (!comment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a comment'
+      });
+    }
+
+    // Verify the intern exists and is assigned to this incharge
+    const intern = await Intern.findById(internId);
+    if (!intern) {
+      return res.status(404).json({
+        success: false,
+        message: 'Intern not found'
+      });
+    }
+
+    const incharge = await InternIncharge.findById(req.user._id);
+    if (!incharge.departments.includes(intern.domain)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to add comments for this intern'
+      });
+    }
+
+    // Create new comment object
+    const newComment = {
+      text: comment,
+      commentedBy: req.user._id,
+      date: new Date()
+    };
+
+    // Add comment to intern's comments array
+    const updatedIntern = await Intern.findByIdAndUpdate(
+      internId,
+      { 
+        $push: { comments: newComment },
+        updatedByIncharge: req.user._id
+      },
+      { new: true }
+    ).populate('comments.commentedBy', 'fullName');
+
+    res.status(201).json({
+      success: true,
+      message: 'Comment added successfully',
+      intern: updatedIntern
+    });
+  } catch (error) {
+    console.error('Add comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while adding comment'
+    });
+  }
+}
+
+export const DeleteComments = async (req, res) =>{
+  try {
+    const { internId, commentId } = req.params;
+
+    // Verify the intern exists
+    const intern = await Intern.findById(internId);
+    if (!intern) {
+      return res.status(404).json({
+        success: false,
+        message: 'Intern not found'
+      });
+    }
+
+    // Remove comment from intern's comments array
+    const updatedIntern = await Intern.findByIdAndUpdate(
+      internId,
+      { 
+        $pull: { comments: { _id: commentId } },
+        updatedByIncharge: req.user._id
+      },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: 'Comment deleted successfully',
+      intern: updatedIntern
+    });
+  } catch (error) {
+    console.error('Delete comment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while deleting comment'
+    });
+  }
+}
+

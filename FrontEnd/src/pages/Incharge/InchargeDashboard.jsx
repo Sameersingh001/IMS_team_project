@@ -11,7 +11,11 @@ import {
   Filter,
   Search,
   Menu,
-  X
+  X,
+  MessageCircle,
+  Send,
+  Trash2,
+  Calendar
 } from "lucide-react";
 
 const InternInchargeDashboard = () => {
@@ -22,6 +26,10 @@ const InternInchargeDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDomain, setFilterDomain] = useState("");
+  const [selectedIntern, setSelectedIntern] = useState(null);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
 
   useEffect(() => {
     checkAuthAndFetchData();
@@ -65,6 +73,81 @@ const InternInchargeDashboard = () => {
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+
+  const handleAddComment = async (internId) => {
+    if (!newComment.trim()) return;
+
+    try {
+      setCommentLoading(true);
+      const response = await axios.post(
+        `/api/intern-incharge/interns/${internId}/comments`,
+        {
+          comment: newComment
+        },
+        { withCredentials: true }
+      );
+      
+      // Update the intern's comments in the local state
+      setInterns(prevInterns => 
+        prevInterns.map(intern => 
+          intern._id === internId 
+            ? {
+                ...intern,
+                comments: response.data.intern.comments
+              }
+            : intern
+        )
+      );
+
+      setNewComment("");
+      setShowCommentModal(false);
+      alert("Comment added successfully!");
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      alert("Failed to add comment");
+    } finally {
+      setCommentLoading(false);
+    }
+  };
+
+  const handleDeleteComment = async (internId, commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await axios.delete(
+        `/api/intern-incharge/interns/${internId}/comments/${commentId}`,
+        { withCredentials: true }
+      );
+      
+      window.location.reload()
+      // Update the intern's comments in the local state
+      setInterns(prevInterns => 
+        prevInterns.map(intern => 
+          intern._id === internId 
+            ? {
+                ...intern,
+                comments: response.data.intern.comments
+              }
+            : intern
+        )
+      );
+      
+      alert("Comment deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+      alert("Failed to delete comment");
+    }
+  };
+
+  const openCommentModal = (intern) => {
+    setSelectedIntern(intern);
+    setNewComment("");
+    setShowCommentModal(true);
+  };
+
+  const getCommentCount = (intern) => {
+    return intern.comments ? intern.comments.length : 0;
   };
 
   // Filter interns based on search and domain
@@ -306,12 +389,15 @@ const InternInchargeDashboard = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredInterns.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                         {interns.length === 0 ? "No interns assigned to you yet." : "No interns match your search criteria."}
                       </td>
                     </tr>
@@ -327,6 +413,11 @@ const InternInchargeDashboard = () => {
                               <div>
                                 <p className="font-medium text-gray-900">{intern.fullName}</p>
                                 <p className="text-sm text-gray-500">ID: {intern.uniqueId}</p>
+                                {getCommentCount(intern) > 0 && (
+                                  <p className="text-xs text-gray-400 mt-1">
+                                    {getCommentCount(intern)} comment{getCommentCount(intern) !== 1 ? 's' : ''}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -369,6 +460,21 @@ const InternInchargeDashboard = () => {
                             {intern.status}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openCommentModal(intern)}
+                              className="flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+                            >
+                              <MessageCircle size={14} />
+                              {getCommentCount(intern) > 0 ? (
+                                <span>Comments ({getCommentCount(intern)})</span>
+                              ) : (
+                                <span>Add Comment</span>
+                              )}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -379,6 +485,19 @@ const InternInchargeDashboard = () => {
         </div>
       </div>
 
+      {/* Comment Modal */}
+      {showCommentModal && selectedIntern && (
+        <CommentModal
+          intern={selectedIntern}
+          newComment={newComment}
+          setNewComment={setNewComment}
+          onClose={() => setShowCommentModal(false)}
+          onSubmit={handleAddComment}
+          onDeleteComment={handleDeleteComment}
+          loading={commentLoading}
+        />
+      )}
+
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -386,6 +505,146 @@ const InternInchargeDashboard = () => {
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
+    </div>
+  );  
+};
+
+// Comment Modal Component
+const CommentModal = ({ 
+  intern, 
+  newComment, 
+  setNewComment, 
+  onClose, 
+  onSubmit, 
+  onDeleteComment,
+  loading 
+}) => {
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-lg bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between p-6 border-b">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Intern Comments</h3>
+            <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex flex-col md:flex-row h-[calc(90vh-8rem)]">
+          {/* Add Comment Section */}
+          <div className="md:w-1/3 border-r p-6">
+            <h4 className="font-semibold text-gray-900 mb-4">Add New Comment</h4>
+            
+            <div className="space-y-4">
+              {/* Comment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Your Comment
+                </label>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add your feedback about this intern..."
+                  rows="6"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                />
+              </div>
+
+              <button
+                onClick={() => onSubmit(intern._id)}
+                disabled={!newComment.trim() || loading}
+                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <Send size={16} />
+                    Submit Comment
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Comments List */}
+          <div className="md:w-2/3 p-6 overflow-y-auto">
+            <h4 className="font-semibold text-gray-900 mb-4">
+              Previous Comments ({intern.comments ? intern.comments.length : 0})
+            </h4>
+
+            {!intern.comments || intern.comments.length === 0 ? (
+              <div className="text-center py-12">
+                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No comments yet for this intern.</p>
+                <p className="text-gray-400 text-sm mt-1">Be the first to add a comment!</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {intern.comments.map((comment) => (
+                  <CommentCard 
+                    key={comment._id} 
+                    comment={comment} 
+                    internId={intern._id}
+                    onDelete={onDeleteComment}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Comment Card Component
+const CommentCard = ({ comment, internId, onDelete }) => {
+  const canDelete = true; // You can add logic to check if current user can delete
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            IC
+          </div>
+          <div>
+            <h4 className="font-medium text-gray-900 text-sm">
+              Intern Incharge 
+            </h4>
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Calendar size={12} />  
+              {new Date(comment.date).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {canDelete && (
+            <button
+              onClick={() => onDelete(internId, comment._id)}
+              className="text-red-500 hover:text-red-700 transition-colors"
+              title="Delete comment"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+      
+      <p className="text-gray-700 text-sm">{comment.text}</p>
     </div>
   );
 };

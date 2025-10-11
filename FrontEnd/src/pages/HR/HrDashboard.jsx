@@ -43,7 +43,7 @@ const HRDashboard = () => {
       setTimeout(() => setError(""), 3000);
       return;
     }
-    
+
     setUpdating(internId);
     try {
       await axios.put(
@@ -65,7 +65,7 @@ const HRDashboard = () => {
       setTimeout(() => setError(""), 3000);
       return;
     }
-    
+
     setUpdating(internId);
     try {
       await axios.put(
@@ -87,7 +87,7 @@ const HRDashboard = () => {
       setTimeout(() => setError(""), 3000);
       return;
     }
-    
+
     setUpdating(internId);
     try {
       await axios.put(
@@ -477,8 +477,8 @@ const HRDashboard = () => {
               <button
                 onClick={() => setShowSelectedOnly(!showSelectedOnly)}
                 className={`border rounded-xl px-4 py-3 font-medium transition-all duration-200 ${showSelectedOnly
-                    ? 'bg-green-100 text-green-800 border-green-300'
-                    : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                  ? 'bg-green-100 text-green-800 border-green-300'
+                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                   }`}
               >
                 {showSelectedOnly ? '✅ Showing Selected' : '👥 Show All'}
@@ -538,13 +538,12 @@ const HRDashboard = () => {
                   {filteredInterns.map((intern) => {
                     const hasUniqueId = !!intern.uniqueId;
                     const isLocked = hasUniqueId;
-                    
+
                     return (
                       <tr
                         key={intern._id}
-                        className={`hover:bg-indigo-50 transition-colors duration-150 ${
-                          isLocked ? 'bg-yellow-50' : ''
-                        }`}
+                        className={`hover:bg-indigo-50 transition-colors duration-150 ${isLocked ? 'bg-yellow-50' : ''
+                          }`}
                       >
                         {/* Name & Email */}
                         <td className="p-4">
@@ -604,13 +603,15 @@ const HRDashboard = () => {
                             value={intern.status}
                             onChange={(e) => handleStatusUpdate(intern._id, e.target.value, hasUniqueId)}
                             disabled={updating === intern._id || isLocked}
-                            className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${
-                              isLocked ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                            className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${isLocked ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                           >
                             <option value="Applied">Applied</option>
                             <option value="Selected">Selected</option>
                             <option value="Rejected">Rejected</option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Completed">Completed</option>
                           </select>
                           {isLocked && (
                             <div className="text-xs text-yellow-600 mt-1 no-print">
@@ -630,9 +631,8 @@ const HRDashboard = () => {
                             value={intern.performance}
                             onChange={(e) => handlePerformanceUpdate(intern._id, e.target.value, hasUniqueId)}
                             disabled={updating === intern._id || isLocked}
-                            className={`${getPerformanceColor(intern.performance)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${
-                              isLocked ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                            className={`${getPerformanceColor(intern.performance)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${isLocked ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                           >
                             <option value="Average">Average</option>
                             <option value="Good">Good</option>
@@ -656,9 +656,8 @@ const HRDashboard = () => {
                             value={intern.domain}
                             onChange={(e) => handleDomainUpdate(intern._id, e.target.value, hasUniqueId)}
                             disabled={updating === intern._id || isLocked}
-                            className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${
-                              isLocked ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
+                            className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${isLocked ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                           >
                             <option>Sales & Marketing</option>
                             <option>Email Outreaching</option>
