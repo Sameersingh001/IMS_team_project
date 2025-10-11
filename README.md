@@ -1,138 +1,180 @@
-# Graphura Intern Management System (IMS)
-
-![Graphura Logo](GraphuraLogo.jpg)
----
-
-## Project Overview
-
-The **Graphura Intern Management System (IMS)** is a web-based platform designed to automate and streamline the management of interns in an organization. This system provides HR personnel, Admins, and Managers with tools to efficiently manage intern data, track performance, generate reports, and communicate important updates.
-
-The project is a **group project** developed as part of our academic curriculum to showcase real-world software development practices, teamwork, and full-stack development skills.
+Perfect 👍
+Here’s a **visually styled, professional, and modern “pretty” README.md** — with emojis, formatting, and GitHub-friendly visuals.
+It’s optimized to look **great in GitHub or VS Code preview**.
 
 ---
 
-## Project Objectives
+````markdown
+<h1 align="center">🌟 Intern Management System</h1>
 
-* To create a centralized platform for managing interns.
-* To automate intern onboarding and performance tracking.
-* To reduce manual paperwork and administrative workload.
-* To provide HR and Admins with an easy-to-use dashboard for monitoring intern progress.
-* To integrate communication tools for sending notifications and updates.
-
----
-
-## Features
-
-### Admin Panel
-
-* Add, update, and delete intern records.
-* Assign interns to departments or teams.
-* Track intern progress and performance.
-* Generate reports in PDF format (e.g., Offer Letters, Evaluation Reports).
-
-### HR Dashboard
-
-* View all interns with search and filter options.
-* Monitor intern performance metrics.
-* Send notifications to interns via email or WhatsApp (Twilio integration).
-
-### Intern Panel
-
-* View personal information and assigned tasks.
-* Track performance and feedback.
-* Submit reports and request leave.
-
-### Authentication & Authorization
-
-* Role-based access control: Admin, HR, and Intern roles.
-* JWT-based authentication for secure login.
-
-### Communication
-
-* Real-time notifications.
-* Integration with WhatsApp API (Twilio).
-* Email notifications for important updates.
+<p align="center">
+  A complete role-based web platform for managing interns efficiently — with Admin, HR, and Incharge dashboards, secure authentication, offer letter automation, and real-time performance tracking.
+</p>
 
 ---
 
-## Technologies Used
+## 🧩 Overview
 
-### Frontend
-
-* **React.js** – For building dynamic user interfaces.
-* **HTML5, CSS3, and JavaScript** – Core web technologies.
-* **Tailwind CSS** – For responsive and modern UI.
-* **React Router** – For client-side routing.
-* **Axios** – For API requests.
-
-### Backend
-
-* **Node.js & Express.js** – Server-side logic and RESTful APIs.
-* **MongoDB & Mongoose** – Database for storing intern, HR, and admin data.
-* **JWT (JSON Web Token)** – Authentication and authorization.
-* **Twilio API** – WhatsApp notifications.
-
-### Tools & Libraries
-
-* **VS Code** – IDE for development.
-* **Postman** – API testing.
-* **Git & GitHub** – Version control and collaboration.
+The **Intern Management System** simplifies intern tracking and evaluation for organizations.  
+It features **secure login**, **role-based dashboards**, and **automated offer letter generation** — ensuring a smooth workflow between Admin, HR, and Incharges.
 
 ---
 
-## System Architecture
+## 🚀 Core Functionalities
 
-The system follows a **client-server architecture**:
-
-1. **Frontend (React)**: Interacts with users and sends API requests.
-2. **Backend (Node.js & Express)**: Handles requests, processes business logic, and communicates with the database.
-3. **Database (MongoDB)**: Stores all intern, HR, and admin data securely.
-4. **External APIs**: Twilio/Meta API for messaging and notifications.
-
-**Diagram:**
-
-```
-[User] ---> [React Frontend] ---> [Express Backend] ---> [MongoDB Database]
-                        |
-                        ---> [Twilio/Meta API for WhatsApp]
-```
+### 🔐 Authentication & Authorization
+- Role-based Login & Registration: **Intern**, **HR**, **Incharge**
+- **Incharge registration** requires a **secret key**
+- Interns can’t log in until verified by Admin or HR
+- Forgot password system with **email verification** and **reset link**
 
 ---
 
-## Setup and Installation
+### 🧭 Incharge Dashboard
+- View and manage interns by department  
+- Track total interns (**Active / Inactive**)  
+- Manage **only active interns**  
+- No access to HR or Admin sections  
 
-### Prerequisites
+---
 
-* Node.js (v18+)
-* MongoDB Atlas or local instance
-* NPM or Yarn
-* Git
+### 🧾 HR Dashboard
+- Update intern **performance** and **application status** (`Applied`, `Selected`, `Rejected`)
+- Marking performance as **Good** or **Excellent** forwards data to Admin
+- Add comments or reviews on each intern
+- HR cannot modify records once an **offer letter** is generated
 
-### Steps
-```
-PORT=8000
-MONGODB_URL=<your_mongodb_connection_string>
-JWT_SECRET=<your_jwt_secret>
-TWILIO_ACCOUNT_SID=<your_twilio_sid>
-TWILIO_AUTH_TOKEN=<your_twilio_token>
-TWILIO_PHONE_NUMBER=<your_twilio_number>
+---
+
+### 🛠️ Admin Dashboard
+- Full **CRUD operations** on intern data
+- Generate **Offer Letters (PDF)** automatically
+- Send **personalized offer letters via email**
+- Manage **HR and Incharge accounts**
+- Assign, update, or remove **departments**
+- Track **HR activity logs** and performance updates
+
+---
+
+### 📧 Automated Email System
+- Auto-sends personalized emails with attached **PDF Offer Letters**
+- Uses a **professional Graphura-style email template**
+- Triggered when an offer letter is generated
+
+---
+
+### 🔒 Security Features
+- Passwords securely hashed using **bcrypt**
+- **JWT authentication** for role-based access
+- **Email verification** for secure registration and password resets
+- Data becomes **locked after offer letter generation**
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|-------|-------------|
+| Frontend | React.js |
+| Backend | Node.js + Express.js |
+| Database | MongoDB |
+| Authentication | JWT + bcrypt |
+| Email Service | Nodemailer |
+| PDF Generation | pdfkit / jsPDF |
+
+---
+
+## ⚙️ Setup & Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/intern-management-system.git
+
+# Move into project directory
+cd IMS_team_project
+
+# Install backend dependencies
+cd BackEnd
+npm install
+
+# Install frontend dependencies
+cd ../FrontEnd
+npm install
+````
+
+---
+
+## ▶️ Run the Application
+
+### Start Backend Server
+
+```bash
+cd BackEnd
+npm run dev
 ```
 
+### Start Frontend App
+
+```bash
+cd FrontEnd
+npm start
 ```
 
-7. Open your browser at `http://localhost:8000` to see the application.
+---
+
+## 👨‍💼 Roles & Permissions
+
+| Role         | Access Level     | Description                                   |
+| ------------ | ---------------- | --------------------------------------------- |
+| **Admin**    | 🔥 Full Access   | Manage HRs, Incharges, and all intern data    |
+| **HR**       | 🧾 Medium        | Evaluate interns, update performance & status |
+| **Incharge** | 🧭 Limited       | Manage only assigned interns (Active only)    |
+| **Intern**   | 👩‍🎓 Restricted | View offer letter and updates                 |
 
 ---
 
-## How to Use
+## 📦 Folder Structure
 
-1. Admin/HR logs in using assigned credentials.
-2. Admin can add new interns, assign tasks, and generate reports.
-3. HR can track intern performance and communicate important updates.
-4. Interns can view tasks, submit reports, and receive notifications.
+```
+intern-management-system/
+│
+├── client/                 # Frontend (React+tailwind)
+│   ├── src/
+│   └── public/
+│
+├── server/                 # Backend (Node + Express)
+│   ├── config/
+│   ├── models/
+│   ├── routes/
+│   ├── controllers/
+│   └── middlewares/
+│
+└── README.md
+```
 
 ---
 
-## License
+## 🧠 Future Enhancements
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+* 📊 Analytics Dashboard for Admin
+* 💬 Real-time messaging between HR and Incharges
+* ☁️ Cloud storage for intern documents
+* 🔔 Notification system (email + in-app)
+
+---
+
+## 💡 Developed By
+
+**Sameer Singh**
+🚀 Built with dedication and modern MERN stack architecture.
+
+---
+
+## 🪪 License
+
+This project is licensed under the **MIT License**.
+
+---
+
+<p align="center">✨ “Empowering organizations to manage interns efficiently and securely.” ✨</p>
+```
