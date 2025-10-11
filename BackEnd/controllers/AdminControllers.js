@@ -390,6 +390,32 @@ export const updateJoiningDate = async (req, res) => {
 
 
 
+export const updateDuration = async (req, res)=>{
+   try {
+    const { id } = req.params;
+    const { duration } = req.body;
+
+    const intern = await Intern.findByIdAndUpdate(
+      id,
+      { duration },
+      { new: true }
+    );
+
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
+
+    res.status(200).json({
+      message: "Duration updated successfully",
+      intern
+    });
+  } catch (error) {
+    console.error("Error updating duration:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+
 export const InternIncharges = async (req, res)=>{
     try {
     const incharges = await InternIncharge.find().select("-password"); // exclude password

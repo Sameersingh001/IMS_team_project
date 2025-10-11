@@ -15,6 +15,8 @@ const InternDetail = ({ role }) => {
   const [editingComment, setEditingComment] = useState(false);
   const [editingJoiningDate, setEditingJoiningDate] = useState(false);
   const [joiningDate, setJoiningDate] = useState("");
+  const [editingDuration, setEditingDuration] = useState(false);
+  const [duration, setDuration] = useState("");
   const navigate = useNavigate();
 
   const isAdmin = role === "Admin";
@@ -31,6 +33,9 @@ const InternDetail = ({ role }) => {
       }
       if (intern.joiningDate) {
         setJoiningDate(intern.joiningDate);
+      }
+      if (intern.duration) {
+        setDuration(intern.duration);
       }
     }
   }, [intern]);
@@ -121,6 +126,28 @@ const InternDetail = ({ role }) => {
     setUpdating(false);
   };
 
+  const handleDurationUpdate = async () => {
+    if (!isAdmin) return;
+
+    setUpdating(true);
+    try {
+      await axios.put(
+        `/api/admin/interns/${id}/duration`,
+        { duration: duration },
+        { withCredentials: true }
+      );
+
+      setIntern(prev => ({ ...prev, duration: duration }));
+      setEditingDuration(false);
+      setUpdateSuccess("Duration updated successfully!");
+      setTimeout(() => setUpdateSuccess(""), 3000);
+    } catch (err) {
+      console.error("Error updating duration:", err);
+      setError("Failed to update duration");
+    }
+    setUpdating(false);
+  };
+
   const handleJoiningDateUpdate = async () => {
     if (!isAdmin) return;
 
@@ -175,11 +202,21 @@ const InternDetail = ({ role }) => {
       return;
     }
 
+    // Check if duration is set
+    if (!duration) {
+      setError("Please set a duration before generating offer letter");
+      setTimeout(() => setError(""), 5000);
+      return;
+    }
+
     setGeneratingOffer(true);
     try {
       const response = await axios.post(
         `/api/admin/interns/${id}/generate-offer-letter`,
-        { joiningDate: joiningDate },
+        { 
+          joiningDate: joiningDate,
+          duration: duration 
+        },
         {
           withCredentials: true,
           responseType: 'blob'
@@ -495,6 +532,72 @@ const InternDetail = ({ role }) => {
               )}
             </div>
 
+            {/* Duration Card - Admin Only */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  ⏱️ Internship Duration
+                </h3>
+                {!editingDuration ? (
+                  <div className="space-y-3">
+                    <div className={`border-2 rounded-xl p-4 text-center ${duration ? "bg-blue-50 border-blue-200" : "bg-yellow-50 border-yellow-200"}`}>
+                      <div className="text-3xl mb-2">⏱️</div>
+                      <div className="text-xl font-bold">
+                        {duration || "Not Set"}
+                      </div>
+                      <div className="text-sm opacity-75 mt-1">
+                        {duration ? "Duration set" : "Required for offer letter"}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setEditingDuration(true)}
+                      className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      ✏️ {duration ? "Edit Duration" : "Set Duration"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <select
+                      value={duration}
+                      onChange={(e) => setDuration(e.target.value)}
+                      className="w-full border-2 border-gray-300 rounded-xl p-3 text-center font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select Duration</option>
+                      <option value="1 month">1 Month</option>
+                      <option value="3 months">3 Months</option>
+                      <option value="6 months">6 Months</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingDuration(false);
+                          setDuration(intern.duration || "");
+                        }}
+                        className="flex-1 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDurationUpdate}
+                        disabled={updating || !duration}
+                        className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {updating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Duration"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Joining Date Card - Admin Only */}
             {isAdmin && (
               <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -566,8 +669,8 @@ const InternDetail = ({ role }) => {
                 </h3>
                 <button
                   onClick={generateOfferLetter}
-                  disabled={generatingOffer || intern.status !== "Selected" || !joiningDate}
-                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${intern.status === "Selected" && joiningDate
+                  disabled={generatingOffer || intern.status !== "Selected" || !joiningDate || !duration}
+                  className={`w-full py-3 px-4 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 ${intern.status === "Selected" && joiningDate && duration
                     ? "bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     } ${generatingOffer ? "opacity-50" : ""}`}
@@ -584,6 +687,11 @@ const InternDetail = ({ role }) => {
                 {!joiningDate && (
                   <p className="text-sm text-yellow-600 mt-2 text-center">
                     Please set joining date first
+                  </p>
+                )}
+                {!duration && (
+                  <p className="text-sm text-yellow-600 mt-2 text-center">
+                    Please set duration first
                   </p>
                 )}
                 {intern.status !== "Selected" && (
@@ -698,6 +806,16 @@ const InternDetail = ({ role }) => {
                               <option>Front-end Developer</option>
                               <option>Back-end Developer</option>
                             </select>
+                          ) : label === "Duration" && isAdmin ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-800 font-medium">{value || "Not specified"}</span>
+                              <button
+                                onClick={() => setEditingDuration(true)}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                ✏️ Edit
+                              </button>
+                            </div>
                           ) : (
                             <div className={`text-gray-800 font-medium ${!value ? 'text-gray-400' : ''}`}>
                               {value || "Not specified"}
@@ -706,7 +824,6 @@ const InternDetail = ({ role }) => {
                         </div>
                       </div>
                     </div>
-
                   ))}
 
                   {isAdmin && intern.updatedByHR && (
@@ -718,9 +835,6 @@ const InternDetail = ({ role }) => {
                 </div>
               </div>
             </div>
-
-
-
 
             {/* Comment Section */}
             <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
@@ -845,8 +959,8 @@ const InternDetail = ({ role }) => {
             {isAdmin && (
               <button
                 onClick={generateOfferLetter}
-                disabled={generatingOffer || intern.status !== "Selected" || !joiningDate}
-                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected" && joiningDate
+                disabled={generatingOffer || intern.status !== "Selected" || !joiningDate || !duration}
+                className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors ${intern.status === "Selected" && joiningDate && duration
                   ? "bg-purple-600 hover:bg-purple-700 text-white"
                   : "bg-gray-400 text-gray-600 cursor-not-allowed"
                   }`}

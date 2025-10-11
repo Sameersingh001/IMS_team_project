@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/AuthVerify.js"
 import { logoutUser } from "../controllers/AuthController.js";
-import { getAllInterns, getInternById, updateDomain, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR} from "../controllers/AdminControllers.js";
+import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR} from "../controllers/AdminControllers.js";
 
 
 const router = express.Router();
@@ -22,6 +22,9 @@ router.put("/admin/interns/:id/status",verifyToken, updateStatus);
 router.put("/admin/interns/:id/performance", verifyToken, updatePerformance);
 router.put("/admin/interns/:id/domain",verifyToken, updateDomain);
 router.put("/admin/interns/:id/joining-date", verifyToken,updateJoiningDate )
+router.put("/admin/interns/:id/duration", verifyToken,updateDuration )
+
+
 router.post("/admin/logout", verifyToken, logoutUser)
 router.post("/admin/interns/:id/generate",verifyToken, generateOfferLetterWithPNG)
 
