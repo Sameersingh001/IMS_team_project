@@ -1,15 +1,8 @@
-Perfect 👍
-Here’s a **visually styled, professional, and modern “pretty” README.md** — with emojis, formatting, and GitHub-friendly visuals.
-It’s optimized to look **great in GitHub or VS Code preview**.
-
----
 
 ````markdown
-<h1 align="center">🌟 Intern Management System</h1>
+## 🌟 Intern Management System
 
-<p align="center">
   A complete role-based web platform for managing interns efficiently — with Admin, HR, and Incharge dashboards, secure authentication, offer letter automation, and real-time performance tracking.
-</p>
 
 ---
 
