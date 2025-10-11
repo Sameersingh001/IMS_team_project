@@ -12,7 +12,6 @@ The **Intern Management System** simplifies intern tracking and evaluation for o
 It features **secure login**, **role-based dashboards**, and **automated offer letter generation** — ensuring a smooth workflow between Admin, HR, and Incharges.
 
 ---
-
 ## 🚀 Core Functionalities
 
 ### 🔐 Authentication & Authorization
