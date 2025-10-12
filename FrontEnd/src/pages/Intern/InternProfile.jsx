@@ -12,22 +12,29 @@ const InternDetail = ({ role }) => {
   const [updateSuccess, setUpdateSuccess] = useState("");
   const [generatingOffer, setGeneratingOffer] = useState(false);
   const [hrComment, setHrComment] = useState("");
-  const [editingComment, setEditingComment] = useState(false);
+  const [hrCommentStage, setHrCommentStage] = useState("Resume Shortlisted");
   const [editingJoiningDate, setEditingJoiningDate] = useState(false);
   const [joiningDate, setJoiningDate] = useState("");
   const [editingDuration, setEditingDuration] = useState(false);
   const [duration, setDuration] = useState("");
   const [inchargeComments, setInchargeComments] = useState([]);
+  const [hrComments, setHrComments] = useState([]);
   const [showInchargeComments, setShowInchargeComments] = useState(false);
+  const [showHrComments, setShowHrComments] = useState(false);
   const navigate = useNavigate();
 
   const isAdmin = role === "Admin";
   const isHR = role === "HR";
 
+  const hrStages = ['Resume Shortlisted', 'Interviewing', 'Telephonic', 'Emailing', 'Selected'];
+
   useEffect(() => {
     fetchIntern();
     if (isAdmin) {
       fetchInchargeComments();
+      fetchHrComments();
+    } else if (isHR) {
+      fetchHrComments();
     }
   }, [id]);
 
@@ -72,6 +79,21 @@ const InternDetail = ({ role }) => {
     }
   };
 
+  const fetchHrComments = async () => {
+    try {
+      const endpoint = isAdmin 
+        ? `/api/admin/interns/${id}/hr-comments`
+        : `/api/hr/interns/${id}/hr-comments`;
+      
+      const response = await axios.get(endpoint, {
+        withCredentials: true,
+      });
+      setHrComments(response.data.hrComments || []);
+    } catch (err) {
+      console.error("Error fetching HR comments:", err);
+    }
+  };
+
   const handleDeleteInchargeComment = async (commentId) => {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
 
@@ -90,10 +112,56 @@ const InternDetail = ({ role }) => {
     }
   };
 
+  const handleAddHrComment = async () => {
+    if (!isHR || !hrComment.trim()) return;
+
+    setUpdating(true);
+    try {
+      await axios.post(
+        `/api/hr/interns/${id}/hr-comments`,
+        { 
+          text: hrComment,
+          stage: hrCommentStage 
+        },
+        { withCredentials: true }
+      );
+
+      setHrComment("");
+      setHrCommentStage("Resume Shortlisted");
+      setUpdateSuccess("HR comment added successfully!");
+      setTimeout(() => setUpdateSuccess(""), 3000);
+      
+      // Refresh comments
+      fetchHrComments();
+    } catch (err) {
+      console.error("Error adding HR comment:", err);
+      setError(err.response?.data?.message || "Failed to add comment");
+    }
+    setUpdating(false);
+  };
+
+  const handleDeleteHrComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const endpoint = isHR 
+        ? `/api/hr/interns/${id}/hr-comments/${commentId}`
+        : `/api/admin/interns/${id}/hr-comments/${commentId}`;
+
+      await axios.delete(endpoint, { withCredentials: true });
+
+      setHrComments(prev => prev.filter(comment => comment._id !== commentId));
+      setUpdateSuccess("HR comment deleted successfully!");
+      setTimeout(() => setUpdateSuccess(""), 3000);
+    } catch (err) {
+      console.error("Error deleting HR comment:", err);
+      setError(err.response?.data?.message || "Failed to delete comment");
+    }
+  };
+
   const handleStatusUpdate = async (newStatus) => {
     if (!isAdmin) return;
 
-    // Check if trying to set to Active/Inactive/Completed without unique ID
     if (["Active", "Inactive", "Completed"].includes(newStatus) && !intern.uniqueId) {
       setError("Cannot set status to Active/Inactive/Completed without generating Unique ID first. Please generate offer letter to create Unique ID.");
       setTimeout(() => setError(""), 5000);
@@ -204,39 +272,16 @@ const InternDetail = ({ role }) => {
     setUpdating(false);
   };
 
-  const handleCommentUpdate = async () => {
-    if (!isHR) return;
-
-    setUpdating(true);
-    try {
-      await axios.put(
-        `/api/hr/interns/${id}/comment`,
-        { comment: hrComment },
-        { withCredentials: true }
-      );
-
-      setIntern(prev => ({ ...prev, comment: hrComment }));
-      setEditingComment(false);
-      setUpdateSuccess("Comment updated successfully!");
-      setTimeout(() => setUpdateSuccess(""), 3000);
-    } catch (err) {
-      console.error("Error updating comment:", err);
-      setError("Failed to update comment");
-    }
-    setUpdating(false);
-  };
 
   const generateOfferLetter = async () => {
     if (!isAdmin) return;
 
-    // Check if joining date is set
     if (!joiningDate) {
       setError("Please set a joining date before generating offer letter");
       setTimeout(() => setError(""), 5000);
       return;
     }
 
-    // Check if duration is set
     if (!duration) {
       setError("Please set a duration before generating offer letter");
       setTimeout(() => setError(""), 5000);
@@ -257,7 +302,6 @@ const InternDetail = ({ role }) => {
         }
       );
 
-      // Create blob link and download
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -268,7 +312,6 @@ const InternDetail = ({ role }) => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      // Fetch updated intern data to get the generated unique ID
       await fetchIntern();
 
       setUpdateSuccess("Offer letter generated successfully! Unique ID has been created.");
@@ -322,9 +365,12 @@ const InternDetail = ({ role }) => {
     }
   };
 
-  // Check if status can be changed to Active/Inactive/Completed
   const canChangeToWorkStatus = (status) => {
     return ["Active", "Inactive", "Completed"].includes(status) && !intern.uniqueId;
+  };
+
+  const getHrCommentCount = () => {
+    return hrComments.length;
   };
 
   const getInchargeCommentCount = () => {
@@ -386,7 +432,6 @@ const InternDetail = ({ role }) => {
     );
   }
 
-  // Group details into categories
   const personalDetails = [
     { label: "Full Name", value: intern.fullName, icon: "👤" },
     { label: "Email", value: intern.email, icon: "📧", isLink: true, href: `mailto:${intern.email}` },
@@ -427,10 +472,19 @@ const InternDetail = ({ role }) => {
                     Unique ID: {intern.uniqueId}
                   </p>
                 )}
-                {isAdmin && getInchargeCommentCount() > 0 && (
-                  <p className="text-sm text-blue-600 font-medium mt-1">
-                    {getInchargeCommentCount()} incharge comment{getInchargeCommentCount() !== 1 ? 's' : ''}
-                  </p>
+                {isAdmin && (
+                  <div className="flex gap-4 mt-1">
+                    {getHrCommentCount() > 0 && (
+                      <p className="text-sm text-purple-600 font-medium">
+                        {getHrCommentCount()} HR comment{getHrCommentCount() !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {getInchargeCommentCount() > 0 && (
+                      <p className="text-sm text-blue-600 font-medium">
+                        {getInchargeCommentCount()} incharge comment{getInchargeCommentCount() !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -704,7 +758,33 @@ const InternDetail = ({ role }) => {
               </div>
             )}
 
-            {/* Admin Only - Incharge Comments Quick View */}
+            {/* HR Comments Quick View - Admin Only */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  💼 HR Comments
+                </h3>
+                <div className="space-y-3">
+                  <div className={`border-2 rounded-xl p-4 text-center ${getHrCommentCount() > 0 ? "bg-purple-50 border-purple-200" : "bg-gray-50 border-gray-200"}`}>
+                    <div className="text-3xl mb-2">💼</div>
+                    <div className="text-xl font-bold">
+                      {getHrCommentCount()} Comment{getHrCommentCount() !== 1 ? 's' : ''}
+                    </div>
+                    <div className="text-sm opacity-75 mt-1">
+                      {getHrCommentCount() > 0 ? "From HR team" : "No HR comments yet"}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowHrComments(true)}
+                    className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  >
+                    💼 View HR Comments
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Incharge Comments Quick View - Admin Only */}
             {isAdmin && (
               <div className="bg-white rounded-2xl shadow-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -724,7 +804,7 @@ const InternDetail = ({ role }) => {
                     onClick={() => setShowInchargeComments(true)}
                     className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
                   >
-                    💬 View All Comments
+                    💬 View Incharge Comments
                   </button>
                 </div>
               </div>
@@ -905,140 +985,123 @@ const InternDetail = ({ role }) => {
               </div>
             </div>
 
-            {/* Comment Section - HR Comments */}
-            <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                💬 HR Comments
-                {isHR && (
-                  <span className="text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded-full ml-2">
-                    HR Only
-                  </span>
-                )}
-              </h3>
-
-              {/* HR - Edit Comment */}
-              {isHR && (
-                <div className="mb-6">
-                  {!editingComment ? (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <span className="font-medium text-gray-700">Current Comment:</span>
-                        <button
-                          onClick={() => setEditingComment(true)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          ✏️ Edit
-                        </button>
-                      </div>
-                      <p className="text-gray-700 whitespace-pre-wrap">
-                        {intern.comment || "No comment added yet."}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <textarea
-                        value={hrComment}
-                        onChange={(e) => setHrComment(e.target.value)}
-                        placeholder="Add your comments about this intern..."
-                        className="w-full border border-gray-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                        rows="4"
-                      />
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-500">
-                          {hrComment.length}/500 characters
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingComment(false);
-                              setHrComment(intern.comment || "");
-                            }}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleCommentUpdate}
-                            disabled={updating}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
-                          >
-                            {updating ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Saving...
-                              </>
-                            ) : (
-                              "Save Comment"
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Admin - View HR Comment Only */}
-              {isAdmin && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="font-medium text-gray-700">HR Comment:</span>
-                    <span className="text-xs text-blue-500 bg-blue-100 px-2 py-1 rounded-full">
-                      HR
-                    </span>
-                  </div>
-                  <p className="text-gray-700 whitespace-pre-wrap">
-                    {intern.comment || "No HR comment available."}
-                  </p>
-                  {!intern.comment && (
-                    <p className="text-gray-500 text-sm mt-2">
-                      HR hasn't added any comments yet.
-                    </p>
-                  )}
-
-                  {isAdmin && intern.updatedByHR && (
-                    <div className="mt-2 text-xs text-gray-500">
-                      Last comment updated by: {intern.updatedByHR.fullName} ({intern.updatedByHR.email})
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Admin Only - Incharge Comments Section */}
-            {isAdmin && (
+            {/* HR Comment Section - HR Can Add Comments */}
+            {isHR && (
               <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                  👥 Incharge Comments
-                  <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full ml-2">
-                    Admin View Only
+                  💼 Add HR Comment
+                  <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full ml-2">
+                    HR Only
                   </span>
                 </h3>
 
-                {/* Incharge Comments List */}
-                <div>
-                  <h4 className="font-medium text-gray-800 mb-3">
-                    Comments from Intern Incharges ({getInchargeCommentCount()})
-                  </h4>
-
-                  {inchargeComments.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-lg">
-                      <div className="text-4xl mb-3">💬</div>
-                      <p className="text-gray-500">No incharge comments yet.</p>
-                      <p className="text-gray-400 text-sm mt-1">Incharges will add comments from their dashboard.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {inchargeComments.map((comment) => (
-                        <InchargeCommentCard 
-                          key={comment._id} 
-                          comment={comment} 
-                          internId={intern._id}
-                          onDelete={handleDeleteInchargeComment}
-                        />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Stage
+                    </label>
+                    <select
+                      value={hrCommentStage}
+                      onChange={(e) => setHrCommentStage(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      {hrStages.map(stage => (
+                        <option key={stage} value={stage}>{stage}</option>
                       ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Comment
+                    </label>
+                    <textarea
+                      value={hrComment}
+                      onChange={(e) => setHrComment(e.target.value)}
+                      placeholder="Add your comments about this intern's progress..."
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      rows="4"
+                    />
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm text-gray-500">
+                        {hrComment.length}/500 characters
+                      </span>
+                      <button
+                        onClick={handleAddHrComment}
+                        disabled={updating || !hrComment.trim()}
+                        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {updating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Adding...
+                          </>
+                        ) : (
+                          "Add Comment"
+                        )}
+                      </button>
                     </div>
-                  )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* HR Comments Display - For HR to see their own comments */}
+            {isHR && hrComments.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                  💼 Your HR Comments
+                </h3>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {hrComments.map((comment) => (
+                    <HrCommentCard 
+                      key={comment._id} 
+                      comment={comment} 
+                      onDelete={handleDeleteHrComment}
+                      isHR={isHR}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* HR Comments Display - For Admin to see all HR comments */}
+            {isAdmin && hrComments.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                  💼 HR Comments
+                  <span className="text-sm text-purple-600 bg-purple-100 px-2 py-1 rounded-full ml-2">
+                    Admin View
+                  </span>
+                </h3>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {hrComments.map((comment) => (
+                    <HrCommentCard 
+                      key={comment._id} 
+                      comment={comment} 
+                      onDelete={isAdmin ? handleDeleteHrComment : null}
+                      isHR={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Incharge Comments Section - Admin Only */}
+            {isAdmin && inchargeComments.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+                <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                  👥 Incharge Comments
+                </h3>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {inchargeComments.map((comment) => (
+                    <InchargeCommentCard 
+                      key={comment._id} 
+                      comment={comment} 
+                      internId={intern._id}
+                      onDelete={handleDeleteInchargeComment}
+                    />
+                  ))}
                 </div>
               </div>
             )}
@@ -1075,10 +1138,18 @@ const InternDetail = ({ role }) => {
                 >
                   {generatingOffer ? "⏳ Generating..." : "📝 Offer Letter"}
                 </button>
+                {getHrCommentCount() > 0 && (
+                  <button
+                    onClick={() => setShowHrComments(true)}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
+                  >
+                    💼 HR Comments ({getHrCommentCount()})
+                  </button>
+                )}
                 {getInchargeCommentCount() > 0 && (
                   <button
                     onClick={() => setShowInchargeComments(true)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
                   >
                     💬 Incharge Comments ({getInchargeCommentCount()})
                   </button>
@@ -1095,9 +1166,43 @@ const InternDetail = ({ role }) => {
         </div>
       </div>
 
+      {/* HR Comments Modal */}
+      {showHrComments && isAdmin && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">HR Comments</h3>
+                <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
+              </div>
+              <button 
+                onClick={() => setShowHrComments(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+              <div className="space-y-4">
+                {hrComments.map((comment) => (
+                  <HrCommentCard 
+                    key={comment._id} 
+                    comment={comment} 
+                    onDelete={null}
+                    isHR={false}
+                    isModal={true}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Incharge Comments Modal */}
       {showInchargeComments && isAdmin && (
-        <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-lg bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-6 border-b">
               <div>
@@ -1132,6 +1237,113 @@ const InternDetail = ({ role }) => {
   );
 };
 
+// HR Comment Card Component
+const HrCommentCard = ({ comment, onDelete, isHR, isModal = false }) => {
+  const [hrUserDetails, setHrUserDetails] = useState(null);
+  const [loadingHrUser, setLoadingHrUser] = useState(false);
+
+  useEffect(() => {
+    if (comment.commentedBy && typeof comment.commentedBy === 'object') {
+      setHrUserDetails(comment.commentedBy);
+    } else if (comment.commentedBy) {
+      fetchHrUserDetails();
+    }
+  }, [comment.commentedBy]);
+
+  const fetchHrUserDetails = async () => {
+    try {
+      setLoadingHrUser(true);
+      const response = await axios.get(`/api/admin/users/${comment.commentedBy}`, {
+        withCredentials: true,
+      });
+      setHrUserDetails(response.data.user);
+    } catch (err) {
+      console.error('Error fetching HR user details:', err);
+    } finally {
+      setLoadingHrUser(false);
+    }
+  };
+
+  const getHrUserInitials = (name) => {
+    if (!name) return 'HR';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
+  const getHrUserName = () => {
+    if (hrUserDetails) {
+      return hrUserDetails.fullName;
+    }
+    return 'Loading...';
+  };
+
+  const getHrUserEmail = () => {
+    if (hrUserDetails) {
+      return hrUserDetails.email;
+    }
+    return '';
+  };
+
+  const getStageColor = (stage) => {
+    switch (stage) {
+      case 'Selected': return 'bg-green-100 text-green-800';
+      case 'Interviewing': return 'bg-blue-100 text-blue-800';
+      case 'Telephonic': return 'bg-purple-100 text-purple-800';
+      case 'Emailing': return 'bg-yellow-100 text-yellow-800';
+      case 'Resume Shortlisted': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className={`bg-gray-50 rounded-lg p-4 border border-gray-200 ${isModal ? 'border-2 border-purple-200' : ''}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+            {getHrUserInitials(getHrUserName())}
+          </div>
+          <div>
+            <h5 className="font-medium text-gray-900 text-sm">
+              {loadingHrUser ? 'Loading...' : getHrUserName()}
+            </h5>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`text-xs px-2 py-1 rounded-full ${getStageColor(comment.stage)}`}>
+                {comment.stage}
+              </span>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <span>📅</span>
+                {new Date(comment.date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+            {hrUserDetails && (
+              <div className="text-xs text-gray-400 mt-1">
+                {getHrUserEmail()}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {isHR && onDelete && (
+          <button
+            onClick={() => onDelete(comment._id)}
+            className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50"
+            title="Delete comment"
+          >
+            🗑️
+          </button>
+        )}
+      </div>
+      
+      <p className="text-gray-700 text-sm">{comment.text}</p>
+    </div>
+  );
+};
+
 // Incharge Comment Card Component
 const InchargeCommentCard = ({ comment, onDelete, isModal = false }) => {
   const [inchargeDetails, setInchargeDetails] = useState(null);
@@ -1142,8 +1354,6 @@ const InchargeCommentCard = ({ comment, onDelete, isModal = false }) => {
       fetchInchargeDetails();
     }
   }, [comment.commentedBy]);
-
-
 
   const fetchInchargeDetails = async () => {
     try {

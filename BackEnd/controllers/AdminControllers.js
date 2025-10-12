@@ -786,3 +786,25 @@ export const toggleApplicationStatus = async (req, res) => {
 };
 
 
+
+export const getHrCommentsForAdmin = async (req, res) => {
+  try {
+    const { id } = req.params; // Intern ID
+
+    // Find intern and populate HR who commented
+    const intern = await Intern.findById(id)
+      .populate("hrComments.commentedBy", "fullName email role");
+
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
+
+    res.status(200).json({
+      message: "HR comments fetched successfully (Admin view)",
+      hrComments: intern.hrComments || [],
+    });
+  } catch (err) {
+    console.error("Error fetching HR comments for Admin:", err);
+    res.status(500).json({ message: "Failed to fetch HR comments" });
+  }
+};

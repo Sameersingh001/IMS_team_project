@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const internSchema = new mongoose.Schema({
     fullName: {
-        type: String,   
+        type: String,
         required: true
     },
     email: {
@@ -84,55 +84,67 @@ const internSchema = new mongoose.Schema({
         default: 'Applied'
     },
     uniqueId: {
-        type:String,
+        type: String,
     },
     comment: {
-        type:String
+        type: String
     },
-    TpoName : {
-        type:String
+    TpoName: {
+        type: String
     },
-    TpoEmail : {
-        type:String
+    TpoEmail: {
+        type: String
     },
-    TpoNumber : {
-        type:String
+    TpoNumber: {
+        type: String
     },
-    joiningDate : {
-        type:String
+    joiningDate: {
+        type: String
     },
     updatedByHR: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // reference to the HR (User collection)
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User", // reference to the HR (User collection)
     },
+    hrComments: [
+        {
+            stage: {
+                type: String,
+                enum: ['Resume Shortlisted','Interviewing','Telephonic', 'Emailing', 'Selected',],
+                required: true
+            },
+            text: { type: String }, // optional notes
+            commentedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // HR user
+            date: { type: Date, default: Date.now }
+        }
+    ],
     updatedByIncharge: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "InternHead", // reference to the HR (User collection)
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "InternHead", // reference to the HR (User collection)
     },
     comments: [
-  {
-    text: {
-      type: String,
-      required: true,
-    },
-    commentedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "InternHead", // or "HR" / "Admin" / "Intern" depending on your logic
-    },
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-  },
-],
+        {
+            text: {
+                type: String,
+                required: true,
+            },
+            commentedBy: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "InternHead", // or "HR" / "Admin" / "Intern" depending on your logic
+            },
+            date: {
+                type: Date,
+                default: Date.now,
+            },
+        },
+    ],
 
 }, { timestamps: true });
 
 const Intern = mongoose.model('Intern', internSchema);
 export default Intern;
-    
-    
-    
 
-    
-   
+
+
+
+
+

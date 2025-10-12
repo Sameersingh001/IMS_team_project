@@ -142,26 +142,105 @@ export const updateDomain = async (req, res) => {
 };
 
 
-export const updateComment = async (req, res) =>{
-  try{
-    const {id} = req.params
-    const {comment} =  req.body
+export const addHrComment = async (req, res) => {
+  try {
+    const { id } = req.params; // intern id
+    const { text, stage } = req.body;
+    const hrId = req.user?.id; // HR id from JWT (if using auth middleware)
+
+    // Validate input
+    if (!text || !stage) {
+      return res.status(400).json({ message: "Stage and comment text are required" });
+    }
+
+    // Find intern and push new HR comment
     const intern = await Intern.findByIdAndUpdate(
       id,
       {
-        comment,
-        updatedByHR: id, // track which HR updated performance
+        $push: {
+          hrComments: {
+            text,
+            stage,
+            commentedBy: hrId,
+            date: new Date(),
+          },
+        },
+        updatedByHR: hrId,
       },
       { new: true }
-    ).populate("updatedByHR", "fullName email role");
+    )
+      .populate("hrComments.commentedBy", "fullName email role")
+      .populate("updatedByHR", "fullName email role");
 
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
 
-    if (!intern) return res.status(404).json({ message: "Intern not found" });
-
-    res.status(200).json({ message: "Comment updated successfully", intern });
-
-  }catch(err){
-    console.error("Error updating Comment:", err);
-    res.status(500).json({ message: "Failed to update domain" });
+    res.status(200).json({
+      message: "HR comment added successfully",
+      intern,
+    });
+  } catch (err) {
+    console.error("Error adding HR comment:", err);
+    res.status(500).json({ message: "Failed to add HR comment" });
   }
-}
+};
+
+
+export const getHrComments = async (req, res) => {
+  try {
+    const { id } = req.params; // Intern ID
+
+    // Find intern and populate HR comment authors
+    const intern = await Intern.findById(id)
+      .populate("hrComments.commentedBy", "fullName email role");
+
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
+
+    res.status(200).json({
+      message: "HR comments fetched successfully",
+      hrComments: intern.hrComments || [],
+    });
+  } catch (err) {
+    console.error("Error fetching HR comments:", err);
+    res.status(500).json({ message: "Failed to fetch HR comments" });
+  }
+};
+
+
+
+export const deleteHrComment = async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const hrId = req.user?.id; // Assuming JWT middleware provides logged-in HR ID
+
+    // Find intern
+    const intern = await Intern.findById(id);
+    if (!intern) {
+      return res.status(404).json({ message: "Intern not found" });
+    }
+
+    // Find the comment by its ID
+    const comment = intern.hrComments.id(commentId);
+    if (!comment) {
+      return res.status(404).json({ message: "HR comment not found" });
+    }
+
+    // Optional: Ensure only the HR who added it can delete
+    if (comment.commentedBy.toString() !== hrId) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
+
+    // Remove the comment
+    comment.deleteOne();
+
+    await intern.save();
+
+    res.status(200).json({ message: "HR comment deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting HR comment:", err);
+    res.status(500).json({ message: "Failed to delete HR comment" });
+  }
+};
