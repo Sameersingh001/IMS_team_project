@@ -1,5 +1,5 @@
 import express from "express";
-import {getAllInterns, getInternById, updatePerformance, updateStatus, updateDomain, addHrComment, getHrComments, deleteHrComment} from "../controllers/HrControllers.js";
+import {getAllInterns, getInternById, updatePerformance, updateStatus, updateDomain, addHrComment, getHrComments, deleteHrComment,deleteRejectMany} from "../controllers/HrControllers.js";
 import { verifyToken } from "../middlewares/AuthVerify.js";
 import { logoutUser } from "../controllers/AuthController.js";
 
@@ -13,6 +13,7 @@ router.put("/hr/interns/:id/domain", verifyToken, updateDomain);
 router.post("/hr/interns/:id/hr-comments", verifyToken, addHrComment)
 router.get("/hr/interns/:id/hr-comments", verifyToken, getHrComments)
 router.delete("/hr/interns/:id/hr-comments/:commentId", verifyToken, deleteHrComment)
+router.delete("/hr/interns/delete-rejected", verifyToken, deleteRejectMany)
 router.post("/logout", verifyToken, logoutUser);
 
 export default router;

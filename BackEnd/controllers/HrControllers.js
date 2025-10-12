@@ -244,3 +244,24 @@ export const deleteHrComment = async (req, res) => {
     res.status(500).json({ message: "Failed to delete HR comment" });
   }
 };
+
+
+
+
+export const deleteRejectMany = async (req, res)=>{
+    try {
+    const result = await Intern.deleteMany({ status: 'Rejected' });
+    
+    res.json({
+      success: true,
+      message: `Deleted ${result.deletedCount} rejected interns`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Error deleting rejected interns:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete rejected interns'
+    });
+  }
+}

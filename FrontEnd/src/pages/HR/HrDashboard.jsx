@@ -202,6 +202,35 @@ const HRDashboard = () => {
     setUpdating(null);
   };
 
+  const deleteRejectedInterns = async () => {
+  const confirmDelete = window.confirm(
+    "⚠️ Please make sure you have EXPORTED all Rejected intern data before deleting.\n\nAre you sure you want to delete all rejected interns? This action cannot be undone."
+  );
+
+  if (!confirmDelete) {
+    alert("✅ Deletion cancelled. Please export the data first if not done.");
+    return;
+  }
+
+    setLoading(true);
+    try {
+      await axios.delete("/api/hr/interns/delete-rejected", {
+        withCredentials: true
+      });
+
+      // Refresh the list to reflect changes
+      await fetchInterns();
+
+      setCopySuccess("✅ All rejected interns deleted successfully!");
+      setTimeout(() => setCopySuccess(""), 3000);
+    } catch (err) {
+      console.error("Error deleting rejected interns:", err);
+      setError("Failed to delete rejected interns");
+      setTimeout(() => setError(""), 3000);
+    }
+    setLoading(false);
+  };
+
   const handlePerformanceUpdate = async (internId, newPerformance,) => {
     setUpdating(internId);
     try {
@@ -469,8 +498,8 @@ const HRDashboard = () => {
                 onClick={exportToExcel}
                 disabled={exportLoading || (filteredInterns.length === 0 && interns.length === 0)}
                 className={`px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2 ${exportLoading || (filteredInterns.length === 0 && interns.length === 0)
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:from-green-600 hover:to-green-700'
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:from-green-600 hover:to-green-700'
                   }`}
               >
                 {exportLoading ? (
@@ -529,6 +558,8 @@ const HRDashboard = () => {
           </div>
         )}
 
+        
+
         {/* Main Content */}
         <div className="bg-white shadow-xl rounded-2xl p-6" ref={printRef}>
           {/* Filters Section */}
@@ -580,6 +611,29 @@ const HRDashboard = () => {
                 </div>
               </div>
             )}
+
+
+            {interns.some(i => i.status === "Rejected") ? (
+            <button
+              onClick={deleteRejectedInterns}
+              disabled={loading || interns.filter(i => i.status === 'Rejected').length === 0}
+              className={`px-6 py-2 mt-5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2 ${loading || interns.filter(i => i.status === 'Rejected').length === 0
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:from-red-600 hover:to-red-700'
+                }`}
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>🗑️ Delete Rejected</>
+              )}
+            </button>
+          ) : (
+            <div className="text-gray-500 italic"></div>
+          )}
 
             {/* Email Tools Panel */}
             {showEmailCopy && selectedCount > 0 && (
@@ -670,7 +724,6 @@ const HRDashboard = () => {
               </div>
             )}
           </div>
-
           {/* Intern Table */}
           {loading ? (
             <div className="flex justify-center items-center py-12">
@@ -692,7 +745,7 @@ const HRDashboard = () => {
                 <thead className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
                   <tr>
                     <th className="p-4 text-left font-semibold">Intern Details</th>
-                    <th className="p-4 text-left font-semibold">Contact Info</th>
+                    <th className="p-4 text-left font-semibold">Contact Info/apply Date</th>
                     <th className="p-4 text-left font-semibold">Domain & Duration</th>
                     <th className="p-4 text-left font-semibold">College Info</th>
                     <th className="p-4 text-left font-semibold">Status</th>
@@ -730,7 +783,9 @@ const HRDashboard = () => {
                         {/* Mobile Number */}
                         <td className="p-4">
                           <div className="text-gray-700 text-sm">
-                            {intern.mobile || "Not provided"}
+                            📞 {intern.mobile || "Not provided"}
+                            <p className="text-xs font-bold">Applied : {intern.updatedAt ? new Date(intern.updatedAt).toLocaleDateString() : "Not provided"}</p>
+
                           </div>
                         </td>
 
@@ -862,6 +917,7 @@ const HRDashboard = () => {
                               <FileText className="w-5 h-5" />
                               Resume
                             </a>
+
                           </div>
                         </td>
                       </tr>
