@@ -18,9 +18,14 @@ export const getAllInterns = async (req, res) => {
     // 🔍 Search query (case-insensitive)
     const searchQuery = {
       $or: [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { domain: { $regex: search, $options: "i" } },
+    { fullName: { $regex: search, $options: 'i' } },
+    { email: { $regex: search, $options: 'i' } },
+    { domain: { $regex: search, $options: 'i' } },
+    { college: { $regex: search, $options: 'i' } },
+    { course: { $regex: search, $options: 'i' } },
+    { educationLevel: { $regex: search, $options: 'i' } },
+    { uniqueId: { $regex: search, $options: 'i' } },
+    { mobile: { $regex: search, $options: 'i' } } // Also search in mobile
       ],
       performance: { $nin: ["Average", "Rejected"] }
     };
@@ -81,20 +86,27 @@ export const updateStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const intern = await Intern.findByIdAndUpdate(
-      id,
-      { status },
-      { new: true }
-    );
-
+    const intern = await Intern.findById(id);
     if (!intern) return res.status(404).json({ message: "Intern not found" });
 
+    // ✅ If intern is selected and joiningDate is not yet generated
+    if (status === "Selected" && !intern.joiningDate) {
+      const joinDate = new Date();
+      intern.joiningDate = joinDate.toISOString(); // store as string
+      intern.status = "Active"; // internship starts
+    } else if (status) {
+      // Update other statuses manually
+      intern.status = status;
+    }
+
+    await intern.save();
     res.status(200).json({ message: "Status updated successfully", intern });
   } catch (err) {
     console.error("Error updating status:", err);
     res.status(500).json({ message: "Failed to update status" });
   }
 };
+
 
 // Update intern performance
 export const updatePerformance = async (req, res) => {
@@ -152,52 +164,58 @@ export const deleteIntern = async (req, res) => {
 };
 
 
+const generateUniqueId = async () => {
+  const currentDate = new Date();
+  let candidateId;
+  let exists = true;
+
+  while (exists) {
+    candidateId = `GRAPHURA/${currentDate.getFullYear().toString().slice(2)}/${(
+      currentDate.getMonth() + 1
+    )
+      .toString()
+      .padStart(2, "0")}/${Math.floor(100 + Math.random() * 900)}`;
+
+    // Check if this ID already exists
+    const existing = await Intern.findOne({ uniqueId: candidateId });
+    if (!existing) exists = false;
+  }
+
+  return candidateId;
+};
+
 export const generateOfferLetterWithPNG = async (req, res) => {
   try {
     const { id } = req.params;
-    const { joiningDate } = req.body; // Get joining date from request body
+    const { joiningDate } = req.body;
 
     // 1️⃣ Find the intern
     const intern = await Intern.findById(id);
-    if (!intern) {
-      return res.status(404).json({ error: "Intern not found" });
-    }
+    if (!intern) return res.status(404).json({ error: "Intern not found" });
 
-    if (intern.status !== "Selected") {
-      return res.status(400).json({
-        error: "Offer letter can only be generated for selected interns",
-      });
-    }
+    if (intern.status !== "Selected")
+      return res
+        .status(400)
+        .json({ error: "Offer letter can only be generated for selected interns" });
 
-    // Validate joining date
-    if (!joiningDate) {
-      return res.status(400).json({
-        error: "Joining date is required to generate offer letter",
-      });
-    }
+    if (!joiningDate)
+      return res
+        .status(400)
+        .json({ error: "Joining date is required to generate offer letter" });
 
-    // Update intern's joining date in database
+    // Update joining date
     intern.joiningDate = new Date(joiningDate);
 
-    // 2️⃣ Use existing uniqueId if available, otherwise generate a new one
-    let uniqueId = intern.uniqueId;
-    const currentDate = new Date();
-
-    if (!uniqueId) {
-      uniqueId = `GRAPHURA/${currentDate.getFullYear().toString().slice(2)}/${(
-        currentDate.getMonth() + 1
-      )
-        .toString()
-        .padStart(2, "0")}/${Math.floor(100 + Math.random() * 900)}`;
-
-      intern.uniqueId = uniqueId;
+    // 2️⃣ Generate uniqueId if not already present
+    if (!intern.uniqueId) {
+      intern.uniqueId = await generateUniqueId();
     }
 
     await intern.save();
 
     // 3️⃣ Create PDF
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([595.28, 841.89]); // A4
+    const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
 
     const backgroundPath = path.join(
       process.cwd(),
@@ -220,7 +238,6 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       height: 841.89,
     });
 
-    // Text
     const formattedJoiningDate = new Date(joiningDate).toLocaleDateString("en-GB", {
       day: "numeric",
       month: "long",
@@ -306,19 +323,14 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     y -= 95;
     page.drawText("Unique ID:", { x: 75, y, size: 13, font: fontBold });
     y -= 15;
-    page.drawText(uniqueId, { x: 75, y, size: 14, font: fontBold });
-    // Add Joining Date to PDF
+    page.drawText(intern.uniqueId, { x: 75, y, size: 14, font: fontBold });
+
     y -= 15;
     page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
     page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
 
-    // 6️⃣ Save PDF
-    const outputDir = path.join(
-      process.cwd(),
-      "public",
-      "generated",
-      "offerletters"
-    );
+    // 4️⃣ Save PDF
+    const outputDir = path.join(process.cwd(), "public", "generated", "offerletters");
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
@@ -327,12 +339,12 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     const pdfBytes = await pdfDoc.save();
     fs.writeFileSync(filePath, pdfBytes);
 
-    // 7️⃣ Send email with attachment
+    // 5️⃣ Send email
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // Gmail App Password
+        pass: process.env.EMAIL_PASS,
       },
     });
 
@@ -354,17 +366,16 @@ Graphura India Private Limited
 🌐 www.graphura.online`,
       attachments: [
         {
-          filename: fileName, // OfferLetter-Sameer_Singh.pdf
-          path: filePath,     // Path to saved PDF
+          filename: fileName,
+          path: filePath,
         },
       ],
     });
 
-    // 8️⃣ Send PDF as response
+    // 6️⃣ Send PDF as response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.send(Buffer.from(pdfBytes));
-
   } catch (error) {
     console.error("Error generating offer letter:", error);
     res.status(500).json({ error: "Internal server error" });

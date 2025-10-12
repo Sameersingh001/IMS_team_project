@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Graphura from "../../../public/GraphuraLogo.jpg";
 import * as XLSX from "xlsx";
+import { Eye } from "lucide-react";
+
 
 const AdminDashboard = () => {
   const [interns, setInterns] = useState([]);
@@ -51,9 +53,9 @@ const AdminDashboard = () => {
         withCredentials: true,
       });
       setApplicationSettings(data.settings || { isApplicationOpen: true });
-    await fetchDepartmentIncharges();
-    await fetchHRManagers();
-    await fetchInterns(); // if you need intern count too
+      await fetchDepartmentIncharges();
+      await fetchHRManagers();
+      await fetchInterns(); // if you need intern count too
     } catch (err) {
       console.error("Error fetching settings:", err);
       setError("Failed to load application settings");
@@ -78,20 +80,20 @@ const AdminDashboard = () => {
       const newStatus = !applicationSettings.isApplicationOpen;
       await axios.put(
         "/api/admin/settings/application-status",
-        { 
+        {
           isApplicationOpen: newStatus,
-          password: password 
+          password: password
         },
         { withCredentials: true }
       );
-      
+
       setApplicationSettings(prev => ({
         ...prev,
         isApplicationOpen: newStatus
       }));
       setShowPasswordModal(false);
       setPassword("");
-      
+
       setCopySuccess(`Applications ${newStatus ? 'opened' : 'closed'} successfully!`);
       setTimeout(() => setCopySuccess(""), 3000);
     } catch (err) {
@@ -117,7 +119,7 @@ const AdminDashboard = () => {
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-    
+
     // Auto-size columns
     const maxWidth = columns.reduce((acc, col) => {
       acc[col.key] = Math.max(
@@ -126,41 +128,41 @@ const AdminDashboard = () => {
       );
       return acc;
     }, {});
-    
+
     worksheet['!cols'] = columns.map(col => ({ width: maxWidth[col.key] + 2 }));
-    
+
     XLSX.writeFile(workbook, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const exportInternsToExcel = () => {
-const columns = [
-  { key: 'fullName', header: 'Full Name', accessor: (intern) => intern.fullName || 'Not provided' },
-  { key: 'email', header: 'Email', accessor: (intern) => intern.email || 'Not provided' },
-  { key: 'mobile', header: 'Mobile', accessor: (intern) => intern.mobile || 'Not provided' },
-  { key: 'dob', header: 'Date of Birth', accessor: (intern) => intern.dob || 'Not provided' },
-  { key: 'gender', header: 'Gender', accessor: (intern) => intern.gender || 'Not provided' },
-  { key: 'state', header: 'State', accessor: (intern) => intern.state || 'Not provided' },
-  { key: 'city', header: 'City', accessor: (intern) => intern.city || 'Not provided' },
-  { key: 'address', header: 'Address', accessor: (intern) => intern.address || 'Not provided' },
-  { key: 'pinCode', header: 'Pin Code', accessor: (intern) => intern.pinCode || 'Not provided' },
-  { key: 'college', header: 'College', accessor: (intern) => intern.college || 'Not provided' },
-  { key: 'course', header: 'Course', accessor: (intern) => intern.course || 'Not provided' },
-  { key: 'educationLevel', header: 'Education Level', accessor: (intern) => intern.educationLevel || 'Not provided' },
-  { key: 'domain', header: 'Domain', accessor: (intern) => intern.domain || 'Not specified' },
-  { key: 'contactMethod', header: 'Contact Method', accessor: (intern) => intern.contactMethod || 'Not provided' },
-  { key: 'resumeUrl', header: 'Resume', accessor: (intern) => intern.resumeUrl || 'Not provided' },
-  { key: 'duration', header: 'Duration', accessor: (intern) => intern.duration || 'Not specified' },
-  { key: 'prevInternship', header: 'Previous Internship', accessor: (intern) => intern.prevInternship || 'No' },
-  { key: 'performance', header: 'Performance', accessor: (intern) => intern.performance || 'Average' },
-  { key: 'status', header: 'Status', accessor: (intern) => intern.status || 'Applied' },
-  { key: 'uniqueId', header: 'Unique ID', accessor: (intern) => intern.uniqueId || 'Not assigned' },
-  { key: 'TpoName', header: 'TPO Name', accessor: (intern) => intern.TpoName || '-' },
-  { key: 'TpoEmail', header: 'TPO Email', accessor: (intern) => intern.TpoEmail || '-' },
-  { key: 'TpoNumber', header: 'TPO Number', accessor: (intern) => intern.TpoNumber || '-' },
-  { key: 'joiningDate', header: 'Joining Date', accessor: (intern) => intern.joiningDate || '-' },
-  { key: 'createdAt', header: 'Applied Date', accessor: (intern) => new Date(intern.createdAt).toLocaleDateString() },
- 
-];
+    const columns = [
+      { key: 'fullName', header: 'Full Name', accessor: (intern) => intern.fullName || 'Not provided' },
+      { key: 'email', header: 'Email', accessor: (intern) => intern.email || 'Not provided' },
+      { key: 'mobile', header: 'Mobile', accessor: (intern) => intern.mobile || 'Not provided' },
+      { key: 'dob', header: 'Date of Birth', accessor: (intern) => intern.dob || 'Not provided' },
+      { key: 'gender', header: 'Gender', accessor: (intern) => intern.gender || 'Not provided' },
+      { key: 'state', header: 'State', accessor: (intern) => intern.state || 'Not provided' },
+      { key: 'city', header: 'City', accessor: (intern) => intern.city || 'Not provided' },
+      { key: 'address', header: 'Address', accessor: (intern) => intern.address || 'Not provided' },
+      { key: 'pinCode', header: 'Pin Code', accessor: (intern) => intern.pinCode || 'Not provided' },
+      { key: 'college', header: 'College', accessor: (intern) => intern.college || 'Not provided' },
+      { key: 'course', header: 'Course', accessor: (intern) => intern.course || 'Not provided' },
+      { key: 'educationLevel', header: 'Education Level', accessor: (intern) => intern.educationLevel || 'Not provided' },
+      { key: 'domain', header: 'Domain', accessor: (intern) => intern.domain || 'Not specified' },
+      { key: 'contactMethod', header: 'Contact Method', accessor: (intern) => intern.contactMethod || 'Not provided' },
+      { key: 'resumeUrl', header: 'Resume', accessor: (intern) => intern.resumeUrl || 'Not provided' },
+      { key: 'duration', header: 'Duration', accessor: (intern) => intern.duration || 'Not specified' },
+      { key: 'prevInternship', header: 'Previous Internship', accessor: (intern) => intern.prevInternship || 'No' },
+      { key: 'performance', header: 'Performance', accessor: (intern) => intern.performance || 'Average' },
+      { key: 'status', header: 'Status', accessor: (intern) => intern.status || 'Applied' },
+      { key: 'uniqueId', header: 'Unique ID', accessor: (intern) => intern.uniqueId || 'Not assigned' },
+      { key: 'TpoName', header: 'TPO Name', accessor: (intern) => intern.TpoName || '-' },
+      { key: 'TpoEmail', header: 'TPO Email', accessor: (intern) => intern.TpoEmail || '-' },
+      { key: 'TpoNumber', header: 'TPO Number', accessor: (intern) => intern.TpoNumber || '-' },
+      { key: 'joiningDate', header: 'Joining Date', accessor: (intern) => intern.joiningDate || '-' },
+      { key: 'createdAt', header: 'Applied Date', accessor: (intern) => new Date(intern.createdAt).toLocaleDateString() },
+
+    ];
 
 
     exportToExcel(filteredInterns, 'Interns_Report', columns);
@@ -624,14 +626,14 @@ const columns = [
                     onClick={() => navigate(`/Admin-Dashboard/incharge/${incharge._id}`)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm"
                   >
-                    View Details
+                    <Eye size={20} />
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(`incharge-${incharge._id}`)}
                     disabled={updating === incharge._id}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm disabled:opacity-50"
                   >
-                    🗑️ Delete
+                    🗑️
                   </button>
                 </div>
               </td>
@@ -695,7 +697,7 @@ const columns = [
                     disabled={updating === hr._id}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm disabled:opacity-50"
                   >
-                    🗑️ Delete
+                    🗑️
                   </button>
                 </div>
               </td>
@@ -712,7 +714,7 @@ const columns = [
       <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-200">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">Application Settings</h2>
         <p className="text-gray-600 mb-6">Control the application submission status and other system settings.</p>
-        
+
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
@@ -720,28 +722,26 @@ const columns = [
                 Internship Applications
               </h3>
               <p className="text-gray-600 text-sm">
-                {applicationSettings.isApplicationOpen 
+                {applicationSettings.isApplicationOpen
                   ? "Applications are currently OPEN for submissions"
                   : "Applications are currently CLOSED for submissions"
                 }
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                applicationSettings.isApplicationOpen 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-red-100 text-red-800"
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${applicationSettings.isApplicationOpen
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+                }`}>
                 {applicationSettings.isApplicationOpen ? "OPEN" : "CLOSED"}
               </span>
               <button
                 onClick={handleToggleApplication}
                 disabled={updatingSettings}
-                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  applicationSettings.isApplicationOpen
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-green-600 hover:bg-green-700 text-white"
-                } disabled:opacity-50`}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${applicationSettings.isApplicationOpen
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-green-600 hover:bg-green-700 text-white"
+                  } disabled:opacity-50`}
               >
                 {updatingSettings ? "Updating..." : applicationSettings.isApplicationOpen ? "Close Applications" : "Open Applications"}
               </button>
@@ -770,7 +770,7 @@ const columns = [
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl p-4 border">
             <h4 className="font-semibold text-gray-700 mb-2">Quick Actions</h4>
             <div className="space-y-2">
@@ -882,10 +882,10 @@ const columns = [
                 Confirm Application {applicationSettings.isApplicationOpen ? 'Closure' : 'Opening'}
               </h3>
               <p className="text-gray-600 mb-4">
-                You are about to {applicationSettings.isApplicationOpen ? 'close' : 'open'} internship applications. 
+                You are about to {applicationSettings.isApplicationOpen ? 'close' : 'open'} internship applications.
                 Please enter your admin password to continue.
               </p>
-              
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Admin Password
@@ -904,7 +904,7 @@ const columns = [
                   <p className="text-red-600 text-sm mt-1">{passwordError}</p>
                 )}
               </div>
-              
+
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => {
@@ -1059,7 +1059,7 @@ const columns = [
                   <div className="md:col-span-2">
                     <input
                       type="text"
-                      placeholder="🔍 Search by name, email, or domain..."
+                      placeholder="🔍 Search by name, email, domain, college, course, etc..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
@@ -1139,13 +1139,14 @@ const columns = [
                   <table className="min-w-full">
                     <thead className="bg-gradient-to-r from-purple-600 to-violet-600 text-white">
                       <tr>
-                        <th className="p-4 text-left font-semibold">Intern Details</th>
-                        <th className="p-4 text-left font-semibold">Contact Info</th>
-                        <th className="p-4 text-left font-semibold">Domain & Duration</th>
-                        <th className="p-4 text-left font-semibold">Status</th>
-                        <th className="p-4 text-left font-semibold">Performance</th>
-                        <th className="p-4 text-left font-semibold">Domain</th>
-                        <th className="p-4 text-left font-semibold no-print">Actions</th>
+                        <th className="p-4 text-center font-semibold">Intern Details</th>
+                        <th className="p-4 text-center font-semibold">Contact Info/Applied Date</th>
+                        <th className="p-4 text-center font-semibold">Domain & Duration</th>
+                        <th className="p-4 text-center font-semibold">College Info</th>
+                        <th className="p-4 text-center font-semibold">Status</th>
+                        <th className="p-4 text-center font-semibold">Performance</th>
+                        <th className="p-4 text-center font-semibold">Domain</th>
+                        <th className="p-4 text-center font-semibold no-print">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1160,6 +1161,9 @@ const columns = [
                           </td>
                           <td className="p-4">
                             <div className="text-gray-700">📞 {intern.mobile || "Not provided"}</div>
+                            <div className="text-gray-700">
+                              <p className="text-xs font-bold">Applied : {intern.updatedAt ? new Date(intern.updatedAt).toLocaleDateString() : "Not provided"}</p>
+                            </div>
                           </td>
                           <td className="p-4">
                             <div className="space-y-1">
@@ -1171,6 +1175,21 @@ const columns = [
                               </div>
                             </div>
                           </td>
+
+                          <td className="p-2 md:p-3">
+                            <div className="min-h-[36px] flex items-center">
+                              <div className="truncate-text-2-lines max-w-full">
+                                <span className={`
+                                 text-xs md:text-sm
+                                   ${intern.college ? "text-gray-600" : "text-gray-400 italic"}
+                                   transition-colors duration-100
+                                 `}>
+                                  {intern.college || "—"}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          
                           <td className="p-4">
                             <div className="print-only">
                               <span className={`status-badge status-${intern.status}`}>
@@ -1223,7 +1242,7 @@ const columns = [
                             >
                               <option>Sales & Marketing</option>
                               <option>Email Outreaching</option>
-                              <option>Journalism and Mass communication</option>
+                              <option>Journalism</option>
                               <option>Social Media Management</option>
                               <option>Graphic Design</option>
                               <option>Digital Marketing</option>
@@ -1240,14 +1259,14 @@ const columns = [
                                 onClick={() => navigate(`/Admin-Dashboard/intern/${intern._id}`)}
                                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium text-sm"
                               >
-                                View Details
+                                < Eye size={20} />
                               </button>
                               <button
                                 onClick={() => setShowDeleteConfirm(intern._id)}
                                 disabled={updating === intern._id}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm disabled:opacity-50"
                               >
-                                🗑️ Delete
+                                🗑️
                               </button>
                             </div>
                           </td>

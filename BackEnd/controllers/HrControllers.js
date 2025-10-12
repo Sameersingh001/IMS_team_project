@@ -5,24 +5,33 @@ export const getAllInterns = async (req, res) => {
   try {
     const { search = "", status, performance, page = 1, limit = 10 } = req.query;
 
-    // 🔍 Search query (case-insensitive)
-    const searchQuery = {
-      $or: [
+    const allowedStatuses = ["Applied", "Selected", "Rejected"];
+    let searchQuery = {};
+
+    // ✅ Apply status filter
+    if (status && allowedStatuses.includes(status)) {
+      searchQuery.status = status; // single status
+    } else {
+      searchQuery.status = { $in: allowedStatuses }; // fallback: all allowed
+    }
+
+    // Search filter
+    if (search.trim() !== "") {
+      searchQuery.$or = [
         { fullName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
         { domain: { $regex: search, $options: "i" } },
-      ],
-    };
-
-    if (search.trim() === "") {
-      delete searchQuery.$or; // Remove $or if search is empty
+        { college: { $regex: search, $options: "i" } },
+        { course: { $regex: search, $options: "i" } },
+        { educationLevel: { $regex: search, $options: "i" } },
+        { uniqueId: { $regex: search, $options: "i" } },
+        { mobile: { $regex: search, $options: "i" } },
+      ];
     }
 
-    // 🎯 Filter logic
-    if (status) searchQuery.status = status;
+    // Performance filter
     if (performance) searchQuery.performance = performance;
 
-    // 🧭 Pagination
     const skip = (page - 1) * limit;
 
     const interns = await Intern.find(searchQuery)
@@ -44,6 +53,10 @@ export const getAllInterns = async (req, res) => {
     res.status(500).json({ message: "Server error. Try again later." });
   }
 };
+
+
+
+
 
 
 export const getInternById = async (req, res) => {

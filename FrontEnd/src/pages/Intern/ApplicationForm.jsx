@@ -510,7 +510,7 @@ const ApplicationForm = () => {
                   <option value="">Select Domain</option>
                   <option>Sales & Marketing</option>
                   <option>Email Outreaching</option>
-                  <option>Journalism and Mass communication</option>
+                  <option>Journalism</option>
                   <option>Social Media Management</option>
                   <option>Graphic Design</option>
                   <option>Digital Marketing</option>

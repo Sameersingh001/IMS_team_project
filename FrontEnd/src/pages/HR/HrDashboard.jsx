@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Graphura from "../../../public/GraphuraLogo.jpg";
+import { Eye, FileText, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 const HRDashboard = () => {
   const [interns, setInterns] = useState([]);
@@ -14,6 +16,7 @@ const HRDashboard = () => {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const [showEmailCopy, setShowEmailCopy] = useState(false);
   const [copySuccess, setCopySuccess] = useState("");
+  const [exportLoading, setExportLoading] = useState(false);
   const navigate = useNavigate();
   const printRef = useRef();
 
@@ -37,13 +40,153 @@ const HRDashboard = () => {
     setLoading(false);
   };
 
-  const handleStatusUpdate = async (internId, newStatus, hasUniqueId) => {
-    if (hasUniqueId) {
-      setError("Cannot update status - Unique ID already generated");
+  // Export to Excel function using XLSX
+  const exportToExcel = () => {
+    setExportLoading(true);
+    try {
+      const dataToExport = filteredInterns.length > 0 ? filteredInterns : interns;
+
+      if (dataToExport.length === 0) {
+        setError("No data to export");
+        setTimeout(() => setError(""), 3000);
+        setExportLoading(false);
+        return;
+      }
+
+      // Prepare data for Excel
+      const excelData = dataToExport.map(intern => ({
+        'Full Name': intern.fullName || '',
+        'Email': intern.email || '',
+        'Mobile': intern.mobile || '',
+        'Domain': intern.domain || '',
+        'Duration': intern.duration || '',
+        'College': intern.college || '',
+        'Status': intern.status || '',
+        'Performance': intern.performance || '',
+        'Unique ID': intern.uniqueId || '',
+        'Applied Date': intern.createdAt ? new Date(intern.createdAt).toLocaleDateString() : '',
+        'Resume URL': intern.resumeUrl || '',
+        'Locked Status': intern.uniqueId ? 'Yes' : 'No',
+        'Date of Birth': intern.dob || '',
+        'Gender': intern.gender || '',
+        'State': intern.state || '',
+        'City': intern.city || '',
+        'Address': intern.address || '',
+        'Pin Code': intern.pinCode || '',
+        'Course': intern.course || '',
+        'Education Level': intern.educationLevel || '',
+        'Contact Method': intern.contactMethod || '',
+        'Previous Internship': intern.prevInternship || 'No',
+        'TPO Name': intern.TpoName || '-',
+        'TPO Email': intern.TpoEmail || '-',
+        'TPO Number': intern.TpoNumber || '-',
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 20 }, // Full Name
+        { wch: 25 }, // Email
+        { wch: 15 }, // Mobile
+        { wch: 20 }, // Domain
+        { wch: 15 }, // Duration
+        { wch: 25 }, // College
+        { wch: 12 }, // Status
+        { wch: 12 }, // Performance
+        { wch: 15 }, // Unique ID
+        { wch: 15 }, // Applied Date
+        { wch: 30 }, // Resume URL
+        { wch: 12 }  // Locked Status
+      ];
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Interns Data");
+
+      // Generate Excel file and download
+      const fileName = `interns_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      setCopySuccess(`✅ Exported ${dataToExport.length} interns to Excel!`);
+      setTimeout(() => setCopySuccess(""), 3000);
+
+    } catch (err) {
+      console.error("Error exporting data:", err);
+      setError("Failed to export data");
       setTimeout(() => setError(""), 3000);
+    }
+    setExportLoading(false);
+  };
+
+  // Export only selected interns
+  const exportSelectedToExcel = () => {
+    setExportLoading(true);
+    try {
+      const selectedInterns = interns.filter(intern => intern.status === "Selected");
+
+      if (selectedInterns.length === 0) {
+        setError("No selected interns to export");
+        setTimeout(() => setError(""), 3000);
+        setExportLoading(false);
+        return;
+      }
+
+      // Prepare data for Excel
+      const excelData = selectedInterns.map(intern => ({
+        'Full Name': intern.fullName || '',
+        'Email': intern.email || '',
+        'Mobile': intern.mobile || '',
+        'Domain': intern.domain || '',
+        'Duration': intern.duration || '',
+        'College': intern.college || '',
+        'Status': intern.status || '',
+        'Performance': intern.performance || '',
+        'Unique ID': intern.uniqueId || '',
+        'Applied Date': intern.appliedDate ? new Date(intern.appliedDate).toLocaleDateString() : '',
+        'Resume URL': intern.resumeUrl || '',
+        'Locked Status': intern.uniqueId ? 'Yes' : 'No'
+      }));
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelData);
+
+      // Set column widths
+      const colWidths = [
+        { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 20 },
+        { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 },
+        { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 12 }
+      ];
+      ws['!cols'] = colWidths;
+
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(wb, ws, "Selected Interns");
+
+      // Generate Excel file and download
+      const fileName = `selected_interns_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+
+      setCopySuccess(`✅ Exported ${selectedInterns.length} selected interns to Excel!`);
+      setTimeout(() => setCopySuccess(""), 3000);
+
+    } catch (err) {
+      console.error("Error exporting selected data:", err);
+      setError("Failed to export selected interns");
+      setTimeout(() => setError(""), 3000);
+    }
+    setExportLoading(false);
+  };
+
+  const handleStatusUpdate = async (internId, newStatus, currentPerformance) => {
+    // ✅ Business Rule: can only mark "Selected" if performance is Good or Excellent
+    if (newStatus === "Selected" && !(currentPerformance === "Good" || currentPerformance === "Excellent")) {
+      setError("⚠️ Cannot mark as Selected. Performance must be Good or Excellent first.");
+      setTimeout(() => setError(""), 4000);
       return;
     }
-
     setUpdating(internId);
     try {
       await axios.put(
@@ -59,13 +202,7 @@ const HRDashboard = () => {
     setUpdating(null);
   };
 
-  const handlePerformanceUpdate = async (internId, newPerformance, hasUniqueId) => {
-    if (hasUniqueId) {
-      setError("Cannot update performance - Unique ID already generated");
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
-
+  const handlePerformanceUpdate = async (internId, newPerformance,) => {
     setUpdating(internId);
     try {
       await axios.put(
@@ -81,12 +218,7 @@ const HRDashboard = () => {
     setUpdating(null);
   };
 
-  const handleDomainUpdate = async (internId, newDomain, hasUniqueId) => {
-    if (hasUniqueId) {
-      setError("Cannot update domain - Unique ID already generated");
-      setTimeout(() => setError(""), 3000);
-      return;
-    }
+  const handleDomainUpdate = async (internId, newDomain) => {
 
     setUpdating(internId);
     try {
@@ -332,9 +464,44 @@ const HRDashboard = () => {
             </div>
 
             <div className="flex gap-3">
+              {/* Export All Button */}
+              <button
+                onClick={exportToExcel}
+                disabled={exportLoading || (filteredInterns.length === 0 && interns.length === 0)}
+                className={`px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2 ${exportLoading || (filteredInterns.length === 0 && interns.length === 0)
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'hover:from-green-600 hover:to-green-700'
+                  }`}
+              >
+                {exportLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Export Excel
+                  </>
+                )}
+              </button>
+
+              {/* Export Selected Button */}
+              {selectedCount > 0 && (
+                <button
+                  onClick={exportSelectedToExcel}
+                  disabled={exportLoading}
+                  className={`px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2 ${exportLoading ? 'opacity-50 cursor-not-allowed' : 'hover:from-blue-600 hover:to-blue-700'
+                    }`}
+                >
+                  <Download className="w-4 h-4" />
+                  Export Selected ({selectedCount})
+                </button>
+              )}
+
               <button
                 onClick={handlePrint}
-                className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print"
+                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print"
               >
                 📄 Print Report
               </button>
@@ -527,7 +694,7 @@ const HRDashboard = () => {
                     <th className="p-4 text-left font-semibold">Intern Details</th>
                     <th className="p-4 text-left font-semibold">Contact Info</th>
                     <th className="p-4 text-left font-semibold">Domain & Duration</th>
-                    <th className="p-4 text-left font-semibold">Unique ID</th>
+                    <th className="p-4 text-left font-semibold">College Info</th>
                     <th className="p-4 text-left font-semibold">Status</th>
                     <th className="p-4 text-left font-semibold">Performance</th>
                     <th className="p-4 text-left font-semibold">Domain</th>
@@ -579,17 +746,18 @@ const HRDashboard = () => {
                           </div>
                         </td>
 
-                        {/* Unique ID */}
-                        <td className="p-4">
-                          {hasUniqueId ? (
-                            <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-mono font-bold">
-                              {intern.uniqueId}
+                        <td className="p-2 md:p-3">
+                          <div className="min-h-[36px] flex items-center">
+                            <div className="truncate-text-2-lines max-w-full">
+                              <span className={`
+                                 text-xs md:text-sm
+                                   ${intern.college ? "text-gray-600" : "text-gray-400 italic"}
+                                   transition-colors duration-100
+                                 `}>
+                                {intern.college || "—"}
+                              </span>
                             </div>
-                          ) : (
-                            <div className="text-gray-400 text-sm italic">
-                              Not generated
-                            </div>
-                          )}
+                          </div>
                         </td>
 
                         {/* Status with Update */}
@@ -601,7 +769,7 @@ const HRDashboard = () => {
                           </div>
                           <select
                             value={intern.status}
-                            onChange={(e) => handleStatusUpdate(intern._id, e.target.value, hasUniqueId)}
+                            onChange={(e) => handleStatusUpdate(intern._id, e.target.value, intern.performance)}
                             disabled={updating === intern._id || isLocked}
                             className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-indigo-500 cursor-pointer no-print ${isLocked ? 'opacity-50 cursor-not-allowed' : ''
                               }`}
@@ -609,9 +777,6 @@ const HRDashboard = () => {
                             <option value="Applied">Applied</option>
                             <option value="Selected">Selected</option>
                             <option value="Rejected">Rejected</option>
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                            <option value="Completed">Completed</option>
                           </select>
                           {isLocked && (
                             <div className="text-xs text-yellow-600 mt-1 no-print">
@@ -661,7 +826,7 @@ const HRDashboard = () => {
                           >
                             <option>Sales & Marketing</option>
                             <option>Email Outreaching</option>
-                            <option>Journalism and Mass communication</option>
+                            <option>Journalism</option>
                             <option>Social Media Management</option>
                             <option>Graphic Design</option>
                             <option>Digital Marketing</option>
@@ -685,8 +850,18 @@ const HRDashboard = () => {
                               onClick={() => navigate(`/HR-Dashboard/intern/${intern._id}`)}
                               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium text-xs"
                             >
-                              View Details
+                              <Eye />
                             </button>
+
+                            <a
+                              href={intern.resumeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                            >
+                              <FileText className="w-5 h-5" />
+                              Resume
+                            </a>
                           </div>
                         </td>
                       </tr>

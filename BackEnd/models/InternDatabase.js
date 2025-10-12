@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { type } from "os";
 
 const internSchema = new mongoose.Schema({
     fullName: {
@@ -86,7 +85,6 @@ const internSchema = new mongoose.Schema({
     },
     uniqueId: {
         type:String,
-        unique:true
     },
     comment: {
         type:String

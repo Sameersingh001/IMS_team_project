@@ -15,7 +15,8 @@ import {
   MessageCircle,
   Send,
   Trash2,
-  Calendar
+  Calendar,
+  FileText
 } from "lucide-react";
 
 const InternInchargeDashboard = () => {
@@ -87,15 +88,15 @@ const InternInchargeDashboard = () => {
         },
         { withCredentials: true }
       );
-      
+
       // Update the intern's comments in the local state
-      setInterns(prevInterns => 
-        prevInterns.map(intern => 
-          intern._id === internId 
+      setInterns(prevInterns =>
+        prevInterns.map(intern =>
+          intern._id === internId
             ? {
-                ...intern,
-                comments: response.data.intern.comments
-              }
+              ...intern,
+              comments: response.data.intern.comments
+            }
             : intern
         )
       );
@@ -119,20 +120,20 @@ const InternInchargeDashboard = () => {
         `/api/intern-incharge/interns/${internId}/comments/${commentId}`,
         { withCredentials: true }
       );
-      
+
       window.location.reload()
       // Update the intern's comments in the local state
-      setInterns(prevInterns => 
-        prevInterns.map(intern => 
-          intern._id === internId 
+      setInterns(prevInterns =>
+        prevInterns.map(intern =>
+          intern._id === internId
             ? {
-                ...intern,
-                comments: response.data.intern.comments
-              }
+              ...intern,
+              comments: response.data.intern.comments
+            }
             : intern
         )
       );
-      
+
       alert("Comment deleted successfully!");
     } catch (err) {
       console.error("Error deleting comment:", err);
@@ -224,8 +225,8 @@ const InternInchargeDashboard = () => {
                     {dept}
                   </p>
                 ))}
-              </div>            
               </div>
+            </div>
           </div>
         </div>
 
@@ -470,9 +471,18 @@ const InternInchargeDashboard = () => {
                               {getCommentCount(intern) > 0 ? (
                                 <span>Comments ({getCommentCount(intern)})</span>
                               ) : (
-                                <span>Add Comment</span>
+                                <span>Comment</span>
                               )}
                             </button>
+                            <a
+                              href={intern.resumeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                            >
+                              <FileText className="w-5 h-5" />
+                              Resume
+                            </a>
                           </div>
                         </td>
                       </tr>
@@ -506,18 +516,18 @@ const InternInchargeDashboard = () => {
         ></div>
       )}
     </div>
-  );  
+  );
 };
 
 // Comment Modal Component
-const CommentModal = ({ 
-  intern, 
-  newComment, 
-  setNewComment, 
-  onClose, 
-  onSubmit, 
+const CommentModal = ({
+  intern,
+  newComment,
+  setNewComment,
+  onClose,
+  onSubmit,
   onDeleteComment,
-  loading 
+  loading
 }) => {
   return (
     <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-lg bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -536,7 +546,7 @@ const CommentModal = ({
           {/* Add Comment Section */}
           <div className="md:w-1/3 border-r p-6">
             <h4 className="font-semibold text-gray-900 mb-4">Add New Comment</h4>
-            
+
             <div className="space-y-4">
               {/* Comment */}
               <div>
@@ -569,6 +579,8 @@ const CommentModal = ({
                   </>
                 )}
               </button>
+
+
             </div>
           </div>
 
@@ -587,9 +599,9 @@ const CommentModal = ({
             ) : (
               <div className="space-y-4">
                 {intern.comments.map((comment) => (
-                  <CommentCard 
-                    key={comment._id} 
-                    comment={comment} 
+                  <CommentCard
+                    key={comment._id}
+                    comment={comment}
                     internId={intern._id}
                     onDelete={onDeleteComment}
                   />
@@ -616,10 +628,10 @@ const CommentCard = ({ comment, internId, onDelete }) => {
           </div>
           <div>
             <h4 className="font-medium text-gray-900 text-sm">
-              Intern Incharge 
+              Intern Incharge
             </h4>
             <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Calendar size={12} />  
+              <Calendar size={12} />
               {new Date(comment.date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -630,7 +642,7 @@ const CommentCard = ({ comment, internId, onDelete }) => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {canDelete && (
             <button
@@ -643,7 +655,7 @@ const CommentCard = ({ comment, internId, onDelete }) => {
           )}
         </div>
       </div>
-      
+
       <p className="text-gray-700 text-sm">{comment.text}</p>
     </div>
   );

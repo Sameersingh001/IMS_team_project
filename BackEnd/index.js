@@ -3,6 +3,7 @@ const app = express();
 import ConnectDB from "./config/DB.js";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import {updateInternStatus} from "./CronJob/CalculateDuration.js" 
 dotenv.config();
 
 import cors from "cors";
@@ -27,8 +28,7 @@ import Incharge from "./routers/InchargeRoutes.js"
 // });
 
 // connecting to database
-ConnectDB();
-
+await ConnectDB();
 // routers
 app.use('/api', authRoutes);
 app.use('/api', internRoutes);
@@ -36,6 +36,7 @@ app.use('/api', hrRoutes);
 app.use('/api', adminRoutes);
 app.use("/api", Incharge)
 
+updateInternStatus()
 
 
 app.listen(PORT, () => {
