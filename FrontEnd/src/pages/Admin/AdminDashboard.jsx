@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Graphura from "../../../public/GraphuraLogo.jpg";
+import * as XLSX from "xlsx";
 
 const AdminDashboard = () => {
   const [interns, setInterns] = useState([]);
@@ -17,7 +18,14 @@ const AdminDashboard = () => {
   const [showEmailCopy, setShowEmailCopy] = useState(false);
   const [copySuccess, setCopySuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [activeTab, setActiveTab] = useState("interns"); // "interns", "incharges", or "hr"
+  const [activeTab, setActiveTab] = useState("interns"); // "interns", "incharges", "hr", or "settings"
+  const [applicationSettings, setApplicationSettings] = useState({
+    isApplicationOpen: true
+  });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [updatingSettings, setUpdatingSettings] = useState(false);
   const navigate = useNavigate();
   const printRef = useRef();
 
@@ -29,10 +37,166 @@ const AdminDashboard = () => {
         fetchDepartmentIncharges();
       } else if (activeTab === "hr") {
         fetchHRManagers();
+      } else if (activeTab === "settings") {
+        fetchApplicationSettings();
       }
     }, 500);
     return () => clearTimeout(timer);
   }, [search, status, performance, activeTab]);
+
+  // Fetch application settings
+  const fetchApplicationSettings = async () => {
+    try {
+      const { data } = await axios.get("/api/admin/settings", {
+        withCredentials: true,
+      });
+      setApplicationSettings(data.settings || { isApplicationOpen: true });
+    await fetchDepartmentIncharges();
+    await fetchHRManagers();
+    await fetchInterns(); // if you need intern count too
+    } catch (err) {
+      console.error("Error fetching settings:", err);
+      setError("Failed to load application settings");
+    }
+  };
+
+  // Handle settings toggle with password
+  const handleToggleApplication = async () => {
+    setShowPasswordModal(true);
+    setPassword("");
+    setPasswordError("");
+  };
+
+  const confirmToggleApplication = async () => {
+    if (!password.trim()) {
+      setPasswordError("Password is required");
+      return;
+    }
+
+    setUpdatingSettings(true);
+    try {
+      const newStatus = !applicationSettings.isApplicationOpen;
+      await axios.put(
+        "/api/admin/settings/application-status",
+        { 
+          isApplicationOpen: newStatus,
+          password: password 
+        },
+        { withCredentials: true }
+      );
+      
+      setApplicationSettings(prev => ({
+        ...prev,
+        isApplicationOpen: newStatus
+      }));
+      setShowPasswordModal(false);
+      setPassword("");
+      
+      setCopySuccess(`Applications ${newStatus ? 'opened' : 'closed'} successfully!`);
+      setTimeout(() => setCopySuccess(""), 3000);
+    } catch (err) {
+      console.error("Error updating application status:", err);
+      if (err.response?.status === 401) {
+        setPasswordError("Invalid password");
+      } else {
+        setPasswordError("Failed to update application status");
+      }
+    }
+    setUpdatingSettings(false);
+  };
+
+  // Excel Export Functions
+  const exportToExcel = (data, filename, columns) => {
+    const worksheet = XLSX.utils.json_to_sheet(data.map(item => {
+      const row = {};
+      columns.forEach(col => {
+        row[col.header] = col.accessor(item);
+      });
+      return row;
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+    
+    // Auto-size columns
+    const maxWidth = columns.reduce((acc, col) => {
+      acc[col.key] = Math.max(
+        col.header.length,
+        ...data.map(item => String(col.accessor(item)).length)
+      );
+      return acc;
+    }, {});
+    
+    worksheet['!cols'] = columns.map(col => ({ width: maxWidth[col.key] + 2 }));
+    
+    XLSX.writeFile(workbook, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const exportInternsToExcel = () => {
+const columns = [
+  { key: 'fullName', header: 'Full Name', accessor: (intern) => intern.fullName || 'Not provided' },
+  { key: 'email', header: 'Email', accessor: (intern) => intern.email || 'Not provided' },
+  { key: 'mobile', header: 'Mobile', accessor: (intern) => intern.mobile || 'Not provided' },
+  { key: 'dob', header: 'Date of Birth', accessor: (intern) => intern.dob || 'Not provided' },
+  { key: 'gender', header: 'Gender', accessor: (intern) => intern.gender || 'Not provided' },
+  { key: 'state', header: 'State', accessor: (intern) => intern.state || 'Not provided' },
+  { key: 'city', header: 'City', accessor: (intern) => intern.city || 'Not provided' },
+  { key: 'address', header: 'Address', accessor: (intern) => intern.address || 'Not provided' },
+  { key: 'pinCode', header: 'Pin Code', accessor: (intern) => intern.pinCode || 'Not provided' },
+  { key: 'college', header: 'College', accessor: (intern) => intern.college || 'Not provided' },
+  { key: 'course', header: 'Course', accessor: (intern) => intern.course || 'Not provided' },
+  { key: 'educationLevel', header: 'Education Level', accessor: (intern) => intern.educationLevel || 'Not provided' },
+  { key: 'domain', header: 'Domain', accessor: (intern) => intern.domain || 'Not specified' },
+  { key: 'contactMethod', header: 'Contact Method', accessor: (intern) => intern.contactMethod || 'Not provided' },
+  { key: 'resumeUrl', header: 'Resume', accessor: (intern) => intern.resumeUrl || 'Not provided' },
+  { key: 'duration', header: 'Duration', accessor: (intern) => intern.duration || 'Not specified' },
+  { key: 'prevInternship', header: 'Previous Internship', accessor: (intern) => intern.prevInternship || 'No' },
+  { key: 'performance', header: 'Performance', accessor: (intern) => intern.performance || 'Average' },
+  { key: 'status', header: 'Status', accessor: (intern) => intern.status || 'Applied' },
+  { key: 'uniqueId', header: 'Unique ID', accessor: (intern) => intern.uniqueId || 'Not assigned' },
+  { key: 'TpoName', header: 'TPO Name', accessor: (intern) => intern.TpoName || '-' },
+  { key: 'TpoEmail', header: 'TPO Email', accessor: (intern) => intern.TpoEmail || '-' },
+  { key: 'TpoNumber', header: 'TPO Number', accessor: (intern) => intern.TpoNumber || '-' },
+  { key: 'joiningDate', header: 'Joining Date', accessor: (intern) => intern.joiningDate || '-' },
+  { key: 'createdAt', header: 'Applied Date', accessor: (intern) => new Date(intern.createdAt).toLocaleDateString() },
+ 
+];
+
+
+    exportToExcel(filteredInterns, 'Interns_Report', columns);
+    setCopySuccess("✅ Interns data exported to Excel!");
+    setTimeout(() => setCopySuccess(""), 3000);
+  };
+
+  const exportInchargesToExcel = () => {
+    const columns = [
+      { key: 'fullName', header: 'Full Name', accessor: (incharge) => incharge.fullName },
+      { key: 'email', header: 'Email', accessor: (incharge) => incharge.email },
+      { key: 'mobile', header: 'Mobile', accessor: (incharge) => incharge.mobile || 'Not provided' },
+      { key: 'departments', header: 'Departments', accessor: (incharge) => incharge.departments?.join(', ') || 'Not specified' },
+      { key: 'status', header: 'Status', accessor: (incharge) => incharge.status || 'Active' },
+      { key: 'createdDate', header: 'Created Date', accessor: (incharge) => new Date(incharge.createdAt).toLocaleDateString() }
+    ];
+
+    exportToExcel(departmentIncharges, 'Department_Incharges_Report', columns);
+    setCopySuccess("✅ Department Incharges data exported to Excel!");
+    setTimeout(() => setCopySuccess(""), 3000);
+  };
+
+  const exportHRToExcel = () => {
+    const columns = [
+      { key: 'fullName', header: 'Full Name', accessor: (hr) => hr.fullName },
+      { key: 'email', header: 'Email', accessor: (hr) => hr.email },
+      { key: 'mobile', header: 'Mobile', accessor: (hr) => hr.mobile || 'Not provided' },
+      { key: 'department', header: 'Department', accessor: (hr) => hr.department || 'HR' },
+      { key: 'status', header: 'Status', accessor: (hr) => hr.status },
+      { key: 'createdDate', header: 'Created Date', accessor: (hr) => new Date(hr.createdAt).toLocaleDateString() }
+    ];
+
+    exportToExcel(hrManagers, 'HR_Managers_Report', columns);
+    setCopySuccess("✅ HR Managers data exported to Excel!");
+    setTimeout(() => setCopySuccess(""), 3000);
+  };
 
   const fetchInterns = async () => {
     setLoading(true);
@@ -442,7 +606,6 @@ const AdminDashboard = () => {
                 <span className="inline-block bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full">
                   {incharge.departments?.join(" || ") || "Not specified"}
                 </span>
-
               </td>
               <td className="p-4">
                 <div className="text-gray-700">📞 {incharge.mobile || "Not provided"}</div>
@@ -543,6 +706,96 @@ const AdminDashboard = () => {
     </div>
   );
 
+  // Render Settings Tab
+  const renderSettingsTab = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 border border-purple-200">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Application Settings</h2>
+        <p className="text-gray-600 mb-6">Control the application submission status and other system settings.</p>
+        
+        <div className="bg-white rounded-xl p-6 shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                Internship Applications
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {applicationSettings.isApplicationOpen 
+                  ? "Applications are currently OPEN for submissions"
+                  : "Applications are currently CLOSED for submissions"
+                }
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                applicationSettings.isApplicationOpen 
+                  ? "bg-green-100 text-green-800" 
+                  : "bg-red-100 text-red-800"
+              }`}>
+                {applicationSettings.isApplicationOpen ? "OPEN" : "CLOSED"}
+              </span>
+              <button
+                onClick={handleToggleApplication}
+                disabled={updatingSettings}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  applicationSettings.isApplicationOpen
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "bg-green-600 hover:bg-green-700 text-white"
+                } disabled:opacity-50`}
+              >
+                {updatingSettings ? "Updating..." : applicationSettings.isApplicationOpen ? "Close Applications" : "Open Applications"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl p-6 border border-blue-200">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">System Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl p-4 border">
+            <h4 className="font-semibold text-gray-700 mb-2">Current Status</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Interns:</span>
+                <span className="font-medium">{interns.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Department Incharges:</span>
+                <span className="font-medium">{departmentIncharges.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">HR Managers:</span>
+                <span className="font-medium">{hrManagers.length}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl p-4 border">
+            <h4 className="font-semibold text-gray-700 mb-2">Quick Actions</h4>
+            <div className="space-y-2">
+              <button
+                onClick={exportInternsToExcel}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+              >
+                Export All Data to Excel
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("interns");
+                  setShowSelectedOnly(true);
+                }}
+                className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+              >
+                View Selected Interns
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-violet-100 p-4">
       <div className="max-w-8xl mx-auto">
@@ -621,6 +874,60 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Password Modal */}
+        {showPasswordModal && (
+          <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Confirm Application {applicationSettings.isApplicationOpen ? 'Closure' : 'Opening'}
+              </h3>
+              <p className="text-gray-600 mb-4">
+                You are about to {applicationSettings.isApplicationOpen ? 'close' : 'open'} internship applications. 
+                Please enter your admin password to continue.
+              </p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Admin Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setPasswordError("");
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="Enter your password"
+                />
+                {passwordError && (
+                  <p className="text-red-600 text-sm mt-1">{passwordError}</p>
+                )}
+              </div>
+              
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPassword("");
+                    setPasswordError("");
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmToggleApplication}
+                  disabled={updatingSettings}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                >
+                  {updatingSettings ? "Updating..." : "Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content */}
         <div className="bg-white shadow-xl rounded-2xl p-6" ref={printRef}>
           {/* Tab Navigation */}
@@ -653,6 +960,15 @@ const AdminDashboard = () => {
               >
                 👨‍💼 HR Management
               </button>
+              <button
+                onClick={() => setActiveTab("settings")}
+                className={`px-6 py-3 font-medium text-sm border-b-2 transition-colors ${activeTab === "settings"
+                  ? "border-green-600 text-green-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
+              >
+                ⚙️ Settings
+              </button>
             </div>
           </div>
 
@@ -662,7 +978,7 @@ const AdminDashboard = () => {
               {/* Filters Section for Interns */}
               <div className="mb-8 no-print">
                 {interns.length > 0 && (
-                  <div className="mt-6 grid grid-cols-2 md:grid-cols-7 gap-4">
+                  <div className="mt-6 grid grid-cols-2 md:grid-cols-8 gap-4">
                     <div className="bg-purple-50 rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-purple-600">{interns.length}</div>
                       <div className="text-sm text-purple-800">Total Interns</div>
@@ -701,6 +1017,13 @@ const AdminDashboard = () => {
                     >
                       <div className="text-2xl font-bold text-indigo-600">📧</div>
                       <div className="text-sm text-indigo-800">Email Tools</div>
+                    </div>
+                    <div
+                      className="bg-green-50 rounded-lg p-4 text-center cursor-pointer hover:bg-green-100 transition-colors border-2 border-green-200"
+                      onClick={exportInternsToExcel}
+                    >
+                      <div className="text-2xl font-bold text-green-600">📊</div>
+                      <div className="text-sm text-green-800">Export Excel</div>
                     </div>
                   </div>
                 )}
@@ -832,6 +1155,7 @@ const AdminDashboard = () => {
                             <div>
                               <div className="font-semibold text-gray-800">{intern.fullName}</div>
                               <div className="text-sm text-gray-600">{intern.email}</div>
+                              <div className="text-xs font-bold text-gray-600">{intern.uniqueId}</div>
                             </div>
                           </td>
                           <td className="p-4">
@@ -964,7 +1288,7 @@ const AdminDashboard = () => {
             <>
               {/* Stats for Department Incharges */}
               {departmentIncharges.length > 0 && (
-                <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+                <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4 no-print">
                   <div className="bg-blue-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-blue-600">{departmentIncharges.length}</div>
                     <div className="text-sm text-blue-800">Total Incharges</div>
@@ -977,8 +1301,7 @@ const AdminDashboard = () => {
                   </div>
                   <div className="bg-purple-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-purple-600">
-                      {[...new Set(departmentIncharges.flatMap(i => i.departments))].length
-}
+                      {[...new Set(departmentIncharges.flatMap(i => i.departments))].length}
                     </div>
                     <div className="text-sm text-purple-800">Departments</div>
                   </div>
@@ -987,6 +1310,13 @@ const AdminDashboard = () => {
                       {departmentIncharges.filter(i => !i.status || i.status === 'Inactive').length}
                     </div>
                     <div className="text-sm text-orange-800">Inactive</div>
+                  </div>
+                  <div
+                    className="bg-green-50 rounded-lg p-4 text-center cursor-pointer hover:bg-green-100 transition-colors border-2 border-green-200"
+                    onClick={exportInchargesToExcel}
+                  >
+                    <div className="text-2xl font-bold text-green-600">📊</div>
+                    <div className="text-sm text-green-800">Export Excel</div>
                   </div>
                 </div>
               )}
@@ -1023,7 +1353,7 @@ const AdminDashboard = () => {
             <>
               {/* Stats for HR */}
               {hrManagers.length > 0 && (
-                <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+                <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-4 no-print">
                   <div className="bg-pink-50 rounded-lg p-4 text-center">
                     <div className="text-2xl font-bold text-pink-600">{hrManagers.length}</div>
                     <div className="text-sm text-pink-800">Total HR</div>
@@ -1045,6 +1375,13 @@ const AdminDashboard = () => {
                       {[...new Set(hrManagers.map(hr => hr.department))].length}
                     </div>
                     <div className="text-sm text-blue-800">Departments</div>
+                  </div>
+                  <div
+                    className="bg-green-50 rounded-lg p-4 text-center cursor-pointer hover:bg-green-100 transition-colors border-2 border-green-200"
+                    onClick={exportHRToExcel}
+                  >
+                    <div className="text-2xl font-bold text-green-600">📊</div>
+                    <div className="text-sm text-green-800">Export Excel</div>
                   </div>
                 </div>
               )}
@@ -1075,6 +1412,9 @@ const AdminDashboard = () => {
               )}
             </>
           )}
+
+          {/* Settings Tab Content */}
+          {activeTab === "settings" && renderSettingsTab()}
         </div>
       </div>
     </div>

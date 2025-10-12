@@ -1,5 +1,6 @@
 import Intern from '../models/InternDatabase.js';
 import {transporter} from "../config/emailConfig.js"
+import Setting from "../models/SettingDB.js"
 
 
 
@@ -81,5 +82,23 @@ The Graphura Team
 };
 
 
+export const getApplicationStatus = async (req, res) => {
+  try {
+    let setting = await Setting.findOne();
 
+    if (!setting) {
+      setting = await Setting.create({ isApplicationOpen: true });
+    }
 
+    res.status(200).json({
+      success: true,
+      isApplicationOpen: setting.isApplicationOpen,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error fetching application status",
+      error: error.message,
+    });
+  }
+};

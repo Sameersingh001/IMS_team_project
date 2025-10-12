@@ -6,6 +6,8 @@ import Intern from "../models/InternDatabase.js"
 import InternIncharge from '../models/InternHead.js';
 import nodemailer from "nodemailer"
 import User from "../models/UserDB.js"
+import Setting from "../models/SettingDB.js"
+import bcrypt from "bcrypt"
 
 
 
@@ -721,3 +723,55 @@ export const InchargeDeleteComments = async (req, res) => {
     });
   }
 }
+
+
+
+
+export const GetApplication = async (req,res) =>{
+    try {
+    let settings = await Setting.findOne();
+    if (!settings) {
+      settings = await Setting.create({});
+    }
+    res.json({ settings });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch settings' });
+  }
+}
+
+
+
+
+export const toggleApplicationStatus = async (req, res) => {
+  try {
+    const { isApplicationOpen, password } = req.body;
+
+    // Verify admin password
+    const admin = await User.findById(req.user.id);
+    if (!admin) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
+
+    // Update existing settings
+    const settings = await Setting.findOne();
+    if (!settings) {
+      return res.status(404).json({ error: "Settings not found" });
+    }
+
+    // Update the status
+    settings.isApplicationOpen = isApplicationOpen !== undefined ? isApplicationOpen : !settings.isApplicationOpen;
+    await settings.save();
+
+    res.json({ message: "Application status updated successfully", settings });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update settings" });
+  }
+};
+
+

@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/AuthVerify.js"
 import { logoutUser } from "../controllers/AuthController.js";
-import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments} from "../controllers/AdminControllers.js";
+import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus} from "../controllers/AdminControllers.js";
 
 
 const router = express.Router();
@@ -13,11 +13,13 @@ router.get("/admin/intern-incharge/:id/profile",verifyToken, InchargeProfile)
 router.get("/admin/hr-managers", verifyToken, getHRManagers)
 router.get("/admin/interns/:id/incharge-comments",verifyToken, InchargeComments)
 router.get("/admin/intern-head/:inchargeId",verifyToken, InchargeCommentsDetails)
+router.get("/admin/settings",verifyToken, GetApplication)
 
 router.put("/admin/intern-incharge/:id/add/departments",verifyToken, updateInchargeDepartments )
 router.put("/admin/intern-incharge/:id/remove/departments",verifyToken, removeInchargeDepartment)
 router.put("/admin/intern-incharge/:id/status",verifyToken, ToggleInchargeStatus)
 router.put("/admin/hr-managers/:hrId/status",verifyToken, toggleHRStatus)
+router.put("/admin/settings/application-status",verifyToken, toggleApplicationStatus)
 
 
 router.put("/admin/interns/:id/status",verifyToken, updateStatus);
