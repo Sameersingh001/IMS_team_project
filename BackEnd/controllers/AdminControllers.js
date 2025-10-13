@@ -8,7 +8,7 @@ import nodemailer from "nodemailer"
 import User from "../models/UserDB.js"
 import Setting from "../models/SettingDB.js"
 import bcrypt from "bcrypt"
-
+import * as fontkit from "fontkit"; // import fontkit
 
 
 export const getAllInterns = async (req, res) => {
@@ -18,14 +18,14 @@ export const getAllInterns = async (req, res) => {
     // 🔍 Search query (case-insensitive)
     const searchQuery = {
       $or: [
-    { fullName: { $regex: search, $options: 'i' } },
-    { email: { $regex: search, $options: 'i' } },
-    { domain: { $regex: search, $options: 'i' } },
-    { college: { $regex: search, $options: 'i' } },
-    { course: { $regex: search, $options: 'i' } },
-    { educationLevel: { $regex: search, $options: 'i' } },
-    { uniqueId: { $regex: search, $options: 'i' } },
-    { mobile: { $regex: search, $options: 'i' } } // Also search in mobile
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { domain: { $regex: search, $options: 'i' } },
+        { college: { $regex: search, $options: 'i' } },
+        { course: { $regex: search, $options: 'i' } },
+        { educationLevel: { $regex: search, $options: 'i' } },
+        { uniqueId: { $regex: search, $options: 'i' } },
+        { mobile: { $regex: search, $options: 'i' } } // Also search in mobile
       ],
       performance: { $nin: ["Average", "Rejected"] }
     };
@@ -213,8 +213,11 @@ export const generateOfferLetterWithPNG = async (req, res) => {
 
     await intern.save();
 
-    // 3️⃣ Create PDF
+    
     const pdfDoc = await PDFDocument.create();
+
+
+    // 3️⃣ Create PDF
     const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
 
     const backgroundPath = path.join(
@@ -244,10 +247,19 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       year: "numeric",
     });
 
-    const font = await pdfDoc.embedFont("Helvetica");
-    const fontBold = await pdfDoc.embedFont("Helvetica-Bold");
 
-    let y = 630;
+   
+    // 3️⃣ REGISTER FONTKIT BEFORE EMBEDDING CUSTOM FONT
+    pdfDoc.registerFontkit(fontkit);
+
+
+    const jostRegularPath = path.join(process.cwd(), "public", "fonts", "Jost-Regular.ttf");
+    const jostBoldPath = path.join(process.cwd(), "public", "fonts", "Jost-Bold.ttf");
+
+    const font = await pdfDoc.embedFont(fs.readFileSync(jostRegularPath));
+    const fontBold = await pdfDoc.embedFont(fs.readFileSync(jostBoldPath));
+
+    let y = 635;
     page.drawText("GRAPHURA INDIA PRIVATE LIMITED", {
       x: 60,
       y,
@@ -270,7 +282,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     page.drawText(`${intern.fullName}`, {
       x: 60,
       y,
-      size: 13,
+      size: 14,
       font: fontBold,
       color: rgb(0, 0, 0),
     });
@@ -278,7 +290,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     page.drawText(`${intern.domain} Department`, {
       x: 60,
       y,
-      size: 13,
+      size: 14,
       font,
       color: rgb(0, 0, 0),
     });
@@ -293,7 +305,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     page.drawText(`Dear ${intern.fullName},`, {
       x: 60,
       y,
-      size: 13,
+      size: 14,
       font,
       color: rgb(0, 0, 0),
     });
@@ -311,17 +323,17 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     ];
 
     textLines.forEach((line) => {
-      page.drawText(line, { x: 60, y, size: 13, font, color: rgb(0, 0, 0) });
+      page.drawText(line, { x: 60, y, size: 14, font, color: rgb(0, 0, 0) });
       y -= 15;
     });
 
-    y -= 20;
-    page.drawText("Thank you", { x: 60, y, size: 13, font: fontBold });
+    y -= 25;
+    page.drawText("Thank you", { x: 60, y, size: 14, font: fontBold });
     y -= 15;
-    page.drawText("Team Graphura.", { x: 60, y, size: 13, font: fontBold });
+    page.drawText("Team Graphura.", { x: 60, y, size: 14, font: fontBold });
 
     y -= 95;
-    page.drawText("Unique ID:", { x: 75, y, size: 13, font: fontBold });
+    page.drawText("Unique ID:", { x: 75, y, size: 14, font: fontBold });
     y -= 15;
     page.drawText(intern.uniqueId, { x: 75, y, size: 14, font: fontBold });
 
@@ -738,8 +750,8 @@ export const InchargeDeleteComments = async (req, res) => {
 
 
 
-export const GetApplication = async (req,res) =>{
-    try {
+export const GetApplication = async (req, res) => {
+  try {
     let settings = await Setting.findOne();
     if (!settings) {
       settings = await Setting.create({});

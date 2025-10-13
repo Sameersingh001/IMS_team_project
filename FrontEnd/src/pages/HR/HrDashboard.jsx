@@ -6,6 +6,7 @@ import { Eye, FileText, Download } from "lucide-react";
 import * as XLSX from "xlsx";
 
 const HRDashboard = () => {
+const storedUser = JSON.parse(localStorage.getItem("user"));
   const [interns, setInterns] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -184,7 +185,7 @@ const HRDashboard = () => {
     // ✅ Business Rule: can only mark "Selected" if performance is Good or Excellent
     if (newStatus === "Selected" && !(currentPerformance === "Good" || currentPerformance === "Excellent")) {
       setError("⚠️ Cannot mark as Selected. Performance must be Good or Excellent first.");
-      setTimeout(() => setError(""), 4000);
+      setTimeout(() => setError(""), 2000);
       return;
     }
     setUpdating(internId);
@@ -486,8 +487,8 @@ const HRDashboard = () => {
               <div className="flex items-center gap-3">
                 <img src={Graphura} alt="Graphura Logo" className="sm:h-12 h-8 mr-5" />
                 <div>
-                  <h1 className="sm:text-2xl text-s font-bold text-gray-800">HR Dashboard</h1>
-                  <p className="text-gray-600 sm:text-sm text-xs">Manage intern applications and performance</p>
+                  <h1 className="sm:text-2xl ml-2 text-s font-bold text-gray-800">HR Dashboard</h1>
+                  <p className="text-blue-400 font-bold sm:text-lg text-sm">👋 Hi  {storedUser?.fullName}</p>
                 </div>
               </div>
             </div>

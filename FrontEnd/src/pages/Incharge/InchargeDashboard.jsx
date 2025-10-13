@@ -196,50 +196,6 @@ const InternInchargeDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h1 className="font-bold text-xl text-gray-600">Intern Incharge</h1>
-            <p className=" text-gray-600 text-xs">Graphura</p>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* User Info */}
-        <div className="p-4 border-b">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-              <User size={20} className="text-white" />
-            </div>
-            <div>
-              <p className="font-semibold text-gray-800">{user?.fullName}</p>
-              <div className="mt-1">
-                {user?.department?.map((dept, index) => (
-                  <p key={index} className="text-xs font-bold text-gray-800 truncate">
-                    {dept}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <nav className="p-4">
-          <div className="space-y-2">
-            <button className="w-full flex items-center space-x-3 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg font-medium">
-              <Users size={20} />
-              <span>Assigned Interns</span>
-            </button>
-          </div>
-        </nav>
-      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-0">
@@ -253,11 +209,11 @@ const InternInchargeDashboard = () => {
               >
                 <Menu size={20} />
               </button>
-              <h1 className="text-2xl font-bold text-gray-800">Intern Dashboard</h1>
+              <h1 className="text-2xl font-bold text-gray-800">Incharge Dashboard</h1>
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.fullName}</span>
+              <span className="text-lg font-bold text-blue-400">👋 {user?.fullName}</span>
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition duration-200"

@@ -7,6 +7,8 @@ import { Eye } from "lucide-react";
 
 
 const AdminDashboard = () => {
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+
   const [interns, setInterns] = useState([]);
   const [departmentIncharges, setDepartmentIncharges] = useState([]);
   const [hrManagers, setHrManagers] = useState([]);
@@ -806,8 +808,8 @@ const AdminDashboard = () => {
               <div className="flex items-center gap-3">
                 <img src={Graphura} alt="Graphura Logo" className="sm:h-12 h-8 mr-5" />
                 <div>
-                  <h1 className="sm:text-2xl text-s font-bold text-gray-800">Admin Dashboard </h1>
-                  <p className="text-gray-600 sm:text-sm text-xs">Full control over intern, department incharge, and HR management</p>
+                  <h1 className="sm:text-2xl ml-2 text-s font-bold text-gray-800">Admin Dashboard </h1>
+                  <p className="text-blue-400 font-bold sm:text-lg text-sm">👋 Hi  {storedUser?.fullName}</p>
                 </div>
               </div>
             </div>
@@ -987,12 +989,7 @@ const AdminDashboard = () => {
                       <div className="text-2xl font-bold text-green-600">{selectedCount}</div>
                       <div className="text-sm text-green-800">Selected</div>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-red-600">
-                        {interns.filter(i => i.status === 'Rejected').length}
-                      </div>
-                      <div className="text-sm text-red-800">Rejected</div>
-                    </div>
+
                     <div className="bg-purple-50 rounded-lg p-4 text-center">
                       <div className="text-2xl font-bold text-purple-600">
                         {interns.filter(i => i.performance === 'Excellent').length}
@@ -1005,11 +1002,17 @@ const AdminDashboard = () => {
                       </div>
                       <div className="text-sm text-orange-800">Good</div>
                     </div>
-                    <div className="bg-yellow-50 rounded-lg p-4 text-center">
-                      <div className="text-2xl font-bold text-yellow-600">
-                        {interns.filter(i => i.status === 'Applied').length}
+                    <div className="bg-green-50 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-green-600">
+                        {interns.filter(i => i.status === 'Active').length}
                       </div>
-                      <div className="text-sm text-yellow-800">Pending</div>
+                      <div className="text-sm text-green-800">Active</div>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-4 text-center">
+                      <div className="text-2xl font-bold text-red-600">
+                        {interns.filter(i => i.status === 'Completed').length}
+                      </div>
+                      <div className="text-sm text-red-800">Completed</div>
                     </div>
                     <div
                       className="bg-indigo-50 rounded-lg p-4 text-center cursor-pointer hover:bg-indigo-100 transition-colors border-2 border-indigo-200"
@@ -1135,75 +1138,82 @@ const AdminDashboard = () => {
                   </button>
                 </div>
               ) : filteredInterns.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                  <table className="min-w-full">
+                <div className="w-full overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+                  <table className="min-w-full text-sm text-gray-700">
                     <thead className="bg-gradient-to-r from-purple-600 to-violet-600 text-white">
                       <tr>
-                        <th className="p-4 text-center font-semibold">Intern Details</th>
-                        <th className="p-4 text-center font-semibold">Contact Info/Applied Date</th>
-                        <th className="p-4 text-center font-semibold">Domain & Duration</th>
-                        <th className="p-4 text-center font-semibold">College Info</th>
-                        <th className="p-4 text-center font-semibold">Status</th>
-                        <th className="p-4 text-center font-semibold">Performance</th>
-                        <th className="p-4 text-center font-semibold">Domain</th>
-                        <th className="p-4 text-center font-semibold no-print">Actions</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">Intern Details</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">Contact / Applied</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">Domain & Duration</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">College Info</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">Status</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">Performance</th>
+                        <th className="p-3 text-center font-semibold whitespace-nowrap">Domain</th>
+                        <th className="p-3 text-center font-semibold no-print whitespace-nowrap">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200 bg-white">
                       {filteredInterns.map((intern) => (
-                        <tr key={intern._id} className="hover:bg-purple-50 transition-colors duration-150">
-                          <td className="p-4">
-                            <div>
-                              <div className="font-semibold text-gray-800">{intern.fullName}</div>
-                              <div className="text-sm text-gray-600">{intern.email}</div>
-                              <div className="text-xs font-bold text-gray-600">{intern.uniqueId}</div>
-                            </div>
+                        <tr
+                          key={intern._id}
+                          className="hover:bg-purple-50 transition-colors duration-150"
+                        >
+                          {/* INTERN DETAILS */}
+                          <td className="p-3">
+                            <div className="font-semibold text-gray-800">{intern.fullName}</div>
+                            <div className="text-xs text-gray-600 break-words">{intern.email}</div>
+                            <div className="text-xs font-bold text-gray-600">{intern.uniqueId}</div>
                           </td>
-                          <td className="p-4">
+
+                          {/* CONTACT INFO */}
+                          <td className="p-3">
                             <div className="text-gray-700">📞 {intern.mobile || "Not provided"}</div>
-                            <div className="text-gray-700">
-                              <p className="text-xs font-bold">Applied : {intern.updatedAt ? new Date(intern.updatedAt).toLocaleDateString() : "Not provided"}</p>
-                            </div>
+                            <p className="text-xs font-bold text-gray-500 mt-1">
+                              Applied:{" "}
+                              {intern.updatedAt
+                                ? new Date(intern.updatedAt).toLocaleDateString()
+                                : "Not provided"}
+                            </p>
                           </td>
-                          <td className="p-4">
-                            <div className="space-y-1">
-                              <span className="inline-block bg-purple-100 text-purple-800 text-sm px-2 py-1 rounded-full">
-                                {intern.domain || "Not specified"}
-                              </span>
-                              <div className="text-sm text-gray-600">
-                                ⏱️ {intern.duration || "Not specified"}
-                              </div>
+
+                          {/* DOMAIN + DURATION */}
+                          <td className="p-3">
+                            <span className="inline-block bg-purple-100 text-purple-800 text-sm px-2 py-1 rounded-full mb-1">
+                              {intern.domain || "Not specified"}
+                            </span>
+                            <div className="text-sm text-gray-600">
+                              ⏱️ {intern.duration || "Not specified"}
                             </div>
                           </td>
 
-                          <td className="p-2 md:p-3">
-                            <div className="min-h-[36px] flex items-center">
-                              <div className="truncate-text-2-lines max-w-full">
-                                <span className={`
-                                 text-xs md:text-sm
-                                   ${intern.college ? "text-gray-600" : "text-gray-400 italic"}
-                                   transition-colors duration-100
-                                 `}>
-                                  {intern.college || "—"}
-                                </span>
-                              </div>
-                            </div>
+                          {/* COLLEGE */}
+                          <td className="p-3 ">
+                            <span
+                              className={`text-xs md:text-sm ${intern.college
+                                  ? "text-gray-700"
+                                  : "text-gray-400 italic"
+                                }`}
+                            >
+                              {intern.college || "—"}
+                            </span>
                           </td>
-                          
-                          <td className="p-4">
-                            <div className="print-only">
-                              <span className={`status-badge status-${intern.status}`}>
-                                {intern.status}
-                              </span>
-                            </div>
+
+                          {/* STATUS */}
+                          <td className="p-3">
                             <select
                               value={intern.status}
-                              onChange={(e) => handleStatusUpdate(intern._id, e.target.value)}
+                              onChange={(e) =>
+                                handleStatusUpdate(intern._id, e.target.value)
+                              }
                               disabled={
                                 updating === intern._id ||
-                                ["Active", "Inactive", "Completed"].includes(intern.status)
+                                ["Active", "Inactive", "Completed"].includes(
+                                  intern.status
+                                )
                               }
-                              className={`${getStatusColor(intern.status)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
+                              className={`${getStatusColor(
+                                intern.status
+                              )} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
                             >
                               <option value="Applied">Applied</option>
                               <option value="Selected">Selected</option>
@@ -1214,31 +1224,32 @@ const AdminDashboard = () => {
                             </select>
                           </td>
 
-                          <td className="p-4">
-                            <div className="print-only">
-                              <span className={`performance-badge performance-${intern.performance}`}>
-                                {intern.performance}
-                              </span>
-                            </div>
+                          {/* PERFORMANCE */}
+                          <td className="p-3">
                             <select
                               value={intern.performance}
-                              onChange={(e) => handlePerformanceUpdate(intern._id, e.target.value)}
+                              onChange={(e) =>
+                                handlePerformanceUpdate(intern._id, e.target.value)
+                              }
                               disabled={updating === intern._id}
-                              className={`${getPerformanceColor(intern.performance)} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
+                              className={`${getPerformanceColor(
+                                intern.performance
+                              )} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
                             >
                               <option value="Good">Good</option>
                               <option value="Excellent">Excellent</option>
                             </select>
                           </td>
-                          <td className="p-4">
-                            <div className="print-only">
-                              <span>{intern.domain}</span>
-                            </div>
+
+                          {/* DOMAIN CHANGE */}
+                          <td className="p-3">
                             <select
                               value={intern.domain}
-                              onChange={(e) => handleDomainUpdate(intern._id, e.target.value)}
+                              onChange={(e) =>
+                                handleDomainUpdate(intern._id, e.target.value)
+                              }
                               disabled={updating === intern._id}
-                              className={`px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
+                              className="px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print"
                             >
                               <option>Sales & Marketing</option>
                               <option>Email Outreaching</option>
@@ -1253,18 +1264,22 @@ const AdminDashboard = () => {
                               <option>Back-end Developer</option>
                             </select>
                           </td>
-                          <td className="p-4 no-print">
-                            <div className="flex gap-2">
+
+                          {/* ACTIONS */}
+                          <td className="p-3 no-print">
+                            <div className="flex justify-center gap-2">
                               <button
-                                onClick={() => navigate(`/Admin-Dashboard/intern/${intern._id}`)}
-                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium text-sm"
+                                onClick={() =>
+                                  navigate(`/Admin-Dashboard/intern/${intern._id}`)
+                                }
+                                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium text-sm flex items-center justify-center"
                               >
-                                < Eye size={20} />
+                                <Eye size={18} />
                               </button>
                               <button
                                 onClick={() => setShowDeleteConfirm(intern._id)}
                                 disabled={updating === intern._id}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm disabled:opacity-50"
+                                className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 font-medium text-sm disabled:opacity-50"
                               >
                                 🗑️
                               </button>
@@ -1281,13 +1296,14 @@ const AdminDashboard = () => {
                     {showSelectedOnly ? "✅" : "👥"}
                   </div>
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">
-                    {showSelectedOnly ? "No selected interns found" : "No interns found"}
+                    {showSelectedOnly
+                      ? "No selected interns found"
+                      : "No interns found"}
                   </h3>
                   <p className="text-gray-500">
                     {showSelectedOnly
                       ? "There are no interns with 'Selected' status"
-                      : "Try adjusting your search or filters"
-                    }
+                      : "Try adjusting your search or filters"}
                   </p>
                   {showSelectedOnly && (
                     <button
