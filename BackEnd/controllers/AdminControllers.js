@@ -213,7 +213,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
 
     await intern.save();
 
-    
+
     const pdfDoc = await PDFDocument.create();
 
 
@@ -248,7 +248,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     });
 
 
-   
+
     // 3️⃣ REGISTER FONTKIT BEFORE EMBEDDING CUSTOM FONT
     pdfDoc.registerFontkit(fontkit);
 
@@ -393,6 +393,323 @@ Graphura India Private Limited
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+
+
+// Add this function to your backend
+export const BulkJoinDate = async (req, res) => {
+  console.log('📅 BulkJoinDate function called');
+  try {
+    const { internIds, joiningDate } = req.body;
+
+    await Intern.updateMany(
+      { _id: { $in: internIds } },
+      { $set: { joiningDate: joiningDate } }
+    );
+
+    res.json({ message: 'Joining dates updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update joining dates' });
+  }
+};
+
+// Bulk Offer Letters Function
+export const generateBulkOfferLetters = async (req, res) => {
+  try {
+    const { internIds, joiningDate } = req.body;
+
+    if (!internIds || !Array.isArray(internIds) || internIds.length === 0) {
+      return res.status(400).json({ error: "Intern IDs array is required" });
+    }
+
+    if (!joiningDate) {
+      return res.status(400).json({ error: "Joining date is required" });
+    }
+
+    const results = {
+      processed: 0,
+      failed: 0,
+      details: []
+    };
+
+    // Process interns sequentially
+    for (const internId of internIds) {
+      try {
+        console.log(`Processing intern: ${internId}`);
+
+        // 1️⃣ Find the intern
+        const intern = await Intern.findById(internId);
+        if (!intern) {
+          results.details.push({
+            internId,
+            status: 'failed',
+            error: 'Intern not found'
+          });
+          results.failed++;
+          continue;
+        }
+
+        if (intern.status !== "Selected") {
+          results.details.push({
+            internId,
+            status: 'failed',
+            error: 'Intern not selected'
+          });
+          results.failed++;
+          continue;
+        }
+
+        // 2️⃣ Generate uniqueId if not already present
+        if (!intern.uniqueId) {
+          intern.uniqueId = await generateUniqueId();
+          console.log(`Generated unique ID: ${intern.uniqueId}`);
+        }
+
+        // 3️⃣ Update joining date
+        intern.joiningDate = new Date(joiningDate);
+        await intern.save();
+
+        // 4️⃣ Generate PDF
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
+
+        // Load background image
+        const backgroundPath = path.join(
+          process.cwd(),
+          "public",
+          "templates",
+          "GRAPHURAOFFERLETTERS.png"
+        );
+
+        if (!fs.existsSync(backgroundPath)) {
+          console.error('Background image not found:', backgroundPath);
+          results.details.push({
+            internId,
+            status: 'failed',
+            error: 'Background template not found'
+          });
+          results.failed++;
+          continue;
+        }
+
+        const backgroundImageBytes = fs.readFileSync(backgroundPath);
+        const backgroundImage = await pdfDoc.embedPng(backgroundImageBytes);
+
+        page.drawImage(backgroundImage, {
+          x: 0,
+          y: 0,
+          width: 595.28,
+          height: 841.89,
+        });
+
+        const formattedJoiningDate = new Date(joiningDate).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+
+        // Register fontkit and load fonts
+        pdfDoc.registerFontkit(fontkit);
+
+        const jostRegularPath = path.join(process.cwd(), "public", "fonts", "Jost-Regular.ttf");
+        const jostBoldPath = path.join(process.cwd(), "public", "fonts", "Jost-Bold.ttf");
+
+        // Check if fonts exist
+        if (!fs.existsSync(jostRegularPath) || !fs.existsSync(jostBoldPath)) {
+          console.error('Font files not found');
+          results.details.push({
+            internId,
+            status: 'failed',
+            error: 'Font files not found'
+          });
+          results.failed++;
+          continue;
+        }
+
+        const font = await pdfDoc.embedFont(fs.readFileSync(jostRegularPath));
+        const fontBold = await pdfDoc.embedFont(fs.readFileSync(jostBoldPath));
+
+        // Draw text content
+        let y = 635;
+        page.drawText("GRAPHURA INDIA PRIVATE LIMITED", {
+          x: 60,
+          y,
+          size: 15,
+          font: fontBold,
+          color: rgb(0, 0, 0),
+        });
+        y -= 20;
+        page.drawText("Gurgaon, Haryana.", {
+          x: 60,
+          y,
+          size: 14,
+          font,
+          color: rgb(0, 0, 0),
+        });
+
+        y -= 60;
+        page.drawText(`To,`, { x: 60, y, size: 13, font, color: rgb(0, 0, 0) });
+        y -= 20;
+        page.drawText(`${intern.fullName}`, {
+          x: 60,
+          y,
+          size: 14,
+          font: fontBold,
+          color: rgb(0, 0, 0),
+        });
+        y -= 15;
+        page.drawText(`${intern.domain} Department`, {
+          x: 60,
+          y,
+          size: 14,
+          font,
+          color: rgb(0, 0, 0),
+        });
+
+        y -= 40;
+        page.drawText(
+          "Subject: Offer of Internship at Graphura India Private Limited",
+          { x: 60, y, size: 13, font, color: rgb(0, 0, 0) }
+        );
+
+        y -= 35;
+        page.drawText(`Dear ${intern.fullName},`, {
+          x: 60,
+          y,
+          size: 14,
+          font,
+          color: rgb(0, 0, 0),
+        });
+
+        y -= 20;
+        const textLines = [
+          `We are delighted to offer you the position of Intern at Graphura India Private`,
+          `Limited, starting from ${formattedJoiningDate}. We were impressed with your skills and`,
+          "believe that your contribution will add value to our team.",
+          "",
+          "We look forward to welcoming you aboard and are excited about the journey",
+          "ahead. Please feel free to reach out if you have any questions before your start",
+          "date. Together, let's create impactful work and grow as a team. Once again,",
+          "congratulations and welcome to Graphura India Private Limited.",
+        ];
+
+        textLines.forEach((line) => {
+          page.drawText(line, { x: 60, y, size: 14, font, color: rgb(0, 0, 0) });
+          y -= 15;
+        });
+
+        y -= 25;
+        page.drawText("Thank you", { x: 60, y, size: 14, font: fontBold });
+        y -= 15;
+        page.drawText("Team Graphura.", { x: 60, y, size: 14, font: fontBold });
+
+        y -= 95;
+        page.drawText("Unique ID:", { x: 75, y, size: 14, font: fontBold });
+        y -= 15;
+        page.drawText(intern.uniqueId, { x: 75, y, size: 14, font: fontBold });
+
+        y -= 15;
+        page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
+        page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
+
+        // 5️⃣ Save PDF
+        const outputDir = path.join(process.cwd(), "public", "generated", "offerletters");
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}-${intern.uniqueId.replace(/\//g, '_')}.pdf`;
+        const filePath = path.join(outputDir, fileName);
+
+        const pdfBytes = await pdfDoc.save();
+        fs.writeFileSync(filePath, pdfBytes);
+
+        // 6️⃣ Send email (only if email credentials are available)
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+          const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+              user: process.env.EMAIL_USER,
+              pass: process.env.EMAIL_PASS,
+            },
+          });
+
+          await transporter.sendMail({
+            from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
+            to: intern.email,
+            subject: "Internship Offer Letter – Graphura India Private Limited",
+            text: `Dear ${intern.fullName},
+
+It is our pleasure to offer you the position of intern at Graphura India Private Limited.
+This internship is scheduled to commence on ${formattedJoiningDate}. 
+
+Your Unique ID: ${intern.uniqueId}
+
+During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
+
+We kindly request you to review the attached document carefully.
+We look forward to welcoming you to Graphura and are confident that this internship will provide you with a rewarding and enriching experience.
+
+Best regards,
+HR Department
+Graphura India Private Limited
+🌐 www.graphura.online`,
+            attachments: [
+              {
+                filename: fileName,
+                path: filePath,
+              },
+            ],
+          });
+        } else {
+          console.log('Email credentials not configured, skipping email send');
+        }
+
+        results.processed++;
+        results.details.push({
+          internId,
+          status: 'success',
+          email: intern.email,
+          uniqueId: intern.uniqueId,
+          name: intern.fullName
+        });
+
+        console.log(`✅ Offer letter generated for ${intern.fullName} (${intern.uniqueId})`);
+
+      } catch (error) {
+        console.error(`❌ Error processing intern ${internId}:`, error);
+        results.failed++;
+        results.details.push({
+          internId,
+          status: 'failed',
+          error: error.message
+        });
+      }
+    }
+
+    const UpdatestatustoActive = await Intern.updateMany(
+      { _id: { $in: internIds } },
+      { $set: { status: "Active" } },
+      { new: true }
+    );
+
+
+    res.json({
+      success: true,
+      message: `Bulk offer letter generation completed. Processed: ${results.processed}, Failed: ${results.failed}`,
+      ...results
+    });
+
+  } catch (error) {
+    console.error("Error in bulk offer letter generation:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      details: error.message
+    });
+  }
+};
+
+
 
 
 export const updateJoiningDate = async (req, res) => {
@@ -761,7 +1078,6 @@ export const GetApplication = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
 }
-
 
 
 

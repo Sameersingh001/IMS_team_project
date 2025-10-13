@@ -3,12 +3,18 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Graphura from "../../../public/GraphuraLogo.jpg";
 import * as XLSX from "xlsx";
-import { Eye } from "lucide-react";
+import { Eye, CheckCircle, Calendar, Mail, Wrench, FileSpreadsheet, Printer, Copy } from "lucide-react";
 
 
 const AdminDashboard = () => {
   const storedUser = JSON.parse(localStorage.getItem("user"));
 
+  const [showBulkOfferModal, setShowBulkOfferModal] = useState(false);
+  const [generatingOffers, setGeneratingOffers] = useState(false);
+
+  const [showBulkJoiningDateModal, setShowBulkJoiningDateModal] = useState(false);
+  const [bulkJoiningDate, setBulkJoiningDate] = useState("");
+  const [updatingBulkJoining, setUpdatingBulkJoining] = useState(false);
   const [interns, setInterns] = useState([]);
   const [departmentIncharges, setDepartmentIncharges] = useState([]);
   const [hrManagers, setHrManagers] = useState([]);
@@ -47,6 +53,60 @@ const AdminDashboard = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [search, status, performance, activeTab]);
+
+
+  const generateBulkOfferLetters = async () => {
+    const selectedInterns = interns.filter(intern => intern.status === "Selected");
+
+    if (selectedInterns.length === 0) {
+      setCopySuccess("No selected interns found to generate offer letters");
+      setTimeout(() => setCopySuccess(""), 3000);
+      return;
+    }
+
+    // Check if joining date is set
+    if (!bulkJoiningDate) {
+      setCopySuccess("Please set joining date first");
+      setTimeout(() => setCopySuccess(""), 3000);
+      return;
+    }
+
+    setGeneratingOffers(true);
+    try {
+      const response = await axios.post(
+        "/api/admin/interns/bulk-offer-letters",
+        {
+          internIds: selectedInterns.map(intern => intern._id),
+          joiningDate: bulkJoiningDate  // Add this line
+        },
+        {
+          withCredentials: true,
+          timeout: 300000
+        }
+      );
+
+      setShowBulkOfferModal(false);
+       // Clear the date
+
+      if (response.data.success) {
+        setCopySuccess(`✅ ${response.data.processed} offer letters generated!`);
+        await fetchInterns(); // Refresh data to show new unique IDs
+      } else {
+        setCopySuccess("❌ Some offer letters failed");
+      }
+      setTimeout(() => setCopySuccess(""), 5000);
+
+    } catch (err) {
+      console.error("Error generating bulk offer letters:", err);
+      setCopySuccess("❌ Failed to generate offer letters");
+      setTimeout(() => setCopySuccess(""), 3000);
+    }
+    setGeneratingOffers(false);
+  };
+
+
+
+
 
   // Fetch application settings
   const fetchApplicationSettings = async () => {
@@ -259,6 +319,45 @@ const AdminDashboard = () => {
       setError("Failed to update status");
     }
     setUpdating(null);
+  };
+
+
+  const handleBulkJoiningDateUpdate = async () => {
+    if (!bulkJoiningDate) {
+      setCopySuccess("Please select a joining date");
+      setTimeout(() => setCopySuccess(""), 3000);
+      return;
+    }
+
+    const selectedInterns = interns.filter(intern => intern.status === "Selected");
+    if (selectedInterns.length === 0) {
+      setCopySuccess("No selected interns found to update");
+      setTimeout(() => setCopySuccess(""), 3000);
+      return;
+    }
+
+    setUpdatingBulkJoining(true);
+    try {
+      await axios.put(
+        "/api/admin/interns/bulk-joining-date",
+        {
+          internIds: selectedInterns.map(intern => intern._id),
+          joiningDate: bulkJoiningDate
+        },
+        { withCredentials: true }
+      );
+
+      await fetchInterns();
+      setShowBulkJoiningDateModal(false);
+
+      setCopySuccess(`✅ Joining date updated for ${selectedInterns.length} selected interns!`);
+      setTimeout(() => setCopySuccess(""), 3000);
+    } catch (err) {
+      console.error("Error updating bulk joining date:", err);
+      setCopySuccess("❌ Failed to update joining dates");
+      setTimeout(() => setCopySuccess(""), 3000);
+    }
+    setUpdatingBulkJoining(false);
   };
 
   const handlePerformanceUpdate = async (internId, newPerformance) => {
@@ -817,9 +916,9 @@ const AdminDashboard = () => {
             <div className="flex gap-3">
               <button
                 onClick={handlePrint}
-                className="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print"
+                className="px-6 py-2 flex bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print"
               >
-                📄 Print Report
+                <Printer className="mr-2" /> Print Report
               </button>
               <button
                 onClick={handleLogout}
@@ -837,6 +936,114 @@ const AdminDashboard = () => {
             <span className="block sm:inline">{copySuccess}</span>
           </div>
         )}
+
+        {/* Bulk Offer Letter Modal */}
+        {showBulkOfferModal && (
+          <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Generate Offer Letters
+              </h3>
+
+              {console.log(bulkJoiningDate)}
+
+              {/* Show current joining date */}
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-blue-800 font-medium">Joining Date:</span>
+                  <span className="text-blue-600">{bulkJoiningDate || "Not set"}</span>
+                </div>
+                {!bulkJoiningDate && (
+                  <p className="text-red-600 text-sm mt-2">
+                    Please set joining date first using the "Set Joining Date" button
+                  </p>
+                )}
+              </div>
+
+              <p className="text-gray-600 mb-4">
+                This will generate and send offer letters to all <strong>{selectedCount}</strong> selected interns.
+                Unique IDs will be automatically generated and saved to database.
+              </p>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowBulkOfferModal(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={generateBulkOfferLetters}
+                  disabled={generatingOffers || !bulkJoiningDate}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {generatingOffers ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate Offer Letters"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Joining Date Modal */}
+        {showBulkJoiningDateModal && (
+          <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Set Joining Date for Selected Interns
+              </h3>
+              <p className="text-gray-600 mb-4">
+                This will update the joining date for all <strong>{selectedCount}</strong> selected interns.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Joining Date
+                </label>
+                <input
+                  type="date"
+                  value={bulkJoiningDate}
+                  onChange={(e) => setBulkJoiningDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowBulkJoiningDateModal(false);
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBulkJoiningDateUpdate}
+                  disabled={updatingBulkJoining || !bulkJoiningDate}
+                  className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {updatingBulkJoining ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Joining Date"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+
+
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
@@ -1015,17 +1222,17 @@ const AdminDashboard = () => {
                       <div className="text-sm text-red-800">Completed</div>
                     </div>
                     <div
-                      className="bg-indigo-50 rounded-lg p-4 text-center cursor-pointer hover:bg-indigo-100 transition-colors border-2 border-indigo-200"
+                      className="bg-indigo-50 rounded-lg p-4 flex flex-col text-center items-center justify-center cursor-pointer hover:bg-indigo-100 transition-colors border-2 border-indigo-200"
                       onClick={() => setShowEmailCopy(!showEmailCopy)}
                     >
-                      <div className="text-2xl font-bold text-indigo-600">📧</div>
-                      <div className="text-sm text-indigo-800">Email Tools</div>
+                      <div className="text-2xl font-bold text-indigo-600"><Wrench /></div>
+                      <div className="text-sm text-indigo-800">Selected Intern Tools</div>
                     </div>
                     <div
-                      className="bg-green-50 rounded-lg p-4 text-center cursor-pointer hover:bg-green-100 transition-colors border-2 border-green-200"
+                      className="bg-green-50 rounded-lg p-4 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-green-100 transition-colors border-2 border-green-200"
                       onClick={exportInternsToExcel}
                     >
-                      <div className="text-2xl font-bold text-green-600">📊</div>
+                      <div className="text-2xl font-bold text-green-600"><FileSpreadsheet /></div>
                       <div className="text-sm text-green-800">Export Excel</div>
                     </div>
                   </div>
@@ -1042,13 +1249,26 @@ const AdminDashboard = () => {
                         onClick={copySelectedEmails}
                         className="px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors font-medium flex items-center gap-2"
                       >
-                        📋 Copy All Emails
+                        <Copy /> Copy All Emails
+                      </button>
+                      <button
+                        onClick={() => setShowBulkJoiningDateModal(true)}
+                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium flex items-center gap-2"
+                      >
+                        <Calendar />  Set Joining Date
+                      </button>
+                      <button
+                        onClick={() => setShowBulkOfferModal(true)}
+                        disabled={selectedCount === 0}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <CheckCircle /> Generate
                       </button>
                       <button
                         onClick={openEmailClient}
                         className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
                       >
-                        ✉️ Open Email Client
+                        <Mail /> Email Client
                       </button>
                       <div className="flex-1 bg-white rounded-lg px-3 py-2 border border-indigo-200 text-sm text-gray-600 flex items-center">
                         <span className="truncate">{getSelectedInternsEmails()}</span>
@@ -1101,6 +1321,9 @@ const AdminDashboard = () => {
                   >
                     {showSelectedOnly ? '✅ Showing Selected' : '👥 Show All'}
                   </button>
+
+                  {/* Add this in the email tools panel after the existing buttons */}
+
                 </div>
 
                 {/* Selected Only Notice */}
@@ -1190,8 +1413,8 @@ const AdminDashboard = () => {
                           <td className="p-3 ">
                             <span
                               className={`text-xs md:text-sm ${intern.college
-                                  ? "text-gray-700"
-                                  : "text-gray-400 italic"
+                                ? "text-gray-700"
+                                : "text-gray-400 italic"
                                 }`}
                             >
                               {intern.college || "—"}

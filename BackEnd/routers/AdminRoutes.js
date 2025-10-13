@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/AuthVerify.js"
 import { logoutUser } from "../controllers/AuthController.js";
-import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin} from "../controllers/AdminControllers.js";
+import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin, BulkJoinDate, generateBulkOfferLetters} from "../controllers/AdminControllers.js";
 
 
 const router = express.Router();
@@ -32,6 +32,9 @@ router.put("/admin/interns/:id/duration", verifyToken,updateDuration )
 
 router.post("/admin/logout", verifyToken, logoutUser)
 router.post("/admin/interns/:id/generate-offer-letter",verifyToken, generateOfferLetterWithPNG)
+
+router.put("/admin/interns/bulk-joining-date",verifyToken, BulkJoinDate)
+router.post("/admin/interns/bulk-offer-letters",verifyToken, generateBulkOfferLetters)
 
 router.delete("/admin/interns/:id",verifyToken, deleteIntern);
 router.delete("/admin/department-incharges/:id",verifyToken, deleteIncharge);
