@@ -56,7 +56,6 @@ export const getAllInterns = async (req, res) => {
       interns,
     });
   } catch (error) {
-    console.error("Error fetching interns:", error);
     res.status(500).json({ message: "Server error. Try again later." });
   }
 };
@@ -73,7 +72,6 @@ export const getInternById = async (req, res) => {
 
     res.status(200).json(intern);
   } catch (err) {
-    console.error("Error fetching intern:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -102,7 +100,6 @@ export const updateStatus = async (req, res) => {
     await intern.save();
     res.status(200).json({ message: "Status updated successfully", intern });
   } catch (err) {
-    console.error("Error updating status:", err);
     res.status(500).json({ message: "Failed to update status" });
   }
 };
@@ -126,7 +123,6 @@ export const updatePerformance = async (req, res) => {
       .status(200)
       .json({ message: "Performance updated successfully", intern });
   } catch (err) {
-    console.error("Error updating performance:", err);
     res.status(500).json({ message: "Failed to update performance" });
   }
 };
@@ -145,7 +141,6 @@ export const updateDomain = async (req, res) => {
 
     res.status(200).json({ message: "Domain updated successfully", intern });
   } catch (err) {
-    console.error("Error updating domain:", err);
     res.status(500).json({ message: "Failed to update domain" });
   }
 };
@@ -158,7 +153,6 @@ export const deleteIntern = async (req, res) => {
     if (!intern) return res.status(404).json({ message: "Intern not found" });
     res.status(200).json({ message: "Intern deleted successfully" });
   } catch (err) {
-    console.error("Error deleting intern:", err);
     res.status(500).json({ message: "Failed to delete intern" });
   }
 };
@@ -213,9 +207,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
 
     await intern.save();
 
-
     const pdfDoc = await PDFDocument.create();
-
 
     // 3️⃣ Create PDF
     const page = pdfDoc.addPage([595.28, 841.89]); // A4 size
@@ -247,11 +239,8 @@ export const generateOfferLetterWithPNG = async (req, res) => {
       year: "numeric",
     });
 
-
-
-    // 3️⃣ REGISTER FONTKIT BEFORE EMBEDDING CUSTOM FONT
+    // 4️⃣ REGISTER FONTKIT BEFORE EMBEDDING CUSTOM FONT
     pdfDoc.registerFontkit(fontkit);
-
 
     const jostRegularPath = path.join(process.cwd(), "public", "fonts", "Jost-Regular.ttf");
     const jostBoldPath = path.join(process.cwd(), "public", "fonts", "Jost-Bold.ttf");
@@ -341,17 +330,10 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
     page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
 
-    // 4️⃣ Save PDF
-    const outputDir = path.join(process.cwd(), "public", "generated", "offerletters");
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-
-    const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
-    const filePath = path.join(outputDir, fileName);
-
+    // 5️⃣ Generate PDF bytes (without saving to file system)
     const pdfBytes = await pdfDoc.save();
-    fs.writeFileSync(filePath, pdfBytes);
 
-    // 5️⃣ Send email
+    // 6️⃣ Send email with PDF buffer
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -359,6 +341,8 @@ export const generateOfferLetterWithPNG = async (req, res) => {
         pass: process.env.EMAIL_PASS,
       },
     });
+
+    const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
 
     await transporter.sendMail({
       from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
@@ -379,17 +363,17 @@ Graphura India Private Limited
       attachments: [
         {
           filename: fileName,
-          path: filePath,
+          content: Buffer.from(pdfBytes), // Use buffer instead of file path
+          contentType: 'application/pdf'
         },
       ],
     });
 
-    // 6️⃣ Send PDF as response
+    // 7️⃣ Send PDF as response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.send(Buffer.from(pdfBytes));
   } catch (error) {
-    console.error("Error generating offer letter:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -398,7 +382,6 @@ Graphura India Private Limited
 
 // Add this function to your backend
 export const BulkJoinDate = async (req, res) => {
-  console.log('📅 BulkJoinDate function called');
   try {
     const { internIds, joiningDate } = req.body;
 
@@ -435,8 +418,6 @@ export const generateBulkOfferLetters = async (req, res) => {
     // Process interns sequentially
     for (const internId of internIds) {
       try {
-        console.log(`Processing intern: ${internId}`);
-
         // 1️⃣ Find the intern
         const intern = await Intern.findById(internId);
         if (!intern) {
@@ -462,7 +443,6 @@ export const generateBulkOfferLetters = async (req, res) => {
         // 2️⃣ Generate uniqueId if not already present
         if (!intern.uniqueId) {
           intern.uniqueId = await generateUniqueId();
-          console.log(`Generated unique ID: ${intern.uniqueId}`);
         }
 
         // 3️⃣ Update joining date
@@ -482,7 +462,6 @@ export const generateBulkOfferLetters = async (req, res) => {
         );
 
         if (!fs.existsSync(backgroundPath)) {
-          console.error('Background image not found:', backgroundPath);
           results.details.push({
             internId,
             status: 'failed',
@@ -516,7 +495,6 @@ export const generateBulkOfferLetters = async (req, res) => {
 
         // Check if fonts exist
         if (!fs.existsSync(jostRegularPath) || !fs.existsSync(jostBoldPath)) {
-          console.error('Font files not found');
           results.details.push({
             internId,
             status: 'failed',
@@ -612,17 +590,9 @@ export const generateBulkOfferLetters = async (req, res) => {
         page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
         page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
 
-        // 5️⃣ Save PDF
-        const outputDir = path.join(process.cwd(), "public", "generated", "offerletters");
-        if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
-        }
-
-        const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}-${intern.uniqueId.replace(/\//g, '_')}.pdf`;
-        const filePath = path.join(outputDir, fileName);
-
+        // 5️⃣ Generate PDF bytes (without saving to file system)
         const pdfBytes = await pdfDoc.save();
-        fs.writeFileSync(filePath, pdfBytes);
+        const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}-${intern.uniqueId.replace(/\//g, '_')}.pdf`;
 
         // 6️⃣ Send email (only if email credentials are available)
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
@@ -657,13 +627,12 @@ Graphura India Private Limited
             attachments: [
               {
                 filename: fileName,
-                path: filePath,
+                content: Buffer.from(pdfBytes), // Use buffer instead of file path
+                contentType: 'application/pdf'
               },
             ],
           });
-        } else {
-          console.log('Email credentials not configured, skipping email send');
-        }
+        } 
 
         results.processed++;
         results.details.push({
@@ -674,10 +643,8 @@ Graphura India Private Limited
           name: intern.fullName
         });
 
-        console.log(`✅ Offer letter generated for ${intern.fullName} (${intern.uniqueId})`);
 
       } catch (error) {
-        console.error(`❌ Error processing intern ${internId}:`, error);
         results.failed++;
         results.details.push({
           internId,
@@ -687,12 +654,17 @@ Graphura India Private Limited
       }
     }
 
-    const UpdatestatustoActive = await Intern.updateMany(
-      { _id: { $in: internIds } },
-      { $set: { status: "Active" } },
-      { new: true }
-    );
+    // Update status to Active for successfully processed interns
+    const successfulInternIds = results.details
+      .filter(detail => detail.status === 'success')
+      .map(detail => detail.internId);
 
+    if (successfulInternIds.length > 0) {
+      await Intern.updateMany(
+        { _id: { $in: successfulInternIds } },
+        { $set: { status: "Active" } }
+      );
+    }
 
     res.json({
       success: true,
@@ -701,7 +673,6 @@ Graphura India Private Limited
     });
 
   } catch (error) {
-    console.error("Error in bulk offer letter generation:", error);
     res.status(500).json({
       error: "Internal server error",
       details: error.message
@@ -725,7 +696,6 @@ export const updateJoiningDate = async (req, res) => {
 
     res.status(200).json({ message: "Joining Date updated successfully", intern });
   } catch (err) {
-    console.error("Error updating JoiningDate:", err);
     res.status(500).json({ message: "Failed to update domain" });
   }
 };
@@ -752,7 +722,6 @@ export const updateDuration = async (req, res) => {
       intern
     });
   } catch (error) {
-    console.error("Error updating duration:", error);
     res.status(500).json({ message: "Server error" });
   }
 }
@@ -763,7 +732,6 @@ export const InternIncharges = async (req, res) => {
     const incharges = await InternIncharge.find().select("-password"); // exclude password
     res.status(200).json({ success: true, incharges });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 }
@@ -791,7 +759,6 @@ export const InchargeProfile = async (req, res) => {
       Interns: interns,
     });
   } catch (error) {
-    console.error("Error in fetching incharge profile:", error);
     res.status(500).json({
       message: "Error in fetching incharge profile",
       error: error.message,
@@ -826,7 +793,6 @@ export const updateInchargeDepartments = async (req, res) => {
       incharge,
     });
   } catch (error) {
-    console.error("Error updating departments:", error);
     res.status(500).json({ message: "Error updating incharge departments" });
   }
 };
@@ -864,7 +830,6 @@ export const removeInchargeDepartment = async (req, res) => {
       incharge,
     });
   } catch (error) {
-    console.error("Error removing department:", error);
     res.status(500).json({ message: "Error removing department" });
   }
 };
@@ -891,7 +856,6 @@ export const ToggleInchargeStatus = async (req, res) => {
 
     res.status(200).json({ message: `Incharge status updated to ${newStatus}`, incharge });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -910,7 +874,6 @@ export const deleteIncharge = async (req, res) => {
 
     res.status(200).json({ message: "Incharge deleted successfully" });
   } catch (err) {
-    console.error("Error deleting incharge:", err);
     res.status(500).json({
       message: "Error deleting incharge",
       error: err.message,
@@ -929,7 +892,6 @@ export const getHRManagers = async (req, res) => {
       hrManagers: hrUsers // optional full data
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error fetching HR managers", error: error.message });
   }
 };
@@ -956,7 +918,6 @@ export const toggleHRStatus = async (req, res) => {
       hrUser
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Error updating HR status", error: error.message });
   }
 };
@@ -979,7 +940,6 @@ export const deleteHR = async (req, res) => {
 
     res.status(200).json({ success: true, message: "HR user deleted successfully" });
   } catch (error) {
-    console.error("Delete HR Error:", error);
     res.status(500).json({ success: false, message: "Error deleting HR user", error: error.message });
   }
 };
@@ -1004,7 +964,6 @@ export const InchargeComments = async (req, res) => {
       comments: inchargeComments
     });
   } catch (error) {
-    console.error('Get incharge comments error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching incharge comments'
@@ -1029,7 +988,6 @@ export const InchargeCommentsDetails = async (req, res) => {
       incharge
     });
   } catch (error) {
-    console.error('Get incharge details error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching incharge details'
@@ -1056,7 +1014,6 @@ export const InchargeDeleteComments = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Delete incharge comment error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while deleting comment'
@@ -1108,7 +1065,6 @@ export const toggleApplicationStatus = async (req, res) => {
 
     res.json({ message: "Application status updated successfully", settings });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ error: "Failed to update settings" });
   }
 };
@@ -1132,7 +1088,6 @@ export const getHrCommentsForAdmin = async (req, res) => {
       hrComments: intern.hrComments || [],
     });
   } catch (err) {
-    console.error("Error fetching HR comments for Admin:", err);
     res.status(500).json({ message: "Failed to fetch HR comments" });
   }
 };
