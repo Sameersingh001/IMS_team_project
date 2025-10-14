@@ -336,12 +336,15 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     // 6️⃣ Send email with PDF buffer
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
+      port: 587,       // Use 587 instead of 465
+      secure: false,   // true only for 465
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnauthorized: false // allow self-signed certs
+      }
     });
 
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
@@ -600,12 +603,15 @@ export const generateBulkOfferLetters = async (req, res) => {
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
           const transporter = nodemailer.createTransport({
             host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
+            port: 587,       // Use 587 instead of 465
+            secure: false,   // true only for 465
             auth: {
               user: process.env.EMAIL_USER,
               pass: process.env.EMAIL_PASS,
             },
+            tls: {
+              rejectUnauthorized: false // allow self-signed certs
+            }
           });
 
           await transporter.sendMail({
