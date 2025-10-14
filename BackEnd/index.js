@@ -7,7 +7,7 @@ import {updateInternStatus} from "./CronJob/CalculateDuration.js"
 dotenv.config();
 
 import cors from "cors";
-app.use(cors());
+app.use(cors({ origin: "*" }));
 const PORT = process.env.PORT || 8000;
 
 app.use(express.json());
