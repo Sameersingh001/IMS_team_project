@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "https://ims-team-project.onrender.com/api/$1" }
+    { "source": "/api/(.*)", "destination": "https://ims-team-project.onrender.com/api/$1" }
   ]
 }
