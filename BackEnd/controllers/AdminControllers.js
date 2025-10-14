@@ -335,7 +335,9 @@ export const generateOfferLetterWithPNG = async (req, res) => {
 
     // 6️⃣ Send email with PDF buffer
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -597,7 +599,9 @@ export const generateBulkOfferLetters = async (req, res) => {
         // 6️⃣ Send email (only if email credentials are available)
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
           const transporter = nodemailer.createTransport({
-            service: "gmail",
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
             auth: {
               user: process.env.EMAIL_USER,
               pass: process.env.EMAIL_PASS,
@@ -630,7 +634,7 @@ Graphura India Private Limited
               },
             ],
           });
-        } 
+        }
 
         results.processed++;
         results.details.push({
