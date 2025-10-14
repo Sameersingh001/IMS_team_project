@@ -335,16 +335,13 @@ export const generateOfferLetterWithPNG = async (req, res) => {
 
     // 6️⃣ Send email with PDF buffer
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,       // Use 587 instead of 465
+      host: "smtp-relay.brevo.com", // Brevo SMTP relay
+      port: 587,                     // Use 587 for TLS
       secure: false,   // true only for 465
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        pass: process.env.BREVO_API_KEY,
       },
-      tls: {
-        rejectUnauthorized: false // allow self-signed certs
-      }
     });
 
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
@@ -602,12 +599,12 @@ export const generateBulkOfferLetters = async (req, res) => {
         // 6️⃣ Send email (only if email credentials are available)
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
           const transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 587,       // Use 587 instead of 465
-            secure: false,   // true only for 465
+  host: "smtp-relay.brevo.com", // Brevo SMTP relay
+  port: 587,                     // Use 587 for TLS
+  secure: false,  // true only for 465
             auth: {
               user: process.env.EMAIL_USER,
-              pass: process.env.EMAIL_PASS,
+              pass: process.env.BREVO_API_KEY,
             },
             tls: {
               rejectUnauthorized: false // allow self-signed certs
