@@ -613,8 +613,6 @@ export const generateBulkOfferLetters = async (req, res) => {
 It is our pleasure to offer you the position of intern at Graphura India Private Limited.
 This internship is scheduled to commence on ${formattedJoiningDate}. 
 
-Your Unique ID: ${intern.uniqueId}
-
 During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
 
 We kindly request you to review the attached document carefully.
