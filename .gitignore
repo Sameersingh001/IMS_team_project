@@ -28,5 +28,9 @@ node_modules/
 FrontEnd/node_modules/
 BackEnd/node_modules/
 
+FrontEnd/.env
+BackEnd/.env
+
+
 
 
