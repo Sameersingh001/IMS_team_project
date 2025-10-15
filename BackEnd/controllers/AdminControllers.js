@@ -347,7 +347,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
 
     await transporter.sendMail({
-      from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
+      from: `"Graphura HR" <${process.env.FROM_EMAIL}>`,
       to: intern.email,
       subject: "Internship Offer Letter – Graphura India Private Limited",
       text: `Dear ${intern.fullName},
@@ -597,11 +597,11 @@ export const generateBulkOfferLetters = async (req, res) => {
         const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}-${intern.uniqueId.replace(/\//g, '_')}.pdf`;
 
         // 6️⃣ Send email (only if email credentials are available)
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        if (process.env.EMAIL_USER && process.env.BREVO_API_KEY) {
           const transporter = nodemailer.createTransport({
-  host: "smtp-relay.brevo.com", // Brevo SMTP relay
-  port: 587,                     // Use 587 for TLS
-  secure: false,  // true only for 465
+            host: "smtp-relay.brevo.com", // Brevo SMTP relay
+            port: 587,                     // Use 587 for TLS
+            secure: false,  // true only for 465
             auth: {
               user: process.env.EMAIL_USER,
               pass: process.env.BREVO_API_KEY,
@@ -612,7 +612,7 @@ export const generateBulkOfferLetters = async (req, res) => {
           });
 
           await transporter.sendMail({
-            from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
+            from: `"Graphura HR" <${process.env.FROM_EMAIL}>`,
             to: intern.email,
             subject: "Internship Offer Letter – Graphura India Private Limited",
             text: `Dear ${intern.fullName},

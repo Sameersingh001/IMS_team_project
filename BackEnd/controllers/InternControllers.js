@@ -65,10 +65,14 @@ The Graphura Team
 🌐 www.graphura.online`;
 
         const mailOptions = {
-            from: '"Graphura Team" <no-reply@graphura.com>', // replace with your sender email
-            to: newIntern.email,
+            from: {
+                name:"Graphura Team",
+                address: process.env.FROM_EMAIL || process.env.EMAIL_USER
+            },
+            to: Intern.email,
             subject: "Graphura - Internship Application Received",
-            text: emailMsg, // plain text email
+            text: emailMsg,
+            html: htmlMsg,
         };
 
         await transporter.sendMail(mailOptions);
