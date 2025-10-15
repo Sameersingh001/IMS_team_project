@@ -9,7 +9,8 @@ import User from "../models/UserDB.js"
 import Setting from "../models/SettingDB.js"
 import bcrypt from "bcrypt"
 import * as fontkit from "fontkit"; // import fontkit
-
+import axios from "axios"
+import { sendEmail } from '../config/emailConfig.js';
 
 export const getAllInterns = async (req, res) => {
   try {
@@ -330,27 +331,13 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
     page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
 
-    // 5️⃣ Generate PDF bytes (without saving to file system)
+    // 5️⃣ Generate PDF bytes
     const pdfBytes = await pdfDoc.save();
-
-    // 6️⃣ Send email with PDF buffer
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com", // Brevo SMTP relay
-      port: 587,                     // Use 587 for TLS
-      secure: false,   // true only for 465
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.BREVO_API_KEY,
-      },
-    });
 
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
 
-    await transporter.sendMail({
-      from: `"Graphura HR" <${process.env.FROM_EMAIL}>`,
-      to: intern.email,
-      subject: "Internship Offer Letter – Graphura India Private Limited",
-      text: `Dear ${intern.fullName},
+    // Email content
+    const emailText = `Dear ${intern.fullName},
 
 It is our pleasure to offer you the position of intern at Graphura India Private Limited.
 This internship is scheduled to commence on ${formattedJoiningDate}. During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
@@ -361,21 +348,46 @@ We look forward to welcoming you to Graphura and are confident that this interns
 Best regards,
 HR Department
 Graphura India Private Limited
-🌐 www.graphura.online`,
-      attachments: [
+🌐 www.graphura.online
+`;
+
+    // 6️⃣ Send Email with PDF attachment using Brevo API
+    try {
+      await axios.post(
+        "https://api.brevo.com/v3/smtp/email",
         {
-          filename: fileName,
-          content: Buffer.from(pdfBytes), // Use buffer instead of file path
-          contentType: 'application/pdf'
+          sender: { name: "Graphura", email: process.env.FROM_EMAIL },
+          to: [{ email: intern.email }],
+          subject: "Internship Offer Letter – Graphura India Private Limited",
+          htmlContent: `<pre style="font-family:inherit;">${emailText}</pre>`,
+          attachment: [
+            {
+              name: fileName,
+              content: Buffer.from(pdfBytes).toString("base64"),
+              type: "application/pdf",
+              disposition: "attachment",
+            },
+          ],
         },
-      ],
-    });
+        {
+          headers: {
+            "api-key": process.env.BREVO_API_KEY,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    } catch (emailError) {
+      console.error("❌ Email send error:", emailError.response?.data || emailError.message);
+      // Continue even if email fails - still send the PDF as response
+    }
 
     // 7️⃣ Send PDF as response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     res.send(Buffer.from(pdfBytes));
+
   } catch (error) {
+    console.error("Error generating offer letter:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -592,35 +604,16 @@ export const generateBulkOfferLetters = async (req, res) => {
         page.drawText("Date:", { x: 75, y, size: 14, font: fontBold });
         page.drawText(formattedJoiningDate, { x: 115, y, size: 14, font });
 
-        // 5️⃣ Generate PDF bytes (without saving to file system)
+        // 5️⃣ Generate PDF bytes
         const pdfBytes = await pdfDoc.save();
         const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}-${intern.uniqueId.replace(/\//g, '_')}.pdf`;
 
-        // 6️⃣ Send email (only if email credentials are available)
-        if (process.env.EMAIL_USER && process.env.BREVO_API_KEY) {
-          const transporter = nodemailer.createTransport({
-            host: "smtp-relay.brevo.com", // Brevo SMTP relay
-            port: 587,                     // Use 587 for TLS
-            secure: false,  // true only for 465
-            auth: {
-              user: process.env.EMAIL_USER,
-              pass: process.env.BREVO_API_KEY,
-            },
-            tls: {
-              rejectUnauthorized: false // allow self-signed certs
-            }
-          });
-
-          await transporter.sendMail({
-            from: `"Graphura HR" <${process.env.FROM_EMAIL}>`,
-            to: intern.email,
-            subject: "Internship Offer Letter – Graphura India Private Limited",
-            text: `Dear ${intern.fullName},
+        // 6️⃣ Send email using Brevo API (like your single offer letter function)
+        if (process.env.BREVO_API_KEY && process.env.FROM_EMAIL) {
+          const emailText = `Dear ${intern.fullName},
 
 It is our pleasure to offer you the position of intern at Graphura India Private Limited.
-This internship is scheduled to commence on ${formattedJoiningDate}. 
-
-During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
+This internship is scheduled to commence on ${formattedJoiningDate}. During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
 
 We kindly request you to review the attached document carefully.
 We look forward to welcoming you to Graphura and are confident that this internship will provide you with a rewarding and enriching experience.
@@ -628,15 +621,37 @@ We look forward to welcoming you to Graphura and are confident that this interns
 Best regards,
 HR Department
 Graphura India Private Limited
-🌐 www.graphura.online`,
-            attachments: [
+🌐 www.graphura.online
+`;
+
+          try {
+            await axios.post(
+              "https://api.brevo.com/v3/smtp/email",
               {
-                filename: fileName,
-                content: Buffer.from(pdfBytes), // Use buffer instead of file path
-                contentType: 'application/pdf'
+                sender: { name: "Graphura", email: process.env.FROM_EMAIL },
+                to: [{ email: intern.email }],
+                subject: "Internship Offer Letter – Graphura India Private Limited",
+                htmlContent: `<pre style="font-family:inherit;">${emailText}</pre>`,
+                attachment: [
+                  {
+                    name: fileName,
+                    content: Buffer.from(pdfBytes).toString("base64"),
+                    type: "application/pdf",
+                    disposition: "attachment",
+                  },
+                ],
               },
-            ],
-          });
+              {
+                headers: {
+                  "api-key": process.env.BREVO_API_KEY,
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+          } catch (emailError) {
+            console.error(`❌ Email send error for ${intern.email}:`, emailError.response?.data || emailError.message);
+            // Continue processing even if email fails
+          }
         }
 
         results.processed++;
@@ -647,7 +662,6 @@ Graphura India Private Limited
           uniqueId: intern.uniqueId,
           name: intern.fullName
         });
-
 
       } catch (error) {
         results.failed++;
@@ -678,6 +692,7 @@ Graphura India Private Limited
     });
 
   } catch (error) {
+    console.error("Error in bulk offer letter generation:", error);
     res.status(500).json({
       error: "Internal server error",
       details: error.message
