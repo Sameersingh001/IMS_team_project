@@ -64,12 +64,12 @@ Best regards,
 The Graphura Team
 🌐 www.graphura.online`;
 
-    const mailOptions = {
-      from: process.env.FROM_EMAIL, // Use your verified Brevo email directly
-      to: newIntern.email,
-      subject: "Graphura - Internship Application Received",
-      text: emailMsg,
-    };
+      const mailOptions = {
+        from: process.env.EMAIL_USER, // Use your verified Brevo email directly
+        to: newIntern.email,
+        subject: "Graphura - Internship Application Received",
+        text: emailMsg,
+      };
 
     await transporter.sendMail(mailOptions);
 

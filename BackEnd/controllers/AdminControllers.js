@@ -347,7 +347,7 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
 
     await transporter.sendMail({
-      from: `"Graphura HR" <${process.env.FROM_EMAIL}>`,
+      from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
       to: intern.email,
       subject: "Internship Offer Letter – Graphura India Private Limited",
       text: `Dear ${intern.fullName},
@@ -612,7 +612,7 @@ export const generateBulkOfferLetters = async (req, res) => {
           });
 
           await transporter.sendMail({
-            from: `"Graphura HR" <${process.env.FROM_EMAIL}>`,
+            from: `"Graphura HR" <${process.env.EMAIL_USER}>`,
             to: intern.email,
             subject: "Internship Offer Letter – Graphura India Private Limited",
             text: `Dear ${intern.fullName},
