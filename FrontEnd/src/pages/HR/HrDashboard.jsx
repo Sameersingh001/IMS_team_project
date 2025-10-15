@@ -2,11 +2,11 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Graphura from "../../../public/GraphuraLogo.jpg";
-import { Eye, FileText, Download } from "lucide-react";
+import { Eye, FileText, Download, Upload, X } from "lucide-react";
 import * as XLSX from "xlsx";
 
 const HRDashboard = () => {
-const storedUser = JSON.parse(localStorage.getItem("user"));
+  const storedUser = JSON.parse(localStorage.getItem("user"));
   const [interns, setInterns] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -18,8 +18,16 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
   const [showEmailCopy, setShowEmailCopy] = useState(false);
   const [copySuccess, setCopySuccess] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
+  
+  // Import functionality states
+  const [importLoading, setImportLoading] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [previewData, setPreviewData] = useState([]);
+  const [importSummary, setImportSummary] = useState(null);
   const navigate = useNavigate();
   const printRef = useRef();
+  const fileInputRef = useRef();
 
   useEffect(() => {
     const timer = setTimeout(() => fetchInterns(), 500);
@@ -39,6 +47,178 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
       setError("Failed to load interns");
     }
     setLoading(false);
+  };
+
+  // Import Functions
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv'
+    ];
+    
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
+      setError("Please select a valid Excel file (.xlsx, .xls, .csv)");
+      setTimeout(() => setError(""), 5000);
+      return;
+    }
+
+    setImportFile(file);
+    setImportLoading(true);
+
+    try {
+      const data = await readExcelFile(file);
+      setPreviewData(data);
+    } catch (error) {
+      setError("Failed to read Excel file: " + error.message);
+      setTimeout(() => setError(""), 5000);
+      setImportFile(null);
+    }
+    setImportLoading(false);
+  };
+
+  const readExcelFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+          if (jsonData.length === 0) {
+            reject(new Error("No data found in the Excel file"));
+            return;
+          }
+
+          // Map Excel columns to intern fields
+          const mappedData = jsonData.map((row) => ({
+            fullName: row['Full Name'] || row['fullName'] || row['Name'] || '',
+            email: (row['Email'] || row['email'] || '').toLowerCase().trim(),
+            mobile: String(row['Mobile'] || row['mobile'] || row['Phone'] || row['phone'] || '').trim(),
+            dob: row['Date of Birth'] || row['dob'] || row['DOB'] || '',
+            gender: row['Gender'] || row['gender'] || '',
+            state: row['State'] || row['state'] || '',
+            city: row['City'] || row['city'] || '',
+            address: row['Address'] || row['address'] || '',
+            pinCode: String(row['Pin Code'] || row['pinCode'] || row['pincode'] || ''),
+            college: row['College'] || row['college'] || '',
+            course: row['Course'] || row['course'] || '',
+            educationLevel: row['Education Level'] || row['educationLevel'] || row['Education'] || '',
+            domain: row['Domain'] || row['domain'] || '',
+            contactMethod: row['Contact Method'] || row['contactMethod'] || 'Email',
+            resumeUrl: row['Resume URL'] || row['resumeUrl'] || row['Resume'] || '',
+            duration: row['Duration'] || row['duration'] || '',
+            prevInternship: (row['Previous Internship'] || row['prevInternship'] || 'No').charAt(0).toUpperCase() + (row['Previous Internship'] || row['prevInternship'] || 'No').slice(1).toLowerCase(),
+            TpoName: row['TPO Name'] || row['tpoName'] || row['TPO'] || '',
+            TpoEmail: (row['TPO Email'] || row['tpoEmail'] || '').toLowerCase().trim(),
+            TpoNumber: String(row['TPO Number'] || row['tpoNumber'] || ''),
+            // Optional fields
+            uniqueId: row['Unique ID'] || row['uniqueId'] || row['UniqueId'] || '',
+            joiningDate: row['Joining Date'] || row['joiningDate'] || row['JoiningDate'] || '',
+            status: 'Applied',
+            performance: 'Average'
+          }));
+
+          resolve(mappedData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      reader.onerror = (error) => reject(error);
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const downloadTemplate = () => {
+    const templateData = [{
+      'Full Name': 'John Doe',
+      'Email': 'john.doe@example.com',
+      'Mobile': '1234567890',
+      'Date of Birth': '2000-01-01',
+      'Gender': 'Male',
+      'State': 'California',
+      'City': 'Los Angeles',
+      'Address': '123 Main St',
+      'Pin Code': '90001',
+      'College': 'ABC University',
+      'Course': 'Computer Science',
+      'Education Level': 'Graduate',
+      'Domain': 'Front-end Developer',
+      'Contact Method': 'Email',
+      'Resume URL': 'https://example.com/resume.pdf',
+      'Duration': '3 months',
+      'Previous Internship': 'No',
+      'TPO Name': 'Dr. Smith',
+      'TPO Email': 'smith@college.edu',
+      'TPO Number': '9876543210',
+      'Unique ID': 'OPTIONAL123', // Optional field
+      'Joining Date': '2024-01-15' // Optional field
+    }];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
+      { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 },
+      { wch: 10 }, { wch: 25 }, { wch: 20 }, { wch: 15 },
+      { wch: 20 }, { wch: 15 }, { wch: 30 }, { wch: 10 },
+      { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 15 },
+      { wch: 15 }, { wch: 15 } // Added for Unique ID and Joining Date
+    ];
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "intern_import_template.xlsx");
+  };
+
+  const handleImport = async () => {
+    if (!previewData.length) return;
+
+    setImportLoading(true);
+    try {
+      const { data } = await axios.post(
+        "/api/hr/import-interns",
+        { interns: previewData },
+        { withCredentials: true }
+      );
+
+      setImportSummary(data.summary);
+      
+      if (data.summary.success > 0) {
+        setCopySuccess(`✅ Successfully imported ${data.summary.success} interns! ${data.summary.duplicates > 0 ? `(${data.summary.duplicates} duplicates skipped)` : ''}`);
+        setTimeout(() => setCopySuccess(""), 5000);
+        
+        // Refresh the interns list
+        await fetchInterns();
+        
+        // Close modal after successful import
+        setTimeout(() => {
+          setShowImportModal(false);
+          setImportFile(null);
+          setPreviewData([]);
+          setImportSummary(null);
+        }, 3000);
+      } else {
+        setError(`❌ No interns imported. ${data.summary.duplicates > 0 ? `All ${data.summary.duplicates} records were duplicates.` : 'Please check your data.'}`);
+        setTimeout(() => setError(""), 5000);
+      }
+    } catch (err) {
+      console.error("Import error:", err);
+      setError("Failed to import interns: " + (err.response?.data?.message || err.message));
+      setTimeout(() => setError(""), 5000);
+    }
+    setImportLoading(false);
   };
 
   // Export to Excel function using XLSX
@@ -65,6 +245,7 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
         'Status': intern.status || '',
         'Performance': intern.performance || '',
         'Unique ID': intern.uniqueId || '',
+        'Joining Date': intern.joiningDate || '',
         'Applied Date': intern.createdAt ? new Date(intern.createdAt).toLocaleDateString() : '',
         'Resume URL': intern.resumeUrl || '',
         'Locked Status': intern.uniqueId ? 'Yes' : 'No',
@@ -89,18 +270,13 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
 
       // Set column widths
       const colWidths = [
-        { wch: 20 }, // Full Name
-        { wch: 25 }, // Email
-        { wch: 15 }, // Mobile
-        { wch: 20 }, // Domain
-        { wch: 15 }, // Duration
-        { wch: 25 }, // College
-        { wch: 12 }, // Status
-        { wch: 12 }, // Performance
-        { wch: 15 }, // Unique ID
-        { wch: 15 }, // Applied Date
-        { wch: 30 }, // Resume URL
-        { wch: 12 }  // Locked Status
+        { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 20 },
+        { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 },
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, 
+        { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, 
+        { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 20 }, 
+        { wch: 15 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, 
+        { wch: 20 }, { wch: 15 }
       ];
       ws['!cols'] = colWidths;
 
@@ -136,20 +312,49 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
       }
 
       // Prepare data for Excel
-      const excelData = selectedInterns.map(intern => ({
-        'Full Name': intern.fullName || '',
-        'Email': intern.email || '',
-        'Mobile': intern.mobile || '',
-        'Domain': intern.domain || '',
-        'Duration': intern.duration || '',
-        'College': intern.college || '',
-        'Status': intern.status || '',
-        'Performance': intern.performance || '',
-        'Unique ID': intern.uniqueId || '',
-        'Applied Date': intern.appliedDate ? new Date(intern.appliedDate).toLocaleDateString() : '',
-        'Resume URL': intern.resumeUrl || '',
-        'Locked Status': intern.uniqueId ? 'Yes' : 'No'
-      }));
+const excelData = selectedInterns.map(intern => ({
+  // 🔹 Basic Info
+  'Full Name': intern.fullName || '',
+  'Email': intern.email || '',
+  'Mobile': intern.mobile || '',
+  'Date of Birth': intern.dob || '',
+  'Gender': intern.gender || '',
+
+  // 🔹 Location Info
+  'State': intern.state || '',
+  'City': intern.city || '',
+  'Address': intern.address || '',
+  'Pin Code': intern.pinCode || '',
+
+  // 🔹 Education Details
+  'College': intern.college || '',
+  'Course': intern.course || '',
+  'Education Level': intern.educationLevel || '',
+
+  // 🔹 Internship Details
+  'Domain': intern.domain || '',
+  'Duration': intern.duration || '',
+  'Previous Internship': intern.prevInternship || 'No',
+
+  // 🔹 Status & Performance
+  'Status': intern.status || '',
+  'Performance': intern.performance || '',
+  'Comment': intern.comment || '',
+
+  // 🔹 Contact / Communication
+  'Contact Method': intern.contactMethod || '',
+  'Resume URL': intern.resumeUrl || '',
+
+  // 🔹 TPO / College Incharge
+  'TPO Name': intern.TpoName || '',
+  'TPO Email': intern.TpoEmail || '',
+  'TPO Number': intern.TpoNumber || '',
+
+  'Applied Date': intern.createdAt
+    ? new Date(intern.createdAt).toLocaleDateString()
+    : '',
+}));
+
 
       // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
@@ -159,7 +364,8 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
       const colWidths = [
         { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 20 },
         { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 },
-        { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 12 }
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+        { wch: 30 }, { wch: 12 }
       ];
       ws['!cols'] = colWidths;
 
@@ -204,14 +410,14 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
   };
 
   const deleteRejectedInterns = async () => {
-  const confirmDelete = window.confirm(
-    "⚠️ Please make sure you have EXPORTED all Rejected intern data before deleting.\n\nAre you sure you want to delete all rejected interns? This action cannot be undone."
-  );
+    const confirmDelete = window.confirm(
+      "⚠️ Please make sure you have EXPORTED all Rejected intern data before deleting.\n\nAre you sure you want to delete all rejected interns? This action cannot be undone."
+    );
 
-  if (!confirmDelete) {
-    alert("✅ Deletion cancelled. Please export the data first if not done.");
-    return;
-  }
+    if (!confirmDelete) {
+      alert("✅ Deletion cancelled. Please export the data first if not done.");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -232,7 +438,7 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
     setLoading(false);
   };
 
-  const handlePerformanceUpdate = async (internId, newPerformance,) => {
+  const handlePerformanceUpdate = async (internId, newPerformance) => {
     setUpdating(internId);
     try {
       await axios.put(
@@ -249,7 +455,6 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
   };
 
   const handleDomainUpdate = async (internId, newDomain) => {
-
     setUpdating(internId);
     try {
       await axios.put(
@@ -493,7 +698,16 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              {/* Import Button */}
+              <button
+                onClick={() => setShowImportModal(true)}
+                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                Import Excel
+              </button>
+
               {/* Export All Button */}
               <button
                 onClick={exportToExcel}
@@ -559,8 +773,6 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
           </div>
         )}
 
-        
-
         {/* Main Content */}
         <div className="bg-white shadow-xl rounded-2xl p-6" ref={printRef}>
           {/* Filters Section */}
@@ -612,7 +824,6 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
                 </div>
               </div>
             )}
-
 
             {interns.some(i => i.status === "Rejected") ? (
             <button
@@ -725,6 +936,7 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
               </div>
             )}
           </div>
+
           {/* Intern Table */}
           {loading ? (
             <div className="flex justify-center items-center py-12">
@@ -778,6 +990,11 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
                               )}
                             </div>
                             <div className="text-sm text-gray-600">{intern.email}</div>
+                            {intern.uniqueId && (
+                              <div className="text-xs text-purple-600 font-mono mt-1">
+                                ID: {intern.uniqueId}
+                              </div>
+                            )}
                           </div>
                         </td>
 
@@ -786,7 +1003,11 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
                           <div className="text-gray-700 text-sm">
                             📞 {intern.mobile || "Not provided"}
                             <p className="text-xs font-bold">Applied : {intern.updatedAt ? new Date(intern.updatedAt).toLocaleDateString() : "Not provided"}</p>
-
+                            {intern.joiningDate && (
+                              <p className="text-xs text-green-600 font-bold mt-1">
+                                Joining: {new Date(intern.joiningDate).toLocaleDateString()}
+                              </p>
+                            )}
                           </div>
                         </td>
 
@@ -918,7 +1139,6 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
                               <FileText className="w-5 h-5" />
                               Resume
                             </a>
-
                           </div>
                         </td>
                       </tr>
@@ -953,6 +1173,185 @@ const storedUser = JSON.parse(localStorage.getItem("user"));
           )}
         </div>
       </div>
+
+      {/* Import Interns Modal */}
+      {showImportModal && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800">Import Interns from Excel</h2>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportFile(null);
+                  setPreviewData([]);
+                  setImportSummary(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              {!importFile ? (
+                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-indigo-400 transition-colors">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".xlsx,.xls,.csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <div className="text-4xl mb-4">📊</div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">
+                    Upload Excel File
+                  </h3>
+                  <p className="text-gray-500 mb-4">
+                    Supported formats: .xlsx, .xls, .csv
+                  </p>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                  >
+                    Choose File
+                  </button>
+                  
+                  {/* Template Download */}
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-semibold text-blue-800 mb-2">Download Template</h4>
+                    <p className="text-sm text-blue-600 mb-3">
+                      Use this template to ensure proper formatting. Unique ID and Joining Date are optional fields.
+                    </p>
+                    <button
+                      onClick={downloadTemplate}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    >
+                      📥 Download Template
+                    </button>
+                  </div>
+                </div>
+              ) : previewData.length > 0 ? (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Preview Data ({previewData.length} records)
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setImportFile(null);
+                        setPreviewData([]);
+                        setImportSummary(null);
+                      }}
+                      className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors text-sm font-medium"
+                    >
+                      Change File
+                    </button>
+                  </div>
+
+                  {/* Preview Table */}
+                  <div className="overflow-x-auto border border-gray-200 rounded-lg mb-4">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="p-3 text-left font-semibold text-gray-700">Full Name</th>
+                          <th className="p-3 text-left font-semibold text-gray-700">Email</th>
+                          <th className="p-3 text-left font-semibold text-gray-700">Mobile</th>
+                          <th className="p-3 text-left font-semibold text-gray-700">Domain</th>
+                          <th className="p-3 text-left font-semibold text-gray-700">Unique ID</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {previewData.slice(0, 5).map((intern, index) => (
+                          <tr key={index} className="hover:bg-gray-50">
+                            <td className="p-3">{intern.fullName}</td>
+                            <td className="p-3">{intern.email}</td>
+                            <td className="p-3">{intern.mobile}</td>
+                            <td className="p-3">{intern.domain}</td>
+                            <td className="p-3">{intern.uniqueId || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {previewData.length > 5 && (
+                      <div className="p-3 bg-gray-50 text-center text-gray-600">
+                        ... and {previewData.length - 5} more records
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Import Summary */}
+                  {importSummary && (
+                    <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="font-semibold text-green-800 mb-2">Import Summary</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Total:</span> {importSummary.total}
+                        </div>
+                        <div>
+                          <span className="font-medium">Success:</span> {importSummary.success}
+                        </div>
+                        <div>
+                          <span className="font-medium">Failed:</span> {importSummary.failed}
+                        </div>
+                        <div>
+                          <span className="font-medium">Duplicates:</span> {importSummary.duplicates}
+                        </div>
+                      </div>
+                      {importSummary.errors && importSummary.errors.length > 0 && (
+                        <div className="mt-3">
+                          <h5 className="font-medium text-red-700 mb-1">Errors:</h5>
+                          <ul className="text-sm text-red-600 list-disc list-inside">
+                            {importSummary.errors.slice(0, 3).map((error, idx) => (
+                              <li key={idx}>{error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleImport}
+                      disabled={importLoading}
+                      className={`flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium transition-colors ${
+                        importLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                      }`}
+                    >
+                      {importLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Importing...
+                        </>
+                      ) : (
+                        `Import ${previewData.length} Interns`
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowImportModal(false);
+                        setImportFile(null);
+                        setPreviewData([]);
+                        setImportSummary(null);
+                      }}
+                      className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                  <p>Processing file...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
