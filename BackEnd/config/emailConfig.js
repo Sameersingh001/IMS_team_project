@@ -1,11 +1,25 @@
-import nodemailer from "nodemailer";
+import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
-export const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // your Gmail App Password
-  },
-});
+export const sendEmail = async (toEmail, subject, htmlContent) => {
+  try {
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { name: "Graphura", email: process.env.FROM_EMAIL },
+        to: [{ email: toEmail }],
+        subject,
+        htmlContent,
+      },
+      {
+        headers: {
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  } catch (error) {
+    console.error("❌ Email send error:", error.response?.data || error.message);
+  }
+};

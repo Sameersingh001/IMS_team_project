@@ -1,15 +1,12 @@
 import bcrypt from "bcrypt";
 import User from "../models/UserDB.js";
 import jwt from "jsonwebtoken";
-import {transporter} from "../config/emailConfig.js"
-
-
-
+import { sendEmail } from "../config/emailConfig.js"
 
 
 export const registerUser = async (req, res) => {
   try {
-    const { fullName, email, password, role, secretKey, mobile} = req.body;
+    const { fullName, email, password, role, secretKey, mobile } = req.body;
 
     // ✅ Basic validation
     if (!fullName || !email || !password || !role || !secretKey) {
@@ -67,7 +64,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email, role });
     if (!user) return res.status(404).json({ message: "User not found." });
 
-    if(user.status !== "Active"){
+    if (user.status !== "Active") {
       return res.status(404).json({ message: "Your account is inactive please contact to Admin" })
     }
 
@@ -141,21 +138,20 @@ export const forgotPassword = async (req, res) => {
     setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
 
     // Send OTP via email
-    await transporter.sendMail({
-      from: `"Graphura Intern System" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Password Reset OTP - Graphura Intern System",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 10px;">
-          <h2 style="color:#4f46e5;">Graphura Intern System</h2>
-          <p>Use the OTP below to reset your password:</p>
-          <h1 style="color:#16a34a;">${otp}</h1>
-          <p>This OTP is valid for <b>5 minutes</b>.</p>
-          <hr/>
-          <p style="font-size: 12px; color: gray;">Do not share this code with anyone.</p>
-        </div>
-      `,
-    });
+    await sendEmail(
+      email,
+      "Password Reset OTP - Graphura Intern System",
+      `
+  <div style="font-family: Arial, sans-serif; padding: 10px;">
+    <h2 style="color:#4f46e5;">Graphura Intern System</h2>
+    <p>Use the OTP below to reset your password:</p>
+    <h1 style="color:#16a34a;">${otp}</h1>
+    <p>This OTP is valid for <b>5 minutes</b>.</p>
+    <hr/>
+    <p style="font-size: 12px; color: gray;">Do not share this code with anyone.</p>
+  </div>
+  `
+    );
 
     res.status(200).json({ message: "OTP sent successfully!" });
   } catch (error) {
@@ -241,16 +237,15 @@ export const resendOtp = async (req, res) => {
     otpStore.set(email, { otp, expiresAt });
     setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
 
-    await transporter.sendMail({
-      from: `"Graphura Intern System" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Resend OTP - Graphura Intern System",
-      html: `
-        <h2>Your new OTP</h2>
-        <h3>${otp}</h3>
-        <p>Valid for 5 minutes.</p>
-      `,
-    });
+    await sendEmail(
+      email,
+      "Resend OTP - Graphura Intern System",
+      `
+    <h2>Your new OTP</h2>
+    <h3>${otp}</h3>
+    <p>Valid for 5 minutes.</p>
+  `
+    );
 
     res.status(200).json({ message: "OTP resent successfully!" });
   } catch (error) {
