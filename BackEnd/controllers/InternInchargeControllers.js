@@ -2,7 +2,7 @@ import InternIncharge from "../models/InternHead.js"
 import Intern from "../models/InternDatabase.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
-import {transporter} from "../config/emailConfig.js"
+import { sendEmail } from "../config/emailConfig.js"
 
 export const registerInternIncharge = async (req, res) => {
   try {
@@ -31,7 +31,7 @@ export const registerInternIncharge = async (req, res) => {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    if(Secret_Key !== process.env.INCHARGE_SECRET_KEY){
+    if (Secret_Key !== process.env.INCHARGE_SECRET_KEY) {
       return res.status(400).json({ message: "Invalid Secret Key Please Contact to Admin" });
     }
 
@@ -44,7 +44,7 @@ export const registerInternIncharge = async (req, res) => {
       email,
       password: hashedPassword,
       mobile,
-      departments : department,
+      departments: department,
       gender,
       address,
       city,
@@ -81,13 +81,13 @@ export const loginInternIncharge = async (req, res) => {
 
     // ✅ Step 2: Find intern incharge
     const internIncharge = await InternIncharge.findOne({ email });
-    if (!internIncharge) 
-      return res.status(401).json({success: false, message: "Invalid email or password",});
-    
+    if (!internIncharge)
+      return res.status(401).json({ success: false, message: "Invalid email or password", });
+
 
     // ✅ Step 3: Compare password
     const isPasswordValid = await bcrypt.compare(password, internIncharge.password);
-   if (!isPasswordValid)
+    if (!isPasswordValid)
       return res.status(401).json({ message: "Invalid credentials." });
 
     // ✅ Step 4: Check account status
@@ -161,7 +161,7 @@ export const checkInternInchargeAuth = async (req, res) => {
 
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "intern_incharge_secret");
-    
+
     // Find user
     const internIncharge = await InternIncharge.findById(decoded.id).select("-password");
 
@@ -204,8 +204,8 @@ export const checkInternInchargeAuth = async (req, res) => {
   }
 };
 
-export const DomainWiseInterns = async (req,res)=>{
-    try {
+export const DomainWiseInterns = async (req, res) => {
+  try {
     const incharge = await InternIncharge.findById(req.user._id);
 
     if (!incharge) {
@@ -213,10 +213,10 @@ export const DomainWiseInterns = async (req,res)=>{
     }
 
     // Fetch interns that match ANY of the incharge’s departments
-    
-    const interns = await Intern.find({status : ["Active", "Inactive", "Completed"], domain : incharge.departments})
 
-    res.json({ interns});
+    const interns = await Intern.find({ status: ["Active", "Inactive", "Completed"], domain: incharge.departments })
+
+    res.json({ interns });
 
   } catch (error) {
     console.error("Error fetching assigned interns:", error);
@@ -230,7 +230,7 @@ export const DomainWiseInterns = async (req,res)=>{
 export const logoutInternIncharge = async (req, res) => {
   try {
     res.clearCookie("internIncharge_token");
-    
+
     res.status(200).json({
       success: true,
       message: "Logout successful"
@@ -266,21 +266,20 @@ export const forgotPassword = async (req, res) => {
     setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
 
     // Send OTP Email
-    await transporter.sendMail({
-      from: `"Graphura Intern System" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Password Reset OTP - Intern Incharge",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 16px; background:#f9fafb;">
-          <h2 style="color:#4f46e5;">Graphura Intern System</h2>
-          <p>Hello ${incharge.fullName || "Incharge"},</p>
-          <p>Your OTP for resetting password is:</p>
-          <h1 style="color:#16a34a; letter-spacing:4px;">${otp}</h1>
-          <p>This OTP will expire in <b>5 minutes</b>.</p>
-          <p>Please do not share this code with anyone.</p>
-        </div>
-      `,
-    });
+    await sendEmail(
+      incharge.email,
+      "Password Reset OTP - Intern Incharge",
+      `
+    <div style="font-family: Arial, sans-serif; padding: 16px; background:#f9fafb;">
+      <h2 style="color:#4f46e5;">Graphura Intern System</h2>
+      <p>Hello ${incharge.fullName || "Incharge"},</p>
+      <p>Your OTP for resetting password is:</p>
+      <h1 style="color:#16a34a; letter-spacing:4px;">${otp}</h1>
+      <p>This OTP will expire in <b>5 minutes</b>.</p>
+      <p>Please do not share this code with anyone.</p>
+    </div>
+  `
+    );
 
     res.status(200).json({ message: "OTP sent successfully to your email." });
   } catch (error) {
@@ -351,19 +350,17 @@ export const resendOtp = async (req, res) => {
     otpStore.set(email, { otp, expiresAt });
     setTimeout(() => otpStore.delete(email), 5 * 60 * 1000);
 
-    await transporter.sendMail({
-      from: `"Graphura Intern System" <${process.env.EMAIL_USER}>`,
-      to: email,
-      subject: "Resend OTP - Intern Incharge",
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 16px;">
-          <p>Your new OTP is:</p>
-          <h2 style="color:#4f46e5;">${otp}</h2>
-          <p>Valid for 5 minutes.</p>
-        </div>
-      `,
-    });
-
+    await sendEmail(
+      email,
+      "Resend OTP - Intern Incharge",
+      `
+    <div style="font-family: Arial, sans-serif; padding: 16px;">
+      <p>Your new OTP is:</p>
+      <h2 style="color:#4f46e5;">${otp}</h2>
+      <p>Valid for 5 minutes.</p>
+    </div>
+  `
+    );
     res.status(200).json({ message: "OTP resent successfully." });
   } catch (error) {
     console.error("Resend OTP Error:", error);
@@ -374,8 +371,8 @@ export const resendOtp = async (req, res) => {
 
 
 
-export const InternComments = async (req, res) =>{
-      try {
+export const InternComments = async (req, res) => {
+  try {
     const { internId } = req.params;
     const { comment } = req.body;
 
@@ -413,7 +410,7 @@ export const InternComments = async (req, res) =>{
     // Add comment to intern's comments array
     const updatedIntern = await Intern.findByIdAndUpdate(
       internId,
-      { 
+      {
         $push: { comments: newComment },
         updatedByIncharge: req.user._id
       },
@@ -434,7 +431,7 @@ export const InternComments = async (req, res) =>{
   }
 }
 
-export const DeleteComments = async (req, res) =>{
+export const DeleteComments = async (req, res) => {
   try {
     const { internId, commentId } = req.params;
 
@@ -450,7 +447,7 @@ export const DeleteComments = async (req, res) =>{
     // Remove comment from intern's comments array
     const updatedIntern = await Intern.findByIdAndUpdate(
       internId,
-      { 
+      {
         $pull: { comments: { _id: commentId } },
         updatedByIncharge: req.user._id
       },

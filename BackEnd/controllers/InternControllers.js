@@ -1,5 +1,5 @@
 import Intern from '../models/InternDatabase.js';
-import { transporter } from "../config/emailConfig.js"
+import { sendEmail } from "../config/emailConfig.js"
 import Setting from "../models/SettingDB.js"
 
 
@@ -64,14 +64,7 @@ Best regards,
 The Graphura Team
 🌐 www.graphura.online`;
 
-      const mailOptions = {
-        from: process.env.FROM_EMAIL, // Use your verified Brevo email directly
-        to: newIntern.email,
-        subject: "Graphura - Internship Application Received",
-        text: emailMsg,
-      };
-
-    await transporter.sendMail(mailOptions);
+    await sendEmail(newIntern.email, "Graphura - Internship Application Received", `<pre style="font-family:inherit;">${emailMsg}</pre>`);
 
     res.status(201).json({ message: "Intern created successfully", intern: newIntern });
 
