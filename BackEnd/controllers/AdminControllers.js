@@ -28,7 +28,7 @@ export const getAllInterns = async (req, res) => {
         { uniqueId: { $regex: search, $options: 'i' } },
         { mobile: { $regex: search, $options: 'i' } } // Also search in mobile
       ],
-      performance: { $nin: ["Average", "Rejected"] }
+      performance: { $nin: ["Average"] }
     };
 
     if (search.trim() === "") {

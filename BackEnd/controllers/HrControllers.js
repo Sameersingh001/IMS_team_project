@@ -5,7 +5,7 @@ export const getAllInterns = async (req, res) => {
   try {
     const { search = "", status, performance, page = 1, limit = 10 } = req.query;
 
-    const allowedStatuses = ["Applied", "Selected", "Rejected"];
+    const allowedStatuses = ["Applied", "Selected"];
     let searchQuery = {};
 
     // ✅ Apply status filter

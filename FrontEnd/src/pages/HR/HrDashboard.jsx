@@ -409,35 +409,6 @@ const excelData = selectedInterns.map(intern => ({
     setUpdating(null);
   };
 
-  const deleteRejectedInterns = async () => {
-    const confirmDelete = window.confirm(
-      "⚠️ Please make sure you have EXPORTED all Rejected intern data before deleting.\n\nAre you sure you want to delete all rejected interns? This action cannot be undone."
-    );
-
-    if (!confirmDelete) {
-      alert("✅ Deletion cancelled. Please export the data first if not done.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await axios.delete("/api/hr/interns/delete-rejected", {
-        withCredentials: true
-      });
-
-      // Refresh the list to reflect changes
-      await fetchInterns();
-
-      setCopySuccess("✅ All rejected interns deleted successfully!");
-      setTimeout(() => setCopySuccess(""), 3000);
-    } catch (err) {
-      console.error("Error deleting rejected interns:", err);
-      setError("Failed to delete rejected interns");
-      setTimeout(() => setError(""), 3000);
-    }
-    setLoading(false);
-  };
-
   const handlePerformanceUpdate = async (internId, newPerformance) => {
     setUpdating(internId);
     try {
@@ -825,29 +796,6 @@ const excelData = selectedInterns.map(intern => ({
                 </div>
               </div>
             )}
-
-            {interns.some(i => i.status === "Rejected") ? (
-            <button
-              onClick={deleteRejectedInterns}
-              disabled={loading || interns.filter(i => i.status === 'Rejected').length === 0}
-              className={`px-6 py-2 mt-5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2 ${loading || interns.filter(i => i.status === 'Rejected').length === 0
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:from-red-600 hover:to-red-700'
-                }`}
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Deleting...
-                </>
-              ) : (
-                <>🗑️ Delete Rejected</>
-              )}
-            </button>
-          ) : (
-            <div className="text-gray-500 italic"></div>
-          )}
-
             {/* Email Tools Panel */}
             {showEmailCopy && selectedCount > 0 && (
               <div className="mt-4 bg-indigo-50 rounded-xl p-4 border border-indigo-200">

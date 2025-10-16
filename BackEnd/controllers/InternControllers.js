@@ -39,6 +39,7 @@ export const createIntern = async (req, res) => {
       resumeUrl: internData.resumeUrl,
       duration: internData.duration,
       prevInternship: internData.prevInternship,
+      prevInternshipDesc:internData.prevInternshipDesc,
       TpoEmail: internData.TpoEmail,
       TpoNumber: internData.TpoNumber,
       TpoName: internData.TpoName,

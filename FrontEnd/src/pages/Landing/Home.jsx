@@ -37,17 +37,16 @@ const HomePage = () => {
       {/* Hero Section - Fully Responsive */}
       <main className="flex flex-1 flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
         {/* Main Heading */}
-        <h2 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight drop-shadow-sm">
-          Manage Interns With{" "}
-          <span className="block bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mt-2">
-            Ease and Efficiency
-          </span>
-        </h2>
+<h2 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight drop-shadow-sm">
+  Engage & Collaborate With{" "}
+  <span className="block bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mt-2">
+    Your Intern Community
+  </span>
+</h2>
 
-        {/* Subtitle */}
-        <p className="text-gray-700 text-base sm:text-lg lg:text-xl max-w-xs xs:max-w-sm sm:max-w-xl lg:max-w-2xl mb-6 sm:mb-8 lg:mb-10 leading-relaxed">
-          A centralized platform to onboard, track, and evaluate interns seamlessly — built for modern organizations.
-        </p>
+<p className="text-gray-700 text-base sm:text-lg lg:text-xl max-w-xs xs:max-w-sm sm:max-w-xl lg:max-w-2xl mb-6 sm:mb-8 lg:mb-10 leading-relaxed">
+  Foster meaningful connections while efficiently managing internship programs. Track progress, provide mentorship, and build lasting professional relationships.
+</p>
 
         {/* Main CTA Buttons */}
         <div className="flex flex-col xs:flex-row justify-center gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 w-full max-w-xs xs:max-w-none">
@@ -138,7 +137,7 @@ const HomePage = () => {
       {/* Footer */}
       <footer className="bg-white/50 backdrop-blur-md text-center py-3 sm:py-4 text-gray-600 text-xs sm:text-sm border-t border-white/30 mt-auto">
         © {new Date().getFullYear()}{" "}
-        <span className="font-semibold">Intern Management System</span>. All rights reserved.
+        <span className="font-semibold">Graphura Privet Limited</span>. All rights reserved.
       </footer>
     </div>
   );

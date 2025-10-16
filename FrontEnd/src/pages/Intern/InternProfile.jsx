@@ -81,10 +81,10 @@ const InternDetail = ({ role }) => {
 
   const fetchHrComments = async () => {
     try {
-      const endpoint = isAdmin 
+      const endpoint = isAdmin
         ? `/api/admin/interns/${id}/hr-comments`
         : `/api/hr/interns/${id}/hr-comments`;
-      
+
       const response = await axios.get(endpoint, {
         withCredentials: true,
       });
@@ -119,9 +119,9 @@ const InternDetail = ({ role }) => {
     try {
       await axios.post(
         `/api/hr/interns/${id}/hr-comments`,
-        { 
+        {
           text: hrComment,
-          stage: hrCommentStage 
+          stage: hrCommentStage
         },
         { withCredentials: true }
       );
@@ -130,7 +130,7 @@ const InternDetail = ({ role }) => {
       setHrCommentStage("Resume Shortlisted");
       setUpdateSuccess("HR comment added successfully!");
       setTimeout(() => setUpdateSuccess(""), 3000);
-      
+
       // Refresh comments
       fetchHrComments();
     } catch (err) {
@@ -144,7 +144,7 @@ const InternDetail = ({ role }) => {
     if (!window.confirm('Are you sure you want to delete this comment?')) return;
 
     try {
-      const endpoint = isHR 
+      const endpoint = isHR
         ? `/api/hr/interns/${id}/hr-comments/${commentId}`
         : `/api/admin/interns/${id}/hr-comments/${commentId}`;
 
@@ -292,9 +292,9 @@ const InternDetail = ({ role }) => {
     try {
       const response = await axios.post(
         `/api/admin/interns/${id}/generate-offer-letter`,
-        { 
+        {
           joiningDate: joiningDate,
-          duration: duration 
+          duration: duration
         },
         {
           withCredentials: true,
@@ -975,6 +975,19 @@ const InternDetail = ({ role }) => {
                     </div>
                   ))}
 
+                  {isHR && intern.prevInternshipDesc && (
+                    <div className="bg-gray-100 p-3 rounded-lg mt-3">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                        Previous Internship Description:
+                      </h4>
+                      <br />
+                      <p className="text-gray-800 text-sm whitespace-pre-line">
+                        {intern.prevInternshipDesc}
+                      </p>
+                    </div>
+                  )}
+
+
                   {isAdmin && intern.updatedByHR && (
                     <div className="mt-2 text-sm text-blue-600">
                       Last updated by HR: <span className="font-medium text-gray-800">{intern.updatedByHR.fullName}</span> ({intern.updatedByHR.email})
@@ -1054,9 +1067,9 @@ const InternDetail = ({ role }) => {
                 </h3>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {hrComments.map((comment) => (
-                    <HrCommentCard 
-                      key={comment._id} 
-                      comment={comment} 
+                    <HrCommentCard
+                      key={comment._id}
+                      comment={comment}
                       onDelete={handleDeleteHrComment}
                       isHR={isHR}
                     />
@@ -1076,9 +1089,9 @@ const InternDetail = ({ role }) => {
                 </h3>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {hrComments.map((comment) => (
-                    <HrCommentCard 
-                      key={comment._id} 
-                      comment={comment} 
+                    <HrCommentCard
+                      key={comment._id}
+                      comment={comment}
                       onDelete={isAdmin ? handleDeleteHrComment : null}
                       isHR={false}
                     />
@@ -1095,9 +1108,9 @@ const InternDetail = ({ role }) => {
                 </h3>
                 <div className="space-y-4 max-h-96 overflow-y-auto">
                   {inchargeComments.map((comment) => (
-                    <InchargeCommentCard 
-                      key={comment._id} 
-                      comment={comment} 
+                    <InchargeCommentCard
+                      key={comment._id}
+                      comment={comment}
                       internId={intern._id}
                       onDelete={handleDeleteInchargeComment}
                     />
@@ -1175,20 +1188,20 @@ const InternDetail = ({ role }) => {
                 <h3 className="text-xl font-semibold text-gray-900">HR Comments</h3>
                 <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowHrComments(false)}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
               >
                 ×
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
               <div className="space-y-4">
                 {hrComments.map((comment) => (
-                  <HrCommentCard 
-                    key={comment._id} 
-                    comment={comment} 
+                  <HrCommentCard
+                    key={comment._id}
+                    comment={comment}
                     onDelete={null}
                     isHR={false}
                     isModal={true}
@@ -1209,20 +1222,20 @@ const InternDetail = ({ role }) => {
                 <h3 className="text-xl font-semibold text-gray-900">Incharge Comments</h3>
                 <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowInchargeComments(false)}
                 className="text-gray-400 hover:text-gray-600 text-2xl"
               >
                 ×
               </button>
             </div>
-            
+
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
               <div className="space-y-4">
                 {inchargeComments.map((comment) => (
-                  <InchargeCommentCard 
-                    key={comment._id} 
-                    comment={comment} 
+                  <InchargeCommentCard
+                    key={comment._id}
+                    comment={comment}
                     internId={intern._id}
                     onDelete={handleDeleteInchargeComment}
                     isModal={true}
@@ -1327,7 +1340,7 @@ const HrCommentCard = ({ comment, onDelete, isHR, isModal = false }) => {
             )}
           </div>
         </div>
-        
+
         {isHR && onDelete && (
           <button
             onClick={() => onDelete(comment._id)}
@@ -1338,7 +1351,7 @@ const HrCommentCard = ({ comment, onDelete, isHR, isModal = false }) => {
           </button>
         )}
       </div>
-      
+
       <p className="text-gray-700 text-sm">{comment.text}</p>
     </div>
   );
@@ -1416,7 +1429,7 @@ const InchargeCommentCard = ({ comment, onDelete, isModal = false }) => {
             )}
           </div>
         </div>
-        
+
         <button
           onClick={() => onDelete(comment._id)}
           className="text-red-500 hover:text-red-700 transition-colors p-1 rounded hover:bg-red-50"
@@ -1425,7 +1438,7 @@ const InchargeCommentCard = ({ comment, onDelete, isModal = false }) => {
           🗑️
         </button>
       </div>
-      
+
       <p className="text-gray-700 text-sm">{comment.text}</p>
     </div>
   );
