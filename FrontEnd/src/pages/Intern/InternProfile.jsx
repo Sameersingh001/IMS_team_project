@@ -663,6 +663,7 @@ const InternDetail = ({ role }) => {
                       <option value="">Select Duration</option>
                       <option value="1 month">1 Month</option>
                       <option value="3 months">3 Months</option>
+                      <option value="4 months">4 Months</option>
                       <option value="6 months">6 Months</option>
                     </select>
                     <div className="flex gap-2">
@@ -986,7 +987,6 @@ const InternDetail = ({ role }) => {
                       </p>
                     </div>
                   )}
-
 
                   {isAdmin && intern.updatedByHR && (
                     <div className="mt-2 text-sm text-blue-600">
