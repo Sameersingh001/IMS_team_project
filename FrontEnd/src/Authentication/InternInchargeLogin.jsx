@@ -220,7 +220,7 @@ const InternInchargeLogin = () => {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-around bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8">
+        <div className="min-h-screen flex sm:flex-row flex-col items-center justify-around bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8">
             <img
                 src={Graphura}
                 alt="Login Illustration"
