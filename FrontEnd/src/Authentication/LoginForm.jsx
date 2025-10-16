@@ -226,7 +226,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex justify-around items-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8 sm:py-12">
+    <div className="min-h-screen flex flex-col sm:flex-row justify-around items-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 px-4 py-8 sm:py-12">
       {/* Left image */}
       <img
         src={loginPng}
