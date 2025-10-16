@@ -158,10 +158,10 @@ const ApplicationForm = () => {
   }
   else {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-blue-900 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-blue-900 sm:p-6 p-2">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-4xl bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-8 border-t-8 border-blue-800"
+          className="w-full max-w-5xl bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl sm:p-8 p-3 space-y-8 border-t-8 border-blue-800"
         >
           {/* Logo */}
           <div className="flex justify-center mb-6">
