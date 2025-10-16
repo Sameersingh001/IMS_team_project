@@ -473,7 +473,8 @@ const excelData = selectedInterns.map(intern => ({
   const handleLogout = async () => {
     try {
       await axios.post("/api/logout", {}, { withCredentials: true });
-      navigate("/login");
+      localStorage.removeItem('user');
+      navigate("/login", {replace:true});
     } catch (err) {
       console.error("Logout error:", err);
     }

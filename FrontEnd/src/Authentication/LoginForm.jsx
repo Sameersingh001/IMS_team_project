@@ -89,7 +89,6 @@ const LoginPage = () => {
 
         // Optional: Save user info locally
         localStorage.setItem("user", JSON.stringify(user));
-
         // Redirect based on role
         setTimeout(() => {
           if (user.role === "Admin") navigate("/Admin-Dashboard");
