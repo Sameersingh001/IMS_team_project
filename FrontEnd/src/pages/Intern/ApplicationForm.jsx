@@ -25,6 +25,7 @@ const ApplicationForm = () => {
     resumeUrl: "",
     duration: "",
     prevInternship: "",
+    prevInternshipDesc: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -144,7 +145,7 @@ const ApplicationForm = () => {
         <p className="text-gray-300 sm:text-lg text-sm sm:max-w-2xl w-full">
           Thank you for your interest! The internship application form is currently closed.
           <br />
-          <span className="sm:text-sm text-s">We encourage you to apply in our next batch.</span> 
+          <span className="sm:text-sm text-s">We encourage you to apply in our next batch.</span>
         </p>
 
         <p className="text-gray-400 mt-2 text-sm">
@@ -158,10 +159,10 @@ const ApplicationForm = () => {
   }
   else {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-blue-900 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-gray-900 to-blue-900 sm:p-6 p-2">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-4xl bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-8 border-t-8 border-blue-800"
+          className="w-full max-w-5xl bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl sm:p-8 p-3 space-y-8 border-t-8 border-blue-800"
         >
           {/* Logo */}
           <div className="flex justify-center mb-6">
@@ -583,8 +584,12 @@ const ApplicationForm = () => {
                   <option value="">Select Duration</option>
                   <option>1 Month</option>
                   <option>3 Months</option>
+                  <option>4 Months</option>
                   <option>6 Months</option>
                 </select>
+                <p className="text-yellow-300 text-sm mt-1 flex items-center gap-1">
+                  ⚠️ <span>The 1-Month internship is available only for Entrepreneurship candidates.</span>
+                </p>
               </div>
               <div className="space-y-1 sm:col-span-2">
                 <label className="block text-sm font-medium text-white mb-2">
@@ -616,7 +621,30 @@ const ApplicationForm = () => {
                     />
                     No
                   </label>
+
                 </div>
+                {formData.prevInternship === "Yes" && (
+                  <div className="mt-4 sm:col-span-2 transition-all duration-500 ease-in-out animate-fade-in">
+                    <label
+                      htmlFor="prevInternshipDesc"
+                      className="block text-sm font-medium text-white"
+                    >
+                      Describe Your Previous Internship Experience
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="prevInternshipDesc"
+                      name="prevInternshipDesc"
+                      value={formData.prevInternshipDesc}
+                      onChange={handleChange}
+                      rows="4"
+                      className="p-3 rounded-xl bg-white/10 border border-white/30 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-400/50 transition-all duration-300 placeholder:text-gray-400 text-white w-full"
+                      placeholder="Write about your previous internship experience..."
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </fieldset>

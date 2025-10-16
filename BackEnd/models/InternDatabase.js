@@ -73,6 +73,10 @@ const internSchema = new mongoose.Schema({
         enums: ['Yes', 'No'],
         default: 'No'
     },
+    prevInternshipDesc: {
+    type: String,
+    default: ''
+  },
     performance: {
         type: String,
         enums: ['Excellent', 'Good', 'Average'],

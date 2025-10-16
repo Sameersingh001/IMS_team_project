@@ -15,6 +15,7 @@ export const updateInternStatus = async () => {
 
       if (intern.duration === "1 Month") endDate.setMonth(joinDate.getMonth() + 1);
       else if (intern.duration === "3 Months") endDate.setMonth(joinDate.getMonth() + 3);
+      else if (intern.duration === "4 Months") endDate.setMonth(joinDate.getMonth() + 4);
       else if (intern.duration === "6 Months") endDate.setMonth(joinDate.getMonth() + 6);
 
       if (now >= endDate) {
