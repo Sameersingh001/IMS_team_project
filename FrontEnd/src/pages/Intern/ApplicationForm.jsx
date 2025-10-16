@@ -588,7 +588,7 @@ const ApplicationForm = () => {
                   <option>6 Months</option>
                 </select>
                 <p className="text-yellow-300 text-sm mt-1 flex items-center gap-1">
-                  ⚠️ <span>1 Month internship is only for Interpenorship candidates.</span>
+                  ⚠️ <span>The 1-Month internship is available only for Entrepreneurship candidates.</span>
                 </p>
               </div>
               <div className="space-y-1 sm:col-span-2">
