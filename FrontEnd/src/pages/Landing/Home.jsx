@@ -52,10 +52,10 @@ const HomePage = () => {
         {/* Main CTA Buttons */}
         <div className="flex flex-col xs:flex-row justify-center gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 w-full max-w-xs xs:max-w-none">
           <Link
-            to="/register"
+            to="/apply"
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-base sm:text-lg font-medium shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 text-center"
           >
-            Get Started
+            Apply for InternShip
           </Link>
           <Link
             to="/login"
