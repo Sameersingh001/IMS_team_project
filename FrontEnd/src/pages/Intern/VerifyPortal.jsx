@@ -49,7 +49,7 @@ const InternDetailsPage = () => {
     const mockInternData = {
         uniqueId: "GRAPHURA/25/10/119",
         fullName: "Sameer Singh",
-        email: "sameer.singh@example.com",
+        email: "sameer.singh@example.com",  
         joiningDate: "2025-10-01",
         endingDate: "2026-01-01",
         certificateGenerated: false,
