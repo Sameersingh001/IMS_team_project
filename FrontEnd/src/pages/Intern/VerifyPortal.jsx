@@ -1,7 +1,38 @@
 import { useState, useEffect } from 'react';
 import { Search, User, Calendar, Mail, IdCard, Rocket, TrendingUp, Activity, Target, Clock, Award, RefreshCw } from "lucide-react";
+import { useRef } from 'react';
+import music from "../../../public/mixkit-harp-relax-669.mp3"
+
 
 const InternDetailsPage = () => {
+ const audioRef = useRef(new Audio(music));
+    const [isPlaying, setIsPlaying] = useState(true);
+
+    useEffect(() => {
+        const playAudio = async () => {
+            try {
+                await audioRef.current.play();
+            } catch (err) {
+                console.log("Autoplay blocked by browser:", err);
+            }
+        };
+        playAudio();
+
+        // Cleanup on unmount
+        return () => {
+            audioRef.current.pause();
+        };
+    }, []);
+
+    // Toggle button function
+    const toggleMusic = () => {
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+    };
     const [searchParams, setSearchParams] = useState({
         email: '',
         uniqueId: '',
@@ -19,7 +50,7 @@ const InternDetailsPage = () => {
         uniqueId: "GRAPHURA/25/10/119",
         fullName: "Sameer Singh",
         email: "sameer.singh@example.com",
-        joiningDate: "2025-10-01",  
+        joiningDate: "2025-10-01",
         endingDate: "2026-01-01",
         certificateGenerated: false,
         certificateNo: "Not Generated",
@@ -56,6 +87,8 @@ const InternDetailsPage = () => {
             behaviour: 88
         }
     };
+
+
 
     // Generate 6-digit numeric CAPTCHA
     const generateCaptcha = () => {
@@ -119,6 +152,7 @@ const InternDetailsPage = () => {
 
         return (
             <div className="flex flex-col items-center">
+
                 <div className="relative w-20 h-20">
                     <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 100 100">
                         <circle
@@ -183,6 +217,13 @@ const InternDetailsPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
+
+            <button
+                onClick={toggleMusic}
+                className="fixed bottom-5 right-5 z-50 bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-lg flex items-center justify-center"
+            >
+                {isPlaying ? "⏸️" : "▶️"}
+            </button>
             {/* Animated Background */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -inset-10 opacity-20">
