@@ -137,7 +137,7 @@ const HomePage = () => {
       {/* Footer */}
       <footer className="bg-white/50 backdrop-blur-md text-center py-3 sm:py-4 text-gray-600 text-xs sm:text-sm border-t border-white/30 mt-auto">
         © {new Date().getFullYear()}{" "}
-        <span className="font-semibold">Graphura Private Limited</span>. All rights reserved.
+        <span className="font-semibold">Graphura India Private Limited</span>. All rights reserved.
       </footer>
     </div>
   );
