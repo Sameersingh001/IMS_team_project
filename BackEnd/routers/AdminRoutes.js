@@ -1,7 +1,7 @@
 import express from "express";
 import { verifyToken } from "../middlewares/AuthVerify.js"
 import { logoutUser } from "../controllers/AuthController.js";
-import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin, BulkJoinDate, generateBulkOfferLetters} from "../controllers/AdminControllers.js";
+import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin, BulkJoinDate, generateBulkOfferLetters, DeleteRejectedInterns} from "../controllers/AdminControllers.js";
 
 
 const router = express.Router();
@@ -38,6 +38,7 @@ router.post("/admin/interns/bulk-offer-letters",verifyToken, generateBulkOfferLe
 
 router.delete("/admin/interns/:id",verifyToken, deleteIntern);
 router.delete("/admin/department-incharges/:id",verifyToken, deleteIncharge);
+router.post("/admin/interns/delete",verifyToken, DeleteRejectedInterns);
 router.delete("/admin/hr-managers/:hrId",verifyToken, deleteHR);
 router.delete("/admin/interns/:id/incharge-comments/:commentId",verifyToken, InchargeDeleteComments);
 

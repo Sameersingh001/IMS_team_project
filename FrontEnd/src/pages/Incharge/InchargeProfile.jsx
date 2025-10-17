@@ -556,7 +556,7 @@ const InternCard = ({ intern }) => {
 const EditDepartmentsModal = ({ incharge, onClose, onAddDepartment, editingDepartment, setEditingDepartment }) => {
   const availableDepartments = [
     "Sales & Marketing",
-    "Email Outreaching",
+    "Data Science & Analytics",
     "Journalism and Mass communication",
     "Social Media Management",
     "Graphic Design",

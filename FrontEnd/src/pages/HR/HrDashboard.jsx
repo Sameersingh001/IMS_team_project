@@ -18,7 +18,7 @@ const HRDashboard = () => {
   const [showEmailCopy, setShowEmailCopy] = useState(false);
   const [copySuccess, setCopySuccess] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
-  
+
   // Import functionality states
   const [importLoading, setImportLoading] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -60,7 +60,7 @@ const HRDashboard = () => {
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'text/csv'
     ];
-    
+
     if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
       setError("Please select a valid Excel file (.xlsx, .xls, .csv)");
       setTimeout(() => setError(""), 5000);
@@ -84,7 +84,7 @@ const HRDashboard = () => {
   const readExcelFile = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
@@ -166,7 +166,7 @@ const HRDashboard = () => {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(templateData);
-    
+
     // Set column widths
     const colWidths = [
       { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
@@ -194,14 +194,14 @@ const HRDashboard = () => {
       );
 
       setImportSummary(data.summary);
-      
+
       if (data.summary.success > 0) {
         setCopySuccess(`✅ Successfully imported ${data.summary.success} interns! ${data.summary.duplicates > 0 ? `(${data.summary.duplicates} duplicates skipped)` : ''}`);
         setTimeout(() => setCopySuccess(""), 5000);
-        
+
         // Refresh the interns list
         await fetchInterns();
-        
+
         // Close modal after successful import
         setTimeout(() => {
           setShowImportModal(false);
@@ -272,10 +272,10 @@ const HRDashboard = () => {
       const colWidths = [
         { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 20 },
         { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 },
-        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, 
-        { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, 
-        { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 20 }, 
-        { wch: 15 }, { wch: 15 }, { wch: 5 }, { wch: 15 }, 
+        { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 },
+        { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 15 },
+        { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 20 },
+        { wch: 15 }, { wch: 15 }, { wch: 5 }, { wch: 15 },
         { wch: 20 }, { wch: 15 }
       ];
       ws['!cols'] = colWidths;
@@ -312,48 +312,48 @@ const HRDashboard = () => {
       }
 
       // Prepare data for Excel
-const excelData = selectedInterns.map(intern => ({
-  // 🔹 Basic Info
-  'Full Name': intern.fullName || '',
-  'Email': intern.email || '',
-  'Mobile': intern.mobile || '',
-  'Date of Birth': intern.dob || '',
-  'Gender': intern.gender || '',
+      const excelData = selectedInterns.map(intern => ({
+        // 🔹 Basic Info
+        'Full Name': intern.fullName || '',
+        'Email': intern.email || '',
+        'Mobile': intern.mobile || '',
+        'Date of Birth': intern.dob || '',
+        'Gender': intern.gender || '',
 
-  // 🔹 Location Info
-  'State': intern.state || '',
-  'City': intern.city || '',
-  'Address': intern.address || '',
-  'Pin Code': intern.pinCode || '',
+        // 🔹 Location Info
+        'State': intern.state || '',
+        'City': intern.city || '',
+        'Address': intern.address || '',
+        'Pin Code': intern.pinCode || '',
 
-  // 🔹 Education Details
-  'College': intern.college || '',
-  'Course': intern.course || '',
-  'Education Level': intern.educationLevel || '',
+        // 🔹 Education Details
+        'College': intern.college || '',
+        'Course': intern.course || '',
+        'Education Level': intern.educationLevel || '',
 
-  // 🔹 Internship Details
-  'Domain': intern.domain || '',
-  'Duration': intern.duration || '',
-  'Previous Internship': intern.prevInternship || 'No',
+        // 🔹 Internship Details
+        'Domain': intern.domain || '',
+        'Duration': intern.duration || '',
+        'Previous Internship': intern.prevInternship || 'No',
 
-  // 🔹 Status & Performance
-  'Status': intern.status || '',
-  'Performance': intern.performance || '',
-  'Comment': intern.comment || '',
+        // 🔹 Status & Performance
+        'Status': intern.status || '',
+        'Performance': intern.performance || '',
+        'Comment': intern.comment || '',
 
-  // 🔹 Contact / Communication
-  'Contact Method': intern.contactMethod || '',
-  'Resume URL': intern.resumeUrl || '',
+        // 🔹 Contact / Communication
+        'Contact Method': intern.contactMethod || '',
+        'Resume URL': intern.resumeUrl || '',
 
-  // 🔹 TPO / College Incharge
-  'TPO Name': intern.TpoName || '',
-  'TPO Email': intern.TpoEmail || '',
-  'TPO Number': intern.TpoNumber || '',
+        // 🔹 TPO / College Incharge
+        'TPO Name': intern.TpoName || '',
+        'TPO Email': intern.TpoEmail || '',
+        'TPO Number': intern.TpoNumber || '',
 
-  'Applied Date': intern.createdAt
-    ? new Date(intern.createdAt).toLocaleDateString()
-    : '',
-}));
+        'Applied Date': intern.createdAt
+          ? new Date(intern.createdAt).toLocaleDateString()
+          : '',
+      }));
 
 
       // Create workbook and worksheet
@@ -388,12 +388,20 @@ const excelData = selectedInterns.map(intern => ({
   };
 
   const handleStatusUpdate = async (internId, newStatus, currentPerformance) => {
-    // ✅ Business Rule: can only mark "Selected" if performance is Good or Excellent
+    // ✅ Business Rule 1: can only mark "Selected" if performance is Good or Excellent
     if (newStatus === "Selected" && !(currentPerformance === "Good" || currentPerformance === "Excellent")) {
       setError("⚠️ Cannot mark as Selected. Performance must be Good or Excellent first.");
       setTimeout(() => setError(""), 2000);
       return;
     }
+
+    // ✅ Business Rule 2: can only mark "Rejected" if performance is Poor
+    if (newStatus === "Rejected" && currentPerformance !== "Poor") {
+      setError("⚠️ Cannot mark as Rejected. Performance must be marked as Poor first.");
+      setTimeout(() => setError(""), 2000);
+      return;
+    }
+
     setUpdating(internId);
     try {
       await axios.put(
@@ -445,7 +453,7 @@ const excelData = selectedInterns.map(intern => ({
     try {
       await axios.post("/api/logout", {}, { withCredentials: true });
       localStorage.removeItem('user');
-      navigate("/login", {replace:true});
+      navigate("/login", { replace: true });
     } catch (err) {
       console.error("Logout error:", err);
     }
@@ -533,6 +541,7 @@ const excelData = selectedInterns.map(intern => ({
             .performance-Average { background-color: #fef3c7; color: #92400e; }
             .performance-Good { background-color: #dcfce7; color: #166534; }
             .performance-Excellent { background-color: #e0e7ff; color: #3730a3; }
+            .performance-Poor { background-color: #fee2e2; color: #991b1b; } // Add this line
             .unique-id {
               background-color: #f3e8ff;
               color: #7c3aed;
@@ -644,6 +653,7 @@ const excelData = selectedInterns.map(intern => ({
       case "Excellent": return "bg-purple-100 text-purple-800";
       case "Good": return "bg-green-100 text-green-800";
       case "Average": return "bg-yellow-100 text-yellow-800";
+      case "Poor": return "bg-red-100 text-red-800"; // Add this line
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -854,6 +864,7 @@ const excelData = selectedInterns.map(intern => ({
                 <option value="Excellent">Excellent</option>
                 <option value="Good">Good</option>
                 <option value="Average">Average</option>
+                <option value="Poor">Poor</option> {/* Add this line */}
               </select>
 
               <button
@@ -1012,6 +1023,7 @@ const excelData = selectedInterns.map(intern => ({
                         </td>
 
                         {/* Performance with Update */}
+                        {/* Performance with Update */}
                         <td className="p-4">
                           <div className="print-only">
                             <span className={`performance-badge performance-${intern.performance}`}>
@@ -1028,6 +1040,7 @@ const excelData = selectedInterns.map(intern => ({
                             <option value="Average">Average</option>
                             <option value="Good">Good</option>
                             <option value="Excellent">Excellent</option>
+                            <option value="Poor">Poor</option> {/* Add this line */}
                           </select>
                           {isLocked && (
                             <div className="text-xs text-yellow-600 mt-1 no-print">
@@ -1051,7 +1064,7 @@ const excelData = selectedInterns.map(intern => ({
                               }`}
                           >
                             <option>Sales & Marketing</option>
-                            <option>Email Outreaching</option>
+                            <option>Data Science & Analytics</option>
                             <option>Journalism</option>
                             <option>Social Media Management</option>
                             <option>Graphic Design</option>
@@ -1165,7 +1178,7 @@ const excelData = selectedInterns.map(intern => ({
                   >
                     Choose File
                   </button>
-                  
+
                   {/* Template Download */}
                   <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                     <h4 className="font-semibold text-blue-800 mb-2">Download Template</h4>
@@ -1265,9 +1278,8 @@ const excelData = selectedInterns.map(intern => ({
                     <button
                       onClick={handleImport}
                       disabled={importLoading}
-                      className={`flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium transition-colors ${
-                        importLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
-                      }`}
+                      className={`flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-medium transition-colors ${importLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
+                        }`}
                     >
                       {importLoading ? (
                         <>

@@ -214,7 +214,7 @@ export const DomainWiseInterns = async (req, res) => {
 
     // Fetch interns that match ANY of the incharge’s departments
 
-    const interns = await Intern.find({ status: ["Active", "Inactive", "Completed"], domain: incharge.departments })
+    const interns = await Intern.find({ status: ["Active", "Inactive", "Completed"], domain: incharge.departments }).sort({updatedAt: -1})
 
     res.json({ interns });
 
