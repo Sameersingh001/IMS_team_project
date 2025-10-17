@@ -394,10 +394,16 @@ export const ImportedIntern = async (req, res) => {
               : 'Applied',
 
           performance:
+<<<<<<< HEAD
           internData.uniqueId && internData.joiningDate
     ? 'Good'
     : 'Average',
 
+=======
+            internData.uniqueId && internData.joiningDate
+              ? 'Good'
+              : 'Average',
+>>>>>>> ca647760c2e4aa1368cb27c326c8d1743a0dd555
           // Track import source
           importedBy: req.user._id,
           importDate: new Date(),
