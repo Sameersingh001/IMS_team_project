@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Graphura from "/GraphuraLogo.jpg"
+import { LineChart, GraduationCap, LogIn } from "lucide-react";
 
 const HomePage = () => {
   return (
@@ -37,32 +38,57 @@ const HomePage = () => {
       {/* Hero Section - Fully Responsive */}
       <main className="flex flex-1 flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
         {/* Main Heading */}
-<h2 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight drop-shadow-sm">
-  Engage & Collaborate With{" "}
-  <span className="block bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mt-2">
-    Your Intern Community
-  </span>
-</h2>
+        <h2 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 mb-4 sm:mb-6 leading-tight drop-shadow-sm">
+          Engage & Collaborate With{" "}
+          <span className="block bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mt-2">
+            Your Intern Community
+          </span>
+        </h2>
 
-<p className="text-gray-700 text-base sm:text-lg lg:text-xl max-w-xs xs:max-w-sm sm:max-w-xl lg:max-w-2xl mb-6 sm:mb-8 lg:mb-10 leading-relaxed">
-  Foster meaningful connections while efficiently managing internship programs. Track progress, provide mentorship, and build lasting professional relationships.
-</p>
+        <p className="text-gray-700 text-base sm:text-lg lg:text-xl max-w-xs xs:max-w-sm sm:max-w-xl lg:max-w-2xl mb-6 sm:mb-8 lg:mb-10 leading-relaxed">
+          Foster meaningful connections while efficiently managing internship programs. Track progress, provide mentorship, and build lasting professional relationships.
+        </p>
 
         {/* Main CTA Buttons */}
-        <div className="flex flex-col xs:flex-row justify-center gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 w-full max-w-xs xs:max-w-none">
-          <Link
-            to="/apply"
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 sm:px-8 py-2.5 sm:py-3 rounded-full text-base sm:text-lg font-medium shadow-md hover:shadow-xl hover:scale-105 transition-transform duration-300 text-center"
-          >
-            Apply for InternShip
-          </Link>
-          <Link
-            to="/login"
-            className="px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-indigo-600 text-indigo-600 rounded-full text-base sm:text-lg font-medium hover:bg-indigo-50 hover:scale-105 transition-transform duration-300 text-center"
-          >
-            Login
-          </Link>
-        </div>
+    <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-6 lg:gap-8 mb-8 w-full max-w-4xl mx-auto">
+      
+      {/* Performance Button */}
+      <Link
+        to="/intern/verify/details"
+        className="group relative inline-flex items-center justify-center w-56 sm:w-60 px-6 py-3 text-base sm:text-lg font-semibold text-white rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300"
+      >
+        <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+        <span className="relative z-10 flex items-center gap-2">
+          <LineChart className="w-5 h-5" />
+          Check Performance
+        </span>
+      </Link>
+
+      {/* Apply Button */}
+      <Link
+        to="/apply"
+        className="group relative inline-flex items-center justify-center w-56 sm:w-60 px-6 py-3 text-base sm:text-lg font-semibold text-white rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300"
+      >
+        <span className="absolute inset-0 bg-gradient-to-r from-purple-700 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+        <span className="relative z-10 flex items-center gap-2">
+          <GraduationCap className="w-5 h-5" />
+          Apply an internship
+        </span>
+      </Link>
+
+      {/* Login Button */}
+      <Link
+        to="/login"
+        className="group relative inline-flex items-center justify-center w-56 sm:w-60 px-6 py-3 text-base sm:text-lg font-semibold text-indigo-600 border-2 border-indigo-600 rounded-full bg-white/30 backdrop-blur-sm hover:bg-indigo-50 hover:scale-105 transition-all duration-300"
+      >
+        <span className="relative z-10 flex items-center gap-2">
+          <LogIn className="w-5 h-5" />
+          Login
+        </span>
+      </Link>
+
+    </div>
+
 
         {/* InternIncharge Specific Links */}
         <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white/50 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/30 w-full max-w-xs xs:max-w-sm sm:max-w-md">
@@ -137,7 +163,7 @@ const HomePage = () => {
       {/* Footer */}
       <footer className="bg-white/50 backdrop-blur-md text-center py-3 sm:py-4 text-gray-600 text-xs sm:text-sm border-t border-white/30 mt-auto">
         © {new Date().getFullYear()}{" "}
-        <span className="font-semibold">Graphura Private Limited</span>. All rights reserved.
+        <span className="font-semibold">Graphura India Private Limited</span>. All rights reserved.
       </footer>
     </div>
   );

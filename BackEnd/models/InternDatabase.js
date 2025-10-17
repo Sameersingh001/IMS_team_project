@@ -109,6 +109,9 @@ const internSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User", // reference to the HR (User collection)
     },
+
+    
+
     hrComments: [
         {
             stage: {
@@ -141,6 +144,8 @@ const internSchema = new mongoose.Schema({
             },
         },
     ],
+
+
 
 }, { timestamps: true });
 
