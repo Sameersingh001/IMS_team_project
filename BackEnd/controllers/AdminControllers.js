@@ -41,7 +41,7 @@ export const getAllInterns = async (req, res) => {
     if (performance) searchQuery.performance = performance;
 
     // 🚫 No pagination — fetch all interns
-    const interns = await Intern.find(searchQuery).sort({ updatedAt: -1 });
+    const interns = await Intern.find(searchQuery).sort({createdAt : -1});
     const total = interns.length;
 
     res.status(200).json({

@@ -1370,7 +1370,7 @@ const AdminDashboard = () => {
                       >
                         <Mail /> Email Client
                       </button>
-                      <div className="flex-1 bg-white rounded-lg px-3 py-2 border border-indigo-200 text-sm text-gray-600 flex items-center">
+                      <div className="flex-1 bg-white rounded-lg px-3 py-2 border overflow-x-auto border-indigo-200 text-sm text-gray-600 flex items-center">
                         <span className="truncate">{getSelectedInternsEmails()}</span>
                       </div>
                     </div>
