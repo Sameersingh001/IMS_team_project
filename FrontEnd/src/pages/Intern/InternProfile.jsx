@@ -945,7 +945,7 @@ const InternDetail = ({ role }) => {
                               className="text-gray-800 font-medium bg-transparent border-0 focus:ring-2 focus:ring-indigo-500 rounded px-2 py-1 cursor-pointer"
                             >
                               <option>Sales & Marketing</option>
-                              <option>Email Outreaching</option>
+                              <option>Data Science & Analytics</option>
                               <option>Journalism and Mass communication</option>
                               <option>Social Media Management</option>
                               <option>Graphic Design</option>

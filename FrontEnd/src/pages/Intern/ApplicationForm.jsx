@@ -184,18 +184,6 @@ const ApplicationForm = () => {
             </p>
           </div>
 
-          {/* Success/Error Messages */}
-          {success && (
-            <div className="bg-green-500/20 border border-green-400 text-green-200 p-4 rounded-xl text-center animate-fade-in">
-              {success}
-            </div>
-          )}
-          {error && (
-            <div className="bg-red-500/20 border border-red-400 text-red-200 p-4 rounded-xl text-center animate-fade-in">
-              {error}
-            </div>
-          )}
-
           {/* Personal Details */}
           <fieldset className="border border-white/30 p-6 rounded-xl bg-white/5">
             <legend className="text-2xl font-semibold text-blue-300 px-2">
@@ -510,7 +498,7 @@ const ApplicationForm = () => {
                 >
                   <option value="">Select Domain</option>
                   <option>Sales & Marketing</option>
-                  <option>Email Outreaching</option>
+                    <option>Data Science & Analytics</option>
                   <option>Journalism</option>
                   <option>Social Media Management</option>
                   <option>Graphic Design</option>
@@ -666,7 +654,20 @@ const ApplicationForm = () => {
               <span>Submit Application</span>
             )}
           </button>
+          {/* Success/Error Messages */}
+          {success && (
+            <div className="bg-green-500/20 border border-green-400 text-green-200 p-4 rounded-xl text-center animate-fade-in">
+              {success}
+            </div>
+          )}
+          {error && (
+            <div className="bg-red-500/20 border border-red-400 text-red-200 p-4 rounded-xl text-center animate-fade-in">
+              {error}
+            </div>
+          )}
         </form>
+
+
 
         <style jsx>{`
         @keyframes fade-in {

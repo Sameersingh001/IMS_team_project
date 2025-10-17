@@ -14,7 +14,7 @@ import { sendEmail } from '../config/emailConfig.js';
 
 export const getAllInterns = async (req, res) => {
   try {
-    const { search = "", status, performance, page = 1, limit = 10 } = req.query;
+    const { search = "", status, performance } = req.query;
 
     // 🔍 Search query (case-insensitive)
     const searchQuery = {
@@ -25,41 +25,52 @@ export const getAllInterns = async (req, res) => {
         { college: { $regex: search, $options: 'i' } },
         { course: { $regex: search, $options: 'i' } },
         { educationLevel: { $regex: search, $options: 'i' } },
-        { uniqueId: { $regex: search, $options: 'i' } },
-        { mobile: { $regex: search, $options: 'i' } } // Also search in mobile
+        { uniqueId: { $regex: search, $options: 'i' }},
+        { mobile: { $regex: search, $options: 'i' } }
       ],
       performance: { $nin: ["Average"] }
     };
 
+    // Remove $or if search is empty
     if (search.trim() === "") {
-      delete searchQuery.$or; // Remove $or if search is empty
+      delete searchQuery.$or;
     }
 
     // 🎯 Filter logic
     if (status) searchQuery.status = status;
     if (performance) searchQuery.performance = performance;
 
-    // 🧭 Pagination
-    const skip = (page - 1) * limit;
-
-    const interns = await Intern.find(searchQuery)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await Intern.countDocuments(searchQuery);
+    // 🚫 No pagination — fetch all interns
+    const interns = await Intern.find(searchQuery).sort({ updatedAt: -1 });
+    const total = interns.length;
 
     res.status(200).json({
       success: true,
       total,
-      page: Number(page),
-      pages: Math.ceil(total / limit),
       interns,
     });
   } catch (error) {
+    console.error("Error fetching interns:", error);
     res.status(500).json({ message: "Server error. Try again later." });
   }
 };
+
+export const DeleteRejectedInterns = async (req, res) =>{
+    try {
+    const result = await Intern.deleteMany({ status: 'Rejected' });
+    res.status(200).json({
+      success: true,
+      deletedCount: result.deletedCount,
+      message: `Successfully deleted ${result.deletedCount} rejected interns`
+    });
+  } catch (error) {
+    console.error('Error deleting rejected interns:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete rejected interns'
+    });
+  }
+}
 
 
 export const getInternById = async (req, res) => {

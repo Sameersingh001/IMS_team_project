@@ -3,7 +3,7 @@ import Intern from "../models/InternDatabase.js";
 // ✅ Fetch all interns (with search, filter, pagination)
 export const getAllInterns = async (req, res) => {
   try {
-    const { search = "", status, performance, page = 1, limit = 10 } = req.query;
+    const { search = "", status, performance } = req.query;
 
     const allowedStatuses = ["Applied", "Selected"];
     let searchQuery = {};
@@ -15,7 +15,7 @@ export const getAllInterns = async (req, res) => {
       searchQuery.status = { $in: allowedStatuses }; // fallback: all allowed
     }
 
-    // Search filter
+    // 🔍 Search filter
     if (search.trim() !== "") {
       searchQuery.$or = [
         { fullName: { $regex: search, $options: "i" } },
@@ -29,23 +29,17 @@ export const getAllInterns = async (req, res) => {
       ];
     }
 
-    // Performance filter
+    // 🎯 Performance filter
     if (performance) searchQuery.performance = performance;
 
-    const skip = (page - 1) * limit;
+    // 🚫 Removed pagination: fetch all matching interns
+    const interns = await Intern.find(searchQuery).sort({ createdAt: -1 });
+    const total = interns.length;
 
-    const interns = await Intern.find(searchQuery)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await Intern.countDocuments(searchQuery);
-
+    // ✅ Send response
     res.status(200).json({
       success: true,
       total,
-      page: Number(page),
-      pages: Math.ceil(total / limit),
       interns,
     });
   } catch (error) {
@@ -53,6 +47,7 @@ export const getAllInterns = async (req, res) => {
     res.status(500).json({ message: "Server error. Try again later." });
   }
 };
+
 
 
 

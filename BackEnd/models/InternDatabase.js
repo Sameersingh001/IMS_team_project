@@ -79,7 +79,7 @@ const internSchema = new mongoose.Schema({
   },
     performance: {
         type: String,
-        enums: ['Excellent', 'Good', 'Average'],
+        enums: ['Excellent', 'Good', 'Average', 'Poor'],
         default: 'Average'
     },
     status: {
