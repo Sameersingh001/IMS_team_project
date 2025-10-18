@@ -197,7 +197,7 @@ const HRDashboard = () => {
 
       if (data.summary.success > 0) {
         setCopySuccess(`✅ Successfully imported ${data.summary.success} interns! ${data.summary.duplicates > 0 ? `(${data.summary.duplicates} duplicates skipped)` : ''}`);
-        setTimeout(() => setCopySuccess(""), 10000);
+        setTimeout(() => setCopySuccess(""), 15000);
 
         // Refresh the interns list
         await fetchInterns();
@@ -211,12 +211,12 @@ const HRDashboard = () => {
         }, 3000);
       } else {
         setError(`❌ No interns imported. ${data.summary.duplicates > 0 ? `All ${data.summary.duplicates} records were duplicates.` : 'Please check your data.'}`);
-        setTimeout(() => setError(""), 5000);
+        setTimeout(() => setError(""), 15000);
       }
     } catch (err) {
       console.error("Import error:", err);
       setError("Failed to import interns: " + (err.response?.data?.message || err.message));
-      setTimeout(() => setError(""), 5000);
+      setTimeout(() => setError(""), 15000);
     }
     setImportLoading(false);
   };
