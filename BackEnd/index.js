@@ -10,7 +10,8 @@ import cors from "cors";
 app.use(cors({ origin: "*" }));
 const PORT = process.env.PORT || 8000;
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); 
+app.use(express.urlencoded({ limit: "50mb", extended: true })); 
 app.use(cookieParser());
 
 // import authRoutes from "./routers/authRoutes.js";

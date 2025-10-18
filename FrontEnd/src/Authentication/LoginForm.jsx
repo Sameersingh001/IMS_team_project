@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff, Mail } from "lucide-react";
+import { Eye, EyeOff, Mail, RefreshCw } from "lucide-react";
 import loginPng from "/loginPNG.webp";
 
 const LoginPage = () => {
@@ -16,6 +16,10 @@ const LoginPage = () => {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
+  // Captcha States
+  const [captcha, setCaptcha] = useState("");
+  const [userCaptcha, setUserCaptcha] = useState("");
+  
   // Forgot Password States
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
@@ -26,6 +30,18 @@ const LoginPage = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
   const [countdown, setCountdown] = useState(0);
+
+  // ✅ Generate random numeric captcha
+  const generateCaptcha = () => {
+    const randomNum = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+    setCaptcha(randomNum.toString());
+    setUserCaptcha(""); // Clear previous input
+  };
+
+  // ✅ Initialize captcha on component mount
+  useEffect(() => {
+    generateCaptcha();
+  }, []);
 
   // ✅ Check if already logged in via cookie
   useEffect(() => {
@@ -64,12 +80,33 @@ const LoginPage = () => {
     setError("");
   };
 
+  // ✅ Handle captcha input change
+  const handleCaptchaChange = (e) => {
+    // Only allow numbers
+    const value = e.target.value.replace(/\D/g, '');
+    setUserCaptcha(value);
+    setError("");
+  };
+
+  // ✅ Validate captcha
+  const validateCaptcha = () => {
+    return userCaptcha === captcha;
+  };
+
   // ✅ Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess(false);
+    
+    // Validate captcha first
+    if (!validateCaptcha()) {
+      setError("Invalid captcha! Please try again.");
+      generateCaptcha(); // Generate new captcha on failure
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await axios.post(
@@ -99,6 +136,9 @@ const LoginPage = () => {
       if (err.response?.status === 401)
         setError("Invalid email or password!");
       else setError(err.response.data.message);
+      
+      // Generate new captcha on login failure
+      generateCaptcha();
     } finally {
       setLoading(false);
     }
@@ -444,6 +484,43 @@ const LoginPage = () => {
                   <option value="HR">HR</option>
                   <option value="Admin">Admin</option>
                 </select>
+              </div>
+
+              {/* Captcha */}
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                  Enter Captcha
+                </label>
+                <div className="flex items-center space-x-4">
+                  {/* Captcha Display */}
+                  <div className="flex-1 bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl p-3 text-center">
+                    <span className="text-2xl font-bold text-gray-800 tracking-wider select-none">
+                      {captcha}
+                    </span>
+                  </div>
+                  
+                  {/* Refresh Button */}
+                  <button
+                    type="button"
+                    onClick={generateCaptcha}
+                    className="p-3 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition duration-200"
+                    title="Refresh Captcha"
+                  >
+                    <RefreshCw size={20} />
+                  </button>
+                </div>
+                
+                {/* Captcha Input */}
+                <input
+                  type="text"
+                  value={userCaptcha}
+                  onChange={handleCaptchaChange}
+                  placeholder="Enter the numbers above"
+                  className="w-full mt-3 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50 text-center text-lg font-mono"
+                  required
+                  maxLength={4}
+                  disabled={loading}
+                />
               </div>
 
               {/* Forgot Password Link */}

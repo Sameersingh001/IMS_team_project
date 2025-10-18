@@ -607,6 +607,7 @@ const InternDetail = ({ role }) => {
                     disabled={updating}
                     className={`w-full border-2 rounded-xl p-3 text-center font-bold capitalize cursor-pointer transition-all ${getPerformanceColor(intern.performance)} focus:ring-2 focus:ring-indigo-500`}
                   >
+                    <option value="Poor">Poor</option>
                     <option value="Good">Good</option>
                     <option value="Excellent">Excellent</option>
                   </select>
@@ -945,8 +946,8 @@ const InternDetail = ({ role }) => {
                               className="text-gray-800 font-medium bg-transparent border-0 focus:ring-2 focus:ring-indigo-500 rounded px-2 py-1 cursor-pointer"
                             >
                               <option>Sales & Marketing</option>
-                              <option>Email Outreaching</option>
-                              <option>Journalism and Mass communication</option>
+                              <option>Data Science & Analytics</option>
+                              <option>Journalism</option>
                               <option>Social Media Management</option>
                               <option>Graphic Design</option>
                               <option>Digital Marketing</option>

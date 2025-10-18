@@ -21,7 +21,7 @@ export const getAllInterns = async (req, res) => {
       searchQuery.status = { $in: allowedStatuses }; // fallback: all allowed
     }
 
-    // Search filter
+    // 🔍 Search filter
     if (search.trim() !== "") {
       searchQuery.$or = [
         { fullName: { $regex: search, $options: "i" } },
@@ -35,23 +35,17 @@ export const getAllInterns = async (req, res) => {
       ];
     }
 
-    // Performance filter
+    // 🎯 Performance filter
     if (performance) searchQuery.performance = performance;
 
-    const skip = (page - 1) * limit;
+    // 🚫 Removed pagination: fetch all matching interns
+    const interns = await Intern.find(searchQuery).sort({ createdAt: -1 });
+    const total = interns.length;
 
-    const interns = await Intern.find(searchQuery)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await Intern.countDocuments(searchQuery);
-
+    // ✅ Send response
     res.status(200).json({
       success: true,
       total,
-      page: Number(page),
-      pages: Math.ceil(total / limit),
       interns,
     });
   } catch (error) {

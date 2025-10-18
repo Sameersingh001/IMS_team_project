@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Eye, EyeOff, Mail, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Mail, ArrowLeft, RefreshCw } from "lucide-react";
 import Graphura from "../../public/loginPNG.webp";
 
 const InternInchargeLogin = () => {
@@ -15,6 +15,10 @@ const InternInchargeLogin = () => {
     const [success, setSuccess] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // Captcha States
+    const [captcha, setCaptcha] = useState("");
+    const [userCaptcha, setUserCaptcha] = useState("");
+
     // Forgot Password States
     const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
@@ -25,6 +29,18 @@ const InternInchargeLogin = () => {
     const [otpSent, setOtpSent] = useState(false);
     const [otpVerified, setOtpVerified] = useState(false);
     const [countdown, setCountdown] = useState(0);
+
+    // ✅ Generate random numeric captcha
+    const generateCaptcha = () => {
+        const randomNum = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+        setCaptcha(randomNum.toString());
+        setUserCaptcha(""); // Clear previous input
+    };
+
+    // ✅ Initialize captcha on component mount
+    useEffect(() => {
+        generateCaptcha();
+    }, []);
 
     // ✅ Check if already logged in
     useEffect(() => {
@@ -57,12 +73,33 @@ const InternInchargeLogin = () => {
         setError("");
     };
 
+    // ✅ Handle captcha input change
+    const handleCaptchaChange = (e) => {
+        // Only allow numbers
+        const value = e.target.value.replace(/\D/g, '');
+        setUserCaptcha(value);
+        setError("");
+    };
+
+    // ✅ Validate captcha
+    const validateCaptcha = () => {
+        return userCaptcha === captcha;
+    };
+
     // ✅ Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
         setSuccess(false);
+
+        // Validate captcha first
+        if (!validateCaptcha()) {
+            setError("Invalid captcha! Please enter the correct numbers.");
+            generateCaptcha(); // Generate new captcha on failure
+            setLoading(false);
+            return;
+        }
 
         try {
             const response = await axios.post(
@@ -95,6 +132,9 @@ const InternInchargeLogin = () => {
             } else {
                 setError("Login failed. Please try again.");
             }
+            
+            // Generate new captcha on login failure
+            generateCaptcha();
         } finally {
             setLoading(false);
         }
@@ -434,6 +474,48 @@ const InternInchargeLogin = () => {
                                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Captcha Section */}
+                            <div>
+                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                    Security Verification
+                                </label>
+                                
+                                {/* Captcha Display and Refresh */}
+                                <div className="flex items-center space-x-3 mb-3">
+                                    <div className="flex-1 bg-gradient-to-r from-gray-100 to-gray-200 border-2 border-dashed border-gray-300 rounded-xl p-3 text-center">
+                                        <span className="text-2xl font-bold text-gray-800 tracking-widest select-none">
+                                            {captcha}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Refresh Button */}
+                                    <button
+                                        type="button"
+                                        onClick={generateCaptcha}
+                                        className="p-3 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition duration-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                        title="Refresh Captcha"
+                                        disabled={loading}
+                                    >
+                                        <RefreshCw size={20} />
+                                    </button>
+                                </div>
+                                
+                                {/* Captcha Input */}
+                                <input
+                                    type="text"
+                                    value={userCaptcha}
+                                    onChange={handleCaptchaChange}
+                                    placeholder="Enter the numbers above"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50 text-center text-lg font-mono tracking-widest"
+                                    required
+                                    maxLength={4}
+                                    disabled={loading}
+                                />
+                                <p className="text-xs text-gray-500 mt-2 text-center">
+                                    Enter the 4-digit number shown above
+                                </p>
                             </div>
 
                             {/* Forgot Password Link */}

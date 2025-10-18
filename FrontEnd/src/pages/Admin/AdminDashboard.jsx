@@ -12,6 +12,10 @@ const AdminDashboard = () => {
   const [showBulkOfferModal, setShowBulkOfferModal] = useState(false);
   const [generatingOffers, setGeneratingOffers] = useState(false);
 
+
+  const [deletingRejected, setDeletingRejected] = useState(false);
+  const [showDeleteRejectedConfirm, setShowDeleteRejectedConfirm] = useState(false);
+
   const [showBulkJoiningDateModal, setShowBulkJoiningDateModal] = useState(false);
   const [bulkJoiningDate, setBulkJoiningDate] = useState("");
   const [updatingBulkJoining, setUpdatingBulkJoining] = useState(false);
@@ -55,6 +59,34 @@ const AdminDashboard = () => {
   }, [search, status, performance, activeTab]);
 
 
+  const handleDeleteAllRejected = async () => {
+    setDeletingRejected(true);
+    try {
+      const response = await axios.post("/api/admin/interns/delete",
+        {},
+        {
+          withCredentials: true
+        });
+
+      if (response.data.success) {
+        setCopySuccess(`✅ Successfully deleted ${response.data.deletedCount} rejected interns!`);
+        await fetchInterns(); // Refresh the list
+      } else {
+        setCopySuccess("❌ Failed to delete rejected interns");
+      }
+      setTimeout(() => setCopySuccess(""), 5000);
+
+    } catch (err) {
+      console.error("Error deleting rejected interns:", err);
+      setCopySuccess("❌ Failed to delete rejected interns");
+      setTimeout(() => setCopySuccess(""), 3000);
+    }
+    setDeletingRejected(false);
+    setShowDeleteRejectedConfirm(false);
+  };
+
+
+
   const generateBulkOfferLetters = async () => {
     const selectedInterns = interns.filter(intern => intern.status === "Selected");
 
@@ -86,7 +118,7 @@ const AdminDashboard = () => {
       );
 
       setShowBulkOfferModal(false);
-       // Clear the date
+      // Clear the date
 
       if (response.data.success) {
         setCopySuccess(`✅ ${response.data.processed} offer letters generated!`);
@@ -457,7 +489,7 @@ const AdminDashboard = () => {
     try {
       await axios.post("/api/admin/logout", {}, { withCredentials: true });
       localStorage.removeItem('user');
-      navigate("/login" , {replace: true});
+      navigate("/login", { replace: true });
     } catch (err) {
       console.error("Logout error:", err);
     }
@@ -938,6 +970,54 @@ const AdminDashboard = () => {
           </div>
         )}
 
+
+        {/* Delete All Rejected Confirmation Modal */}
+        {showDeleteRejectedConfirm && (
+          <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                Delete All Rejected Interns
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Are you sure you want to delete all <strong>{interns.filter(intern => intern.status === 'Rejected').length}</strong> rejected interns?
+                <span className="text-red-600 font-semibold block mt-2">This action cannot be undone!</span>
+              </p>
+
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <h4 className="font-semibold text-red-800 mb-2">⚠️ Warning:</h4>
+                <ul className="text-sm text-red-600 list-disc list-inside space-y-1">
+                  <li>All rejected intern records will be permanently deleted</li>
+                  <li>This action cannot be reversed</li>
+                  <li>Associated data will be lost forever</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteRejectedConfirm(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAllRejected}
+                  disabled={deletingRejected}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deletingRejected ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    "Delete All Rejected"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Bulk Offer Letter Modal */}
         {showBulkOfferModal && (
           <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1238,7 +1318,26 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 )}
-
+                {/* Simple One-Click Delete Rejected Button */}
+                {interns.filter(intern => intern.status === 'Rejected').length > 0 && (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setShowDeleteRejectedConfirm(true)}
+                      className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print flex items-center gap-2"
+                    >
+                      {deletingRejected ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Deleting... ({interns.filter(intern => intern.status === 'Rejected').length})
+                        </>
+                      ) : (
+                        <>
+                          🗑️ Delete All Rejected ({interns.filter(intern => intern.status === 'Rejected').length})
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
                 {/* Email Tools Panel */}
                 {showEmailCopy && selectedCount > 0 && (
                   <div className="mt-4 bg-indigo-50 rounded-xl p-4 border border-indigo-200">
@@ -1271,7 +1370,7 @@ const AdminDashboard = () => {
                       >
                         <Mail /> Email Client
                       </button>
-                      <div className="flex-1 bg-white rounded-lg px-3 py-2 border border-indigo-200 text-sm text-gray-600 flex items-center">
+                      <div className="flex-1 bg-white rounded-lg px-3 py-2 border overflow-x-auto border-indigo-200 text-sm text-gray-600 flex items-center">
                         <span className="truncate">{getSelectedInternsEmails()}</span>
                       </div>
                     </div>
@@ -1311,6 +1410,7 @@ const AdminDashboard = () => {
                     <option value="">All Performance</option>
                     <option value="Excellent">Excellent</option>
                     <option value="Good">Good</option>
+                    <option value="Poor">Poor</option>
                   </select>
 
                   <button
@@ -1461,6 +1561,7 @@ const AdminDashboard = () => {
                               )} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
                             >
                               <option value="Good">Good</option>
+                              <option value="Poor">Poor</option>
                               <option value="Excellent">Excellent</option>
                             </select>
                           </td>
@@ -1476,7 +1577,7 @@ const AdminDashboard = () => {
                               className="px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print"
                             >
                               <option>Sales & Marketing</option>
-                              <option>Email Outreaching</option>
+                              <option>Data Science & Analytics</option>
                               <option>Journalism</option>
                               <option>Social Media Management</option>
                               <option>Graphic Design</option>
