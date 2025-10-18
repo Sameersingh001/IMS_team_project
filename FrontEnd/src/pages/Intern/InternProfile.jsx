@@ -948,6 +948,7 @@ const InternDetail = ({ role }) => {
                               <option>Sales & Marketing</option>
                               <option>Data Science & Analytics</option>
                               <option>Journalism</option>
+                              <option>Human Resources</option>
                               <option>Social Media Management</option>
                               <option>Graphic Design</option>
                               <option>Digital Marketing</option>
