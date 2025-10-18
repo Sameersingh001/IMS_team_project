@@ -306,8 +306,9 @@ export const ImportedIntern = async (req, res) => {
 
     const allowedDomains = [
       'Sales & Marketing',
-      'Email Outreaching',
+      'Data Science & Analytics',
       'Journalism',
+      'Human Resources',
       'Social Media Management',
       'Graphic Design',
       'Digital Marketing',
