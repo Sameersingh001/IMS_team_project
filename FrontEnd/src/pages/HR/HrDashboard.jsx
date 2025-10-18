@@ -197,7 +197,7 @@ const HRDashboard = () => {
 
       if (data.summary.success > 0) {
         setCopySuccess(`✅ Successfully imported ${data.summary.success} interns! ${data.summary.duplicates > 0 ? `(${data.summary.duplicates} duplicates skipped)` : ''}`);
-        setTimeout(() => setCopySuccess(""), 5000);
+        setTimeout(() => setCopySuccess(""), 10000);
 
         // Refresh the interns list
         await fetchInterns();
