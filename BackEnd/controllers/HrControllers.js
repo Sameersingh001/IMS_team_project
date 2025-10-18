@@ -257,7 +257,7 @@ export const deleteRejectMany = async (req, res) => {
       message: "Failed to delete rejected interns",
     });
   }
-}
+};
 
 export const ImportedIntern = async (req, res) => {
   try {
@@ -303,7 +303,7 @@ export const ImportedIntern = async (req, res) => {
       'Sales & Marketing',
       'Data Science & Analytics',
       'Journalism',
-      'Human Resources',
+      'Human Resources',
       'Social Media Management',
       'Graphic Design',
       'Digital Marketing',
@@ -342,10 +342,12 @@ export const ImportedIntern = async (req, res) => {
         }
 
         if (!allowedDomains.includes(internData.domain)) {
-          throw new Error(`Invalid domain: ${internData.domain}`);
-        }
+          throw new Error(`  domain Invalid: ${internData.domain}`);
+        }   
 
-        // Prepare intern object
+
+
+        // Prepre intern object
         const internToSave = {
           fullName: internData.fullName.trim(),
           email,
@@ -406,3 +408,8 @@ export const ImportedIntern = async (req, res) => {
     });
   }
 };
+
+
+
+
+
