@@ -257,11 +257,7 @@ export const deleteRejectMany = async (req, res) => {
       message: "Failed to delete rejected interns",
     });
   }
-<<<<<<< HEAD
-};
-=======
 }
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
 
 export const ImportedIntern = async (req, res) => {
   try {
@@ -269,24 +265,10 @@ export const ImportedIntern = async (req, res) => {
 
     if (!interns || !Array.isArray(interns) || interns.length === 0) {
       return res.status(400).json({
-<<<<<<< HEAD
-        message: "Invalid data format. Expected array of interns.",
-      });
-    }
-
-    if (interns.length === 0) {
-      return res.status(400).json({
-        message: "No data to import.",
-      });
-    }
-
-    // Limit the number of records per import
-=======
         message: "Invalid or empty data. Please provide an array of interns.",
       });
     }
 
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
     if (interns.length > 1000) {
       return res.status(400).json({
         message: "Too many records. Maximum 1000 records per import.",
@@ -337,52 +319,12 @@ export const ImportedIntern = async (req, res) => {
     // ✅ Validate all records locally (no DB call)
     for (const [index, internData] of interns.entries()) {
       try {
-<<<<<<< HEAD
-        // Validate required fields
-        const requiredFields = ["fullName", "email", "mobile", "domain"];
-        const missingFields = requiredFields.filter(
-          (field) =>
-            !internData[field] || internData[field].toString().trim() === ""
-        );
-
-        if (missingFields.length > 0) {
-          results.failed++;
-          results.errors.push(
-            `Record ${
-              index + 1
-            }: Missing required fields - ${missingFields.join(", ")}`
-          );
-          continue;
-        }
-
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const email = internData.email.toString().trim().toLowerCase();
-        if (!emailRegex.test(email)) {
-          results.failed++;
-          results.errors.push(
-            `Record ${index + 1}: Invalid email format - ${email}`
-          );
-          continue;
-        }
-
-        // Validate mobile format
-        const mobile = internData.mobile.toString().trim();
-        if (!mobile || mobile.length < 10) {
-          results.failed++;
-          results.errors.push(
-            `Record ${index + 1}: Invalid mobile number - ${mobile}`
-          );
-          continue;
-        }
-=======
         const requiredFields = ['fullName', 'email', 'mobile', 'domain'];
         const missing = requiredFields.filter(f => !internData[f] || internData[f].toString().trim() === '');
         if (missing.length) throw new Error(`Missing required fields: ${missing.join(', ')}`);
 
         const email = internData.email.toString().trim().toLowerCase();
         const mobile = internData.mobile.toString().trim();
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
 
         if (!emailRegex.test(email)) throw new Error(`Invalid email format: ${email}`);
         if (mobile.length < 10) throw new Error(`Invalid mobile number: ${mobile}`);
@@ -390,113 +332,21 @@ export const ImportedIntern = async (req, res) => {
         // Batch duplicate check
         if (seenEmails.has(email) || seenMobiles.has(mobile)) {
           results.duplicates++;
-<<<<<<< HEAD
-          results.errors.push(
-            `Record ${index + 1}: Duplicate email in batch - ${email}`
-          );
-          continue;
-=======
           throw new Error(`Duplicate entry in batch: ${email} / ${mobile}`);
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
         }
 
         // Database duplicate check
         if (existingEmails.has(email) || existingMobiles.has(mobile)) {
           results.duplicates++;
-<<<<<<< HEAD
-          results.errors.push(
-            `Record ${index + 1}: Duplicate mobile in batch - ${mobile}`
-          );
-          continue;
-        }
-
-        // Check for existing interns in database
-        const existingIntern = await Intern.findOne({
-          $or: [{ email: email }, { mobile: mobile }],
-        });
-
-        if (existingIntern) {
-          results.duplicates++;
-          results.errors.push(
-            `Record ${
-              index + 1
-            }: Already exists in database - ${email} / ${mobile}`
-          );
-          continue;
-=======
           throw new Error(`Already exists in database: ${email} / ${mobile}`);
         }
 
         if (!allowedDomains.includes(internData.domain)) {
           throw new Error(`Invalid domain: ${internData.domain}`);
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
         }
 
         // Prepare intern object
         const internToSave = {
-<<<<<<< HEAD
-          fullName: internData.fullName.toString().trim(),
-          email: email,
-          mobile: mobile,
-          dob: internData.dob ? internData.dob.toString().trim() : "",
-          gender: internData.gender ? internData.gender.toString().trim() : "",
-          state: internData.state ? internData.state.toString().trim() : "",
-          city: internData.city ? internData.city.toString().trim() : "",
-          address: internData.address
-            ? internData.address.toString().trim()
-            : "",
-          pinCode: internData.pinCode
-            ? internData.pinCode.toString().trim()
-            : "",
-          college: internData.college
-            ? internData.college.toString().trim()
-            : "",
-          course: internData.course ? internData.course.toString().trim() : "",
-          educationLevel: internData.educationLevel
-            ? internData.educationLevel.toString().trim()
-            : "",
-          domain: internData.domain.toString().trim(),
-          contactMethod: internData.contactMethod
-            ? internData.contactMethod.toString().trim()
-            : "Email",
-          resumeUrl: internData.resumeUrl
-            ? internData.resumeUrl.toString().trim()
-            : "",
-          duration: internData.duration
-            ? internData.duration.toString().trim()
-            : "",
-          prevInternship: ["Yes", "No"].includes(internData.prevInternship)
-            ? internData.prevInternship
-            : "No",
-          TpoName: internData.TpoName
-            ? internData.TpoName.toString().trim()
-            : "",
-          TpoEmail: internData.TpoEmail
-            ? internData.TpoEmail.toString().trim().toLowerCase()
-            : "",
-          TpoNumber: internData.TpoNumber
-            ? internData.TpoNumber.toString().trim()
-            : "",
-
-          // Optional fields
-          uniqueId: internData.uniqueId
-            ? internData.uniqueId.toString().trim()
-            : "",
-          joiningDate: internData.joiningDate
-            ? internData.joiningDate.toString().trim()
-            : "",
-
-          // ✅ Status logic
-          status:
-            internData.uniqueId && internData.joiningDate
-              ? "Active"
-              : "Applied",
-
-          performance:
-            internData.uniqueId && internData.joiningDate ? "Good" : "Average",
-
-          // Track import source
-=======
           fullName: internData.fullName.trim(),
           email,
           mobile,
@@ -523,81 +373,19 @@ export const ImportedIntern = async (req, res) => {
             internData.uniqueId && internData.joiningDate ? 'Active' : 'Applied',
           performance:
             internData.uniqueId && internData.joiningDate ? 'Good' : 'Average',
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
           importedBy: req.user._id,
           importDate: new Date(),
           source: "import",
         };
 
-<<<<<<< HEAD
-        // Validate domain against allowed values
-        const allowedDomains = [
-          "Sales & Marketing",
-          "Email Outreaching",
-          "Journalism",
-          "Social Media Management",
-          "Graphic Design",
-          "Digital Marketing",
-          "Video Editing",
-          "Content Writing",
-          "UI/UX Designing",
-          "Front-end Developer",
-          "Back-end Developer",
-        ];
-
-        if (!allowedDomains.includes(internToSave.domain)) {
-          results.failed++;
-          results.errors.push(
-            `Record ${index + 1}: Invalid domain - ${
-              internToSave.domain
-            }. Must be one of: ${allowedDomains.join(", ")}`
-          );
-          continue;
-        }
-
-        // Create new intern
-        const newIntern = new Intern(internToSave);
-        await newIntern.save();
-
-        // Add to seen sets to prevent duplicates in this batch
-=======
         validDocs.push(internToSave);
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
         seenEmails.add(email);
         seenMobiles.add(mobile);
         results.success++;
-<<<<<<< HEAD
-      } catch (error) {
-        results.failed++;
-
-        if (error.code === 11000) {
-          // MongoDB duplicate key error
-          const field = Object.keys(error.keyPattern)[0];
-          results.duplicates++;
-          results.errors.push(
-            `Record ${index + 1}: Duplicate ${field} - ${internData[field]}`
-          );
-        } else if (error.name === "ValidationError") {
-          // Mongoose validation error
-          const validationErrors = Object.values(error.errors).map(
-            (e) => e.message
-          );
-          results.errors.push(
-            `Record ${index + 1}: Validation error - ${validationErrors.join(
-              ", "
-            )}`
-          );
-        } else {
-          results.errors.push(`Record ${index + 1}: ${error.message}`);
-        }
-
-        console.error(`Error importing record ${index + 1}:`, error);
-=======
 
       } catch (err) {
         results.failed++;
         results.errors.push(`Record ${index + 1}: ${err.message}`);
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
       }
     }
 
@@ -618,11 +406,3 @@ export const ImportedIntern = async (req, res) => {
     });
   }
 };
-<<<<<<< HEAD
-=======
-
-
-
-
-
->>>>>>> 903f444c24394c781beb63d4344bffea3c84e894
