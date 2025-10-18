@@ -264,8 +264,6 @@ export const deleteRejectMany = async (req, res) => {
   }
 }
 
-
-
 export const ImportedIntern = async (req, res) => {
   try {
     const { interns } = req.body;
