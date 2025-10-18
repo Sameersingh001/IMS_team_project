@@ -15,6 +15,9 @@ export const getAllInterns = async (req, res) => {
       searchQuery.status = { $in: allowedStatuses }; // fallback: all allowed
     }
 
+
+
+    
     // 🔍 Search filter
     if (search.trim() !== "") {
       searchQuery.$or = [
@@ -264,26 +267,18 @@ export const deleteRejectMany = async (req, res) => {
 
 
 export const ImportedIntern = async (req, res) => {
-
   try {
     const { interns } = req.body;
 
-    if (!interns || !Array.isArray(interns)) {
+    if (!interns || !Array.isArray(interns) || interns.length === 0) {
       return res.status(400).json({
-        message: "Invalid data format. Expected array of interns."
+        message: "Invalid or empty data. Please provide an array of interns.",
       });
     }
 
-    if (interns.length === 0) {
-      return res.status(400).json({
-        message: "No data to import."
-      });
-    }
-
-    // Limit the number of records per import
     if (interns.length > 1000) {
       return res.status(400).json({
-        message: "Too many records. Maximum 1000 records per import."
+        message: "Too many records. Maximum 1000 records per import.",
       });
     }
 
@@ -295,164 +290,118 @@ export const ImportedIntern = async (req, res) => {
       errors: []
     };
 
-    const importedInterns = [];
+    // ✅ Collect all emails and mobiles at once
+    const allEmails = interns.map(i => i.email?.toString().trim().toLowerCase()).filter(Boolean);
+    const allMobiles = interns.map(i => i.mobile?.toString().trim()).filter(Boolean);
+
+    // ✅ Query DB once to find existing ones
+    const existingInterns = await Intern.find({
+      $or: [{ email: { $in: allEmails } }, { mobile: { $in: allMobiles } }]
+    }).select("email mobile");
+
+    const existingEmails = new Set(existingInterns.map(e => e.email));
+    const existingMobiles = new Set(existingInterns.map(e => e.mobile));
+
     const seenEmails = new Set();
     const seenMobiles = new Set();
+    const validDocs = [];
 
+    const allowedDomains = [
+      'Sales & Marketing',
+      'Email Outreaching',
+      'Journalism',
+      'Social Media Management',
+      'Graphic Design',
+      'Digital Marketing',
+      'Video Editing',
+      'Content Writing',
+      'UI/UX Designing',
+      'Front-end Developer',
+      'Back-end Developer'
+    ];
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // ✅ Validate all records locally (no DB call)
     for (const [index, internData] of interns.entries()) {
       try {
-        // Validate required fields
         const requiredFields = ['fullName', 'email', 'mobile', 'domain'];
-        const missingFields = requiredFields.filter(field => !internData[field] || internData[field].toString().trim() === '');
+        const missing = requiredFields.filter(f => !internData[f] || internData[f].toString().trim() === '');
+        if (missing.length) throw new Error(`Missing required fields: ${missing.join(', ')}`);
 
-        if (missingFields.length > 0) {
-          results.failed++;
-          results.errors.push(`Record ${index + 1}: Missing required fields - ${missingFields.join(', ')}`);
-          continue;
-        }
-
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         const email = internData.email.toString().trim().toLowerCase();
-        if (!emailRegex.test(email)) {
-          results.failed++;
-          results.errors.push(`Record ${index + 1}: Invalid email format - ${email}`);
-          continue;
-        }
-
-        // Validate mobile format
         const mobile = internData.mobile.toString().trim();
-        if (!mobile || mobile.length < 10) {
-          results.failed++;
-          results.errors.push(`Record ${index + 1}: Invalid mobile number - ${mobile}`);
-          continue;
-        }
 
-        // Check for duplicates in current batch
-        if (seenEmails.has(email)) {
+        if (!emailRegex.test(email)) throw new Error(`Invalid email format: ${email}`);
+        if (mobile.length < 10) throw new Error(`Invalid mobile number: ${mobile}`);
+
+        // Batch duplicate check
+        if (seenEmails.has(email) || seenMobiles.has(mobile)) {
           results.duplicates++;
-          results.errors.push(`Record ${index + 1}: Duplicate email in batch - ${email}`);
-          continue;
+          throw new Error(`Duplicate entry in batch: ${email} / ${mobile}`);
         }
 
-        if (seenMobiles.has(mobile)) {
+        // Database duplicate check
+        if (existingEmails.has(email) || existingMobiles.has(mobile)) {
           results.duplicates++;
-          results.errors.push(`Record ${index + 1}: Duplicate mobile in batch - ${mobile}`);
-          continue;
+          throw new Error(`Already exists in database: ${email} / ${mobile}`);
         }
 
-        // Check for existing interns in database
-        const existingIntern = await Intern.findOne({
-          $or: [
-            { email: email },
-            { mobile: mobile }
-          ]
-        });
-
-        if (existingIntern) {
-          results.duplicates++;
-          results.errors.push(`Record ${index + 1}: Already exists in database - ${email} / ${mobile}`);
-          continue;
+        if (!allowedDomains.includes(internData.domain)) {
+          throw new Error(`Invalid domain: ${internData.domain}`);
         }
 
-        // Prepare intern data with proper formatting
+        // Prepare intern object
         const internToSave = {
-          fullName: internData.fullName.toString().trim(),
-          email: email,
-          mobile: mobile,
-          dob: internData.dob ? internData.dob.toString().trim() : '',
-          gender: internData.gender ? internData.gender.toString().trim() : '',
-          state: internData.state ? internData.state.toString().trim() : '',
-          city: internData.city ? internData.city.toString().trim() : '',
-          address: internData.address ? internData.address.toString().trim() : '',
-          pinCode: internData.pinCode ? internData.pinCode.toString().trim() : '',
-          college: internData.college ? internData.college.toString().trim() : '',
-          course: internData.course ? internData.course.toString().trim() : '',
-          educationLevel: internData.educationLevel ? internData.educationLevel.toString().trim() : '',
-          domain: internData.domain.toString().trim(),
-          contactMethod: internData.contactMethod ? internData.contactMethod.toString().trim() : 'Email',
-          resumeUrl: internData.resumeUrl ? internData.resumeUrl.toString().trim() : '',
-          duration: internData.duration ? internData.duration.toString().trim() : '',
+          fullName: internData.fullName.trim(),
+          email,
+          mobile,
+          dob: internData.dob?.toString().trim() || '',
+          gender: internData.gender?.toString().trim() || '',
+          state: internData.state?.toString().trim() || '',
+          city: internData.city?.toString().trim() || '',
+          address: internData.address?.toString().trim() || '',
+          pinCode: internData.pinCode?.toString().trim() || '',
+          college: internData.college?.toString().trim() || '',
+          course: internData.course?.toString().trim() || '',
+          educationLevel: internData.educationLevel?.toString().trim() || '',
+          domain: internData.domain.trim(),
+          contactMethod: internData.contactMethod?.toString().trim() || 'Email',
+          resumeUrl: internData.resumeUrl?.toString().trim() || '',
+          duration: internData.duration?.toString().trim() || '',
           prevInternship: ['Yes', 'No'].includes(internData.prevInternship) ? internData.prevInternship : 'No',
-          TpoName: internData.TpoName ? internData.TpoName.toString().trim() : '',
-          TpoEmail: internData.TpoEmail ? internData.TpoEmail.toString().trim().toLowerCase() : '',
-          TpoNumber: internData.TpoNumber ? internData.TpoNumber.toString().trim() : '',
-
-          // Optional fields
-          uniqueId: internData.uniqueId ? internData.uniqueId.toString().trim() : '',
-          joiningDate: internData.joiningDate ? internData.joiningDate.toString().trim() : '',
-
-          // ✅ Status logic
+          TpoName: internData.TpoName?.toString().trim() || '',
+          TpoEmail: internData.TpoEmail?.toString().trim().toLowerCase() || '',
+          TpoNumber: internData.TpoNumber?.toString().trim() || '',
+          uniqueId: internData.uniqueId?.toString().trim() || '',
+          joiningDate: internData.joiningDate?.toString().trim() || '',
           status:
-            internData.uniqueId && internData.joiningDate
-              ? 'Active'
-              : 'Applied',
-
+            internData.uniqueId && internData.joiningDate ? 'Active' : 'Applied',
           performance:
-            internData.uniqueId && internData.joiningDate
-              ? 'Good'
-              : 'Average', 
-          // Track import source
+            internData.uniqueId && internData.joiningDate ? 'Good' : 'Average',
           importedBy: req.user._id,
           importDate: new Date(),
           source: 'import'
         };
 
-
-        // Validate domain against allowed values
-        const allowedDomains = [
-          'Sales & Marketing',
-          'Email Outreaching',
-          'Journalism',
-          'Social Media Management',
-          'Graphic Design',
-          'Digital Marketing',
-          'Video Editing',
-          'Content Writing',
-          'UI/UX Designing',
-          'Front-end Developer',
-          'Back-end Developer'
-        ];
-
-        if (!allowedDomains.includes(internToSave.domain)) {
-          results.failed++;
-          results.errors.push(`Record ${index + 1}: Invalid domain - ${internToSave.domain}. Must be one of: ${allowedDomains.join(', ')}`);
-          continue;
-        }
-
-        // Create new intern
-        const newIntern = new Intern(internToSave);
-        await newIntern.save();
-
-        // Add to seen sets to prevent duplicates in this batch
+        validDocs.push(internToSave);
         seenEmails.add(email);
         seenMobiles.add(mobile);
-
-        importedInterns.push(newIntern);
         results.success++;
 
-      } catch (error) {
+      } catch (err) {
         results.failed++;
-
-        if (error.code === 11000) {
-          // MongoDB duplicate key error
-          const field = Object.keys(error.keyPattern)[0];
-          results.duplicates++;
-          results.errors.push(`Record ${index + 1}: Duplicate ${field} - ${internData[field]}`);
-        } else if (error.name === 'ValidationError') {
-          // Mongoose validation error
-          const validationErrors = Object.values(error.errors).map(e => e.message);
-          results.errors.push(`Record ${index + 1}: Validation error - ${validationErrors.join(', ')}`);
-        } else {
-          results.errors.push(`Record ${index + 1}: ${error.message}`);
-        }
-
-        console.error(`Error importing record ${index + 1}:`, error);
+        results.errors.push(`Record ${index + 1}: ${err.message}`);
       }
     }
 
+    // ✅ Bulk insert (1 DB call only)
+    if (validDocs.length > 0) {
+      await Intern.insertMany(validDocs, { ordered: false });
+    }
+
     res.json({
-      message: `Import completed: ${results.success} successful, ${results.failed} failed, ${results.duplicates} duplicates`,
+      message: `Import completed: ${results.success} successful, ${results.failed} failed, ${results.duplicates} duplicates.`,
       summary: results,
       importedCount: results.success
     });
@@ -463,9 +412,8 @@ export const ImportedIntern = async (req, res) => {
       message: 'Failed to import interns: ' + error.message
     });
   }
+};
 
-
-}
 
 
 
