@@ -10,7 +10,9 @@ import Setting from "../models/SettingDB.js"
 import bcrypt from "bcrypt"
 import * as fontkit from "fontkit"; // import fontkit
 import axios from "axios"
-import { sendEmail } from '../config/emailConfig.js';
+
+
+
 
 export const getAllInterns = async (req, res) => {
   try {
@@ -61,7 +63,7 @@ export const getAllInterns = async (req, res) => {
       interns,
     });
   } catch (error) {
-    console.error("❌ Error fetching interns:", error);
+    console.error("❌ Error in fetching interns:", error);
     res.status(500).json({ message: "Server error. Try again later." });
   }
 };
