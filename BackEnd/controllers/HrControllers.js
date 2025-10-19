@@ -3,7 +3,12 @@ import Intern from "../models/InternDatabase.js";
 // ✅ Fetch all interns (with search, filter, pagination)
 export const getAllInterns = async (req, res) => {
   try {
-    const { search = "", status, performance } = req.query;
+    const {
+      search = "",
+      status,
+      performance,
+   
+    } = req.query;
 
     // ✅ Allowed status values
     const allowedStatuses = ["Applied", "Selected"];
@@ -39,6 +44,7 @@ export const getAllInterns = async (req, res) => {
     // ⚡ Fetch data efficiently
     const interns = await Intern.find(searchQuery)
       .sort({ createdAt: -1 })
+      
     // ✅ Count total documents (faster than interns.length for large results)
     const total = await Intern.countDocuments(searchQuery);
 
@@ -54,13 +60,6 @@ export const getAllInterns = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
 export const getInternById = async (req, res) => {
   try {
     const intern = await Intern.findById(req.params.id);
@@ -70,8 +69,6 @@ export const getInternById = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
-
 
 export const updateStatus = async (req, res) => {
   try {
@@ -123,7 +120,6 @@ export const updatePerformance = async (req, res) => {
   }
 };
 
-
 // Update intern domain
 export const updateDomain = async (req, res) => {
   try {
@@ -143,7 +139,6 @@ export const updateDomain = async (req, res) => {
   }
 };
 
-
 export const addHrComment = async (req, res) => {
   try {
     const { id } = req.params; // intern id
@@ -152,7 +147,9 @@ export const addHrComment = async (req, res) => {
 
     // Validate input
     if (!text || !stage) {
-      return res.status(400).json({ message: "Stage and comment text are required" });
+      return res
+        .status(400)
+        .json({ message: "Stage and comment text are required" });
     }
 
     // Find intern and push new HR comment
@@ -188,14 +185,15 @@ export const addHrComment = async (req, res) => {
   }
 };
 
-
 export const getHrComments = async (req, res) => {
   try {
     const { id } = req.params; // Intern ID
 
     // Find intern and populate HR comment authors
-    const intern = await Intern.findById(id)
-      .populate("hrComments.commentedBy", "fullName email role");
+    const intern = await Intern.findById(id).populate(
+      "hrComments.commentedBy",
+      "fullName email role"
+    );
 
     if (!intern) {
       return res.status(404).json({ message: "Intern not found" });
@@ -210,8 +208,6 @@ export const getHrComments = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch HR comments" });
   }
 };
-
-
 
 export const deleteHrComment = async (req, res) => {
   try {
@@ -232,7 +228,9 @@ export const deleteHrComment = async (req, res) => {
 
     // Optional: Ensure only the HR who added it can delete
     if (comment.commentedBy.toString() !== hrId) {
-      return res.status(403).json({ message: "Not authorized to delete this comment" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to delete this comment" });
     }
 
     // Remove the comment
@@ -247,23 +245,20 @@ export const deleteHrComment = async (req, res) => {
   }
 };
 
-
-
-
 export const deleteRejectMany = async (req, res) => {
   try {
-    const result = await Intern.deleteMany({ status: 'Rejected' });
+    const result = await Intern.deleteMany({ status: "Rejected" });
 
     res.json({
       success: true,
       message: `Deleted ${result.deletedCount} rejected interns`,
-      deletedCount: result.deletedCount
+      deletedCount: result.deletedCount,
     });
   } catch (error) {
-    console.error('Error deleting rejected interns:', error);
+    console.error("Error deleting rejected interns:", error);
     res.status(500).json({
       success: false,
-      message: 'Failed to delete rejected interns'
+      message: "Failed to delete rejected interns",
     });
   }
 }
@@ -289,7 +284,7 @@ export const ImportedIntern = async (req, res) => {
       success: 0,
       failed: 0,
       duplicates: 0,
-      errors: []
+      errors: [],
     };
 
     // ✅ Collect all emails and mobiles at once
@@ -384,7 +379,7 @@ export const ImportedIntern = async (req, res) => {
             internData.uniqueId && internData.joiningDate ? 'Good' : 'Average',
           importedBy: req.user._id,
           importDate: new Date(),
-          source: 'import'
+          source: "import",
         };
 
         validDocs.push(internToSave);
@@ -406,18 +401,12 @@ export const ImportedIntern = async (req, res) => {
     res.json({
       message: `Import completed: ${results.success} successful, ${results.failed} failed, ${results.duplicates} duplicates.`,
       summary: results,
-      importedCount: results.success
+      importedCount: results.success,
     });
-
   } catch (error) {
-    console.error('Import error:', error);
+    console.error("Import error:", error);
     res.status(500).json({
-      message: 'Failed to import interns: ' + error.message
+      message: "Failed to import interns: " + error.message,
     });
   }
 };
-
-
-
-
-

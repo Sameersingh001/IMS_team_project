@@ -11,9 +11,6 @@ import bcrypt from "bcrypt"
 import * as fontkit from "fontkit"; // import fontkit
 import axios from "axios"
 
-
-
-
 export const getAllInterns = async (req, res) => {
   try {
     const { search = "", status, performance } = req.query;
@@ -101,9 +98,6 @@ export const getInternById = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
-
-
 
 export const updateStatus = async (req, res) => {
   try {
