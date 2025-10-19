@@ -28,8 +28,9 @@ const InternInchargeRegister = () => {
 
     const departments = [
         "Sales & Marketing",
-        "Email Outreaching",
-        "Journalism and Mass communication",
+        "Data Science & Analytics",
+        "Journalism",
+        "Human Resources",
         "Social Media Management",
         "Graphic Design",
         "Digital Marketing",
