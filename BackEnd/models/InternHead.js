@@ -30,8 +30,9 @@ const InternHeadSchema = new mongoose.Schema(
       required: true,
       enum: [
         "Sales & Marketing",
-        "Email Outreaching",
-        "Journalism and Mass communication",
+        'Data Science & Analytics',
+        'Journalism',
+        'Human Resources',
         "Social Media Management",
         "Graphic Design",
         "Digital Marketing",
