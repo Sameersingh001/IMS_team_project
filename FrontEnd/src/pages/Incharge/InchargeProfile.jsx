@@ -557,7 +557,8 @@ const EditDepartmentsModal = ({ incharge, onClose, onAddDepartment, editingDepar
   const availableDepartments = [
     "Sales & Marketing",
     "Data Science & Analytics",
-    "Journalism and Mass communication",
+    "Journalism",
+    "Human Resources",
     "Social Media Management",
     "Graphic Design",
     "Digital Marketing",

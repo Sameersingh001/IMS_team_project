@@ -5,51 +5,55 @@ export const getAllInterns = async (req, res) => {
   try {
     const { search = "", status, performance } = req.query;
 
+    // ✅ Allowed status values
     const allowedStatuses = ["Applied", "Selected"];
-    let searchQuery = {};
 
-    // ✅ Apply status filter
-    if (status && allowedStatuses.includes(status)) {
-      searchQuery.status = status; // single status
-    } else {
-      searchQuery.status = { $in: allowedStatuses }; // fallback: all allowed
-    }
+    // 🧩 Build query efficiently
+    const searchQuery = {
+      status:
+        status && allowedStatuses.includes(status)
+          ? status
+          : { $in: allowedStatuses },
+    };
 
-
-
-    
-    // 🔍 Search filter
-    if (search.trim() !== "") {
+    // 🔍 Add search filter (only if not empty)
+    if (search.trim()) {
+      const regex = new RegExp(search, "i"); // faster and cleaner regex
       searchQuery.$or = [
-        { fullName: { $regex: search, $options: "i" } },
-        { email: { $regex: search, $options: "i" } },
-        { domain: { $regex: search, $options: "i" } },
-        { college: { $regex: search, $options: "i" } },
-        { course: { $regex: search, $options: "i" } },
-        { educationLevel: { $regex: search, $options: "i" } },
-        { uniqueId: { $regex: search, $options: "i" } },
-        { mobile: { $regex: search, $options: "i" } },
+        { fullName: regex },
+        { email: regex },
+        { domain: regex },
+        { college: regex },
+        { course: regex },
+        { educationLevel: regex },
+        { uniqueId: regex },
+        { mobile: regex },
       ];
     }
 
-    // 🎯 Performance filter
-    if (performance) searchQuery.performance = performance;
+    // 🎯 Add performance filter if provided
+    if (performance) {
+      searchQuery.performance = performance;
+    }
 
-    // 🚫 Removed pagination: fetch all matching interns
-    const interns = await Intern.find(searchQuery).sort({ createdAt: -1 });
-    const total = interns.length;
+    // ⚡ Fetch data efficiently
+    const interns = await Intern.find(searchQuery)
+      .sort({ createdAt: -1 })
+    // ✅ Count total documents (faster than interns.length for large results)
+    const total = await Intern.countDocuments(searchQuery);
 
-    // ✅ Send response
+    // 🚀 Respond with data
     res.status(200).json({
       success: true,
       total,
       interns,
     });
   } catch (error) {
-    console.error("Error fetching interns:", error);
+    console.error("❌ Error fetching interns:", error);
     res.status(500).json({ message: "Server error. Try again later." });
   }
 };
+
 
 
 
