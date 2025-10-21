@@ -58,6 +58,13 @@ const AdminDashboard = () => {
     return () => clearTimeout(timer);
   }, [search, status, performance, activeTab]);
 
+  // Add this function
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+};
 
   const handleDeleteAllRejected = async () => {
     setDeletingRejected(true);
@@ -75,6 +82,7 @@ const AdminDashboard = () => {
         setCopySuccess("❌ Failed to delete rejected interns");
       }
       setTimeout(() => setCopySuccess(""), 5000);
+      scrollToTop()
 
     } catch (err) {
       console.error("Error deleting rejected interns:", err);
@@ -348,7 +356,15 @@ const AdminDashboard = () => {
       await fetchInterns();
     } catch (err) {
       console.error("Error updating status:", err);
-      setError("Failed to update status");
+
+      // Show specific error message from backend
+      if (err.response?.data?.message) {
+        setCopySuccess(`❌ ${err.response.data.message}`);
+      } else {
+        setCopySuccess("❌ Failed to update status");
+      }
+      setTimeout(() => setCopySuccess(""), 5000);
+      scrollToTop()
     }
     setUpdating(null);
   };
@@ -948,6 +964,12 @@ const AdminDashboard = () => {
 
             <div className="flex gap-3">
               <button
+                onClick={() => navigate('/Admin-Dashboard/attendance')}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium flex items-center gap-2"
+              >
+                📊 Check Attendance
+              </button>
+              <button
                 onClick={handlePrint}
                 className="px-6 py-2 flex bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 font-medium shadow-md hover:shadow-lg no-print"
               >
@@ -1345,6 +1367,7 @@ const AdminDashboard = () => {
                       📧 Email Selected Interns ({selectedCount})
                     </h3>
                     <div className="flex flex-col sm:flex-row gap-3">
+
                       <button
                         onClick={copySelectedEmails}
                         className="px-4 py-2 bg-white text-indigo-700 border border-indigo-300 rounded-lg hover:bg-indigo-50 transition-colors font-medium flex items-center gap-2"
@@ -1508,6 +1531,11 @@ const AdminDashboard = () => {
                             <div className="text-sm text-gray-600">
                               ⏱️ {intern.duration || "Not specified"}
                             </div>
+                            {intern.extendedDays > 0 && intern.status === "Active" && (
+                              <div className="text-xs text-green-600 font-semibold mt-1">
+                                +{intern.extendedDays} days extended
+                              </div>
+                            )}
                           </td>
 
                           {/* COLLEGE */}
@@ -1523,18 +1551,12 @@ const AdminDashboard = () => {
                           </td>
 
                           {/* STATUS */}
+                          {/* STATUS */}
                           <td className="p-3">
                             <select
                               value={intern.status}
-                              onChange={(e) =>
-                                handleStatusUpdate(intern._id, e.target.value)
-                              }
-                              disabled={
-                                updating === intern._id ||
-                                ["Active", "Inactive", "Completed"].includes(
-                                  intern.status
-                                )
-                              }
+                              onChange={(e) => handleStatusUpdate(intern._id, e.target.value)}
+                              disabled={updating === intern._id}
                               className={`${getStatusColor(
                                 intern.status
                               )} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}

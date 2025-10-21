@@ -3,6 +3,7 @@ import Intern from "../models/InternDatabase.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { sendEmail } from "../config/emailConfig.js"
+import Attendance from "../models/Attendance.js"
 
 export const registerInternIncharge = async (req, res) => {
   try {
@@ -214,7 +215,7 @@ export const DomainWiseInterns = async (req, res) => {
 
     // Fetch interns that match ANY of the incharge’s departments
 
-    const interns = await Intern.find({ status: ["Active", "Inactive", "Completed"], domain: incharge.departments }).sort({updatedAt: -1})
+    const interns = await Intern.find({ status: ["Active", "Inactive", "Completed"], domain: incharge.departments }).sort({ updatedAt: -1 })
 
     res.json({ interns });
 
@@ -468,3 +469,425 @@ export const DeleteComments = async (req, res) => {
   }
 }
 
+
+
+
+export const markAttendance = async (req, res) => {
+  try {
+    const { attendanceDate, domain, attendanceRecords, sendEmail: shouldSendEmail } = req.body;
+
+    if (!attendanceDate || !domain || !attendanceRecords || !Array.isArray(attendanceRecords)) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: attendanceDate, domain, and attendanceRecords"
+      });
+    }
+
+    const updatedInterns = [];
+    const emailPromises = [];
+
+    for (const record of attendanceRecords) {
+      try {
+        // Create attendance record
+        const attendance = new Attendance({
+          intern: record.internId,
+          meetingDate: attendanceDate,
+          status: record.status,
+          remarks: record.remarks || ""
+        });
+
+        await attendance.save();
+
+        // Update intern's attendance stats
+        const intern = await Intern.findById(record.internId);
+        if (intern) {
+          intern.totalMeetings = (intern.totalMeetings || 0) + 1;
+
+          if (record.status === "Present") {
+            intern.meetingsAttended = (intern.meetingsAttended || 0) + 1;
+          } else if (record.status === "Leave") {
+            intern.leavesTaken = (intern.leavesTaken || 0) + 1;
+          }
+
+          await intern.save();
+          updatedInterns.push(intern);
+
+          // Send email if requested
+          if (shouldSendEmail) {
+            emailPromises.push(sendAttendanceEmail(intern, record.status, attendanceDate, record.remarks));
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing attendance for intern ${record.internId}:`, error);
+        // Continue with other records even if one fails
+      }
+    }
+
+    // Send all emails in parallel
+    if (shouldSendEmail && emailPromises.length > 0) {
+      try {
+        await Promise.all(emailPromises);
+      } catch (emailError) {
+        console.error("❌ Error sending some emails:", emailError);
+        // Don't fail the entire request if emails fail
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Attendance marked successfully for ${attendanceRecords.length} interns${shouldSendEmail ? ' and emails sent' : ''}`,
+      updatedInterns
+    });
+
+  } catch (error) {
+    console.error("❌ Error marking attendance:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to mark attendance",
+      error: error.message
+    });
+  }
+};
+
+
+const sendAttendanceEmail = async (intern, status, date, remarks) => {
+  try {
+    const formattedDate = new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const emailMsg = `Dear ${intern.fullName},
+
+Your attendance for ${formattedDate} has been recorded.
+
+📌 Attendance Status: ${status}
+${remarks ? `📌 Remarks: ${remarks}\n` : ''}
+📌 Domain: ${intern.domain}
+
+${getStatusMessage(status)}
+
+If you have any questions or concerns regarding this attendance record, please contact your domain incharge.
+
+Best regards,
+Graphura Team
+🌐 www.graphura.online`;
+
+    if (status == "Present") {
+      await sendEmail(
+        intern.email,
+        `Graphura - Attendance Update for ${formattedDate}`,
+        `<pre style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${emailMsg}</pre>`
+      );
+    }
+  } catch (error) {
+    console.error(`❌ Failed to send attendance email to ${intern.email}:`, error);
+    throw error; // Re-throw to handle in Promise.all
+  }
+};
+
+
+const getStatusMessage = (status) => {
+  switch (status) {
+    case 'Present':
+      return 'Thank you for your regular attendance. Keep up the good work!';
+    case 'Absent':
+      return 'Please ensure to inform your incharge in advance if you are unable to attend meetings.';
+    case 'Leave':
+      return 'Your leave has been recorded. Please ensure to follow the proper leave procedure in future.';
+    default:
+      return 'Thank you for your participation.';
+  }
+};
+
+
+export const meetingDateDetails = async (req, res) =>{
+try {
+    // Get all unique meeting dates grouped by department
+    const meetingDatesByDept = await Attendance.aggregate([
+      {
+        $lookup: {
+          from: "interns",
+          localField: "intern",
+          foreignField: "_id",
+          as: "internData"
+        }
+      },
+      {
+        $unwind: "$internData"
+      },
+      {
+        $group: {
+          _id: {
+            department: "$internData.domain",
+            meetingDate: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$meetingDate"
+              }
+            }
+          },
+          date: { $first: "$meetingDate" },
+          totalInterns: { $sum: 1 },
+          presentCount: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Present"] }, 1, 0]
+            }
+          },
+          absentCount: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Absent"] }, 1, 0]
+            }
+          },
+          leaveCount: {
+            $sum: {
+              $cond: [{ $eq: ["$status", "Leave"] }, 1, 0]
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: "$_id.department",
+          meetings: {
+            $push: {
+              date: "$_id.meetingDate",
+              originalDate: "$date",
+              totalInterns: "$totalInterns",
+              presentCount: "$presentCount",
+              absentCount: "$absentCount",
+              leaveCount: "$leaveCount",
+              attendanceRate: {
+                $multiply: [
+                  {
+                    $divide: ["$presentCount", "$totalInterns"]
+                  },
+                  100
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          department: "$_id",
+          meetings: 1,
+          _id: 0
+        }
+      }
+    ]);
+
+    // Convert to object format for easier access
+    const result = {};
+    meetingDatesByDept.forEach(dept => {
+      // Sort meetings by date (newest first)
+      dept.meetings.sort((a, b) => new Date(b.originalDate) - new Date(a.originalDate));
+      result[dept.department] = dept.meetings;
+    });
+
+    res.json({
+      success: true,
+      departmentMeetings: result
+    });
+
+  } catch (error) {
+    console.error('Error fetching department meetings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching department meetings data'
+    });
+  }
+}
+
+
+
+export const MeetingData = async (req, res) =>{
+  try {
+    const { department, date } = req.query;
+    
+    const startDate = new Date(date);
+    startDate.setHours(0, 0, 0, 0);
+    
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999);
+
+    const attendanceRecords = await Attendance.find({
+      meetingDate: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    }).populate('intern', 'fullName uniqueId email mobile gender status domain');
+
+    // Filter by department and format data
+    const filteredRecords = attendanceRecords
+      .filter(record => record.intern && record.intern.domain === department)
+      .map(record => ({
+        internName: record.intern.fullName,
+        internId: record.intern.uniqueId,
+        email: record.intern.email,
+        mobile: record.intern.mobile,
+        gender: record.intern.gender,
+        status: record.intern.status,
+        attendanceStatus: record.status,
+        remarks: record.remarks,
+        meetingDate: record.meetingDate
+      }));
+
+    res.json({
+      success: true,
+      department,
+      date,
+      attendanceRecords: filteredRecords,
+      totalRecords: filteredRecords.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching meeting details:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching meeting details'
+    });
+  }
+}
+
+
+
+export const ExtendedDays = async (req, res) =>{
+try {
+    const { extendedDays } = req.body;
+    const internId = req.params.id;
+
+    if (!extendedDays || extendedDays <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Extended days must be a positive number"
+      });
+    }
+
+    const intern = await Intern.findById(internId);
+    
+    if (!intern) {
+      return res.status(404).json({
+        success: false,
+        message: "Intern not found"
+      });
+    }
+
+    if (!intern.joiningDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Intern joining date is required"
+      });
+    }
+
+    // Calculate new total extended days
+    const totalExtendedDays = (intern.extendedDays || 0) + parseInt(extendedDays);
+    
+    // Calculate end date from original joining date
+    const joinDate = new Date(intern.joiningDate);
+    const endDate = new Date(joinDate);
+
+    // Calculate base duration from joining date
+    if (intern.duration === "1 Month") endDate.setMonth(joinDate.getMonth() + 1);
+    else if (intern.duration === "3 Months") endDate.setMonth(joinDate.getMonth() + 3);
+    else if (intern.duration === "4 Months") endDate.setMonth(joinDate.getMonth() + 4);
+    else if (intern.duration === "6 Months") endDate.setMonth(joinDate.getMonth() + 6);
+
+    // Add total extended days
+    endDate.setDate(endDate.getDate() + totalExtendedDays);
+
+    const now = new Date();
+
+    // Update extended days in database
+    intern.extendedDays = totalExtendedDays;
+    
+    // If intern was completed but the new extended end date is in future, reactivate
+    if (intern.status === "Completed" && now < endDate) {
+      intern.status = "Active";
+    }
+    // If intern is active but the new extended end date is in past, complete them
+    else if (intern.status === "Active" && now >= endDate) {
+      intern.status = "Completed";
+    }
+
+    await intern.save();
+
+    // Send email notification to intern
+    const emailSubject = ` Internship Extended - ${intern.fullName}`;
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+              .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+              .highlight { background: #e7f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea; }
+              .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="header">
+                  <h1> Internship Extended!</h1>
+                  <p>Congratulations! Your internship has been extended</p>
+              </div>
+              <div class="content">
+                  <h2>Hello ${intern.fullName},</h2>
+                  
+                  <p>We're pleased to inform you that your internship at Graphura has been extended.</p>
+                  
+                  <div class="highlight">
+                      <h3>📅 Extension Details:</h3>
+                      <p><strong>Additional Days:</strong> ${extendedDays} days</p>
+                      <p><strong>Total Extended Days:</strong> ${totalExtendedDays} days</p>
+                      <p><strong>New End Date:</strong> ${endDate.toDateString()}</p>
+                      <p><strong>Current Status:</strong> ${intern.status}</p>
+                  </div>
+
+                  <p>If you have any questions, please don't hesitate to contact your department incharge.</p>
+
+                  <p>Best regards,<br>
+                  <strong>Graphura Team</strong></p>
+              </div>
+              <div class="footer">
+                  <p>This is an automated notification. Please do not reply to this email.</p>
+              </div>
+          </div>
+      </body>
+      </html>
+    `;
+
+    // Send email (fire and forget - don't wait for response)
+    sendEmail(intern.email, emailSubject, emailHtml).catch(err => {
+      console.error("Failed to send extension email:", err);
+      // Don't throw error - email failure shouldn't prevent extension
+    });
+
+    const message = intern.status === "Active" 
+      ? `Internship extended by ${extendedDays} days. New end date: ${endDate.toDateString()}`
+      : `Internship extended by ${extendedDays} days. Intern remains completed as end date (${endDate.toDateString()}) has passed`;
+
+    res.json({
+      success: true,
+      message: message,
+      intern: {
+        _id: intern._id,
+        fullName: intern.fullName,
+        extendedDays: intern.extendedDays,
+        status: intern.status,
+        calculatedEndDate: endDate.toISOString().split('T')[0]
+      }
+    });
+
+  } catch (error) {
+    console.error("Error extending internship:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+}

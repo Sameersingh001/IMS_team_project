@@ -696,7 +696,24 @@ const InternDetail = ({ role }) => {
                 )}
               </div>
             )}
-
+            {/* Extended Days Card - Admin Only */}
+            {isAdmin && (
+              <div className="bg-white rounded-2xl shadow-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  📅 Extended Days
+                </h3>
+                <div className={`border-2 rounded-xl p-4 text-center ${intern.extendedDays > 0 ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200"
+                  }`}>
+                  <div className="text-3xl mb-2">⏱️</div>
+                  <div className="text-xl font-bold">
+                    {intern.extendedDays || 0} days
+                  </div>
+                  <div className="text-sm opacity-75 mt-1">
+                    {intern.extendedDays > 0 ? "Internship extended" : "No extension"}
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Joining Date Card - Admin Only */}
             {isAdmin && (
               <div className="bg-white rounded-2xl shadow-xl p-6">
