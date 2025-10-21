@@ -11,6 +11,8 @@ import bcrypt from "bcrypt"
 import * as fontkit from "fontkit"; // import fontkit
 import axios from "axios"
 
+import Attendance from "../models/Attendance.js"
+
 export const getAllInterns = async (req, res) => {
   try {
     const { search = "", status, performance } = req.query;
@@ -106,6 +108,27 @@ export const updateStatus = async (req, res) => {
 
     const intern = await Intern.findById(id);
     if (!intern) return res.status(404).json({ message: "Intern not found" });
+
+    // Check if trying to update status when intern is already Active
+    if (intern.status === "Active" && status !== "Active") {
+      return res.status(400).json({ 
+        message: "Cannot update status once intern is Active. Use Incharge dashboard for attendance and completion tracking." 
+      });
+    }
+
+    // Check if trying to set to Active/Inactive/Completed without required fields
+    if (["Active", "Inactive", "Completed"].includes(status)) {
+      if (!intern.joiningDate) {
+        return res.status(400).json({ 
+          message: "Cannot set status to Active/Inactive/Completed without joining date. Please generate offer letter first." 
+        });
+      }
+      if (!intern.uniqueId) {
+        return res.status(400).json({ 
+          message: "Cannot set status to Active/Inactive/Completed without unique ID. Please generate offer letter first." 
+        });
+      }
+    }
 
     // ✅ If intern is selected and joiningDate is not yet generated
     if (status === "Selected" && !intern.joiningDate) {
@@ -1128,5 +1151,169 @@ export const getHrCommentsForAdmin = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch HR comments" });
+  }
+};
+
+
+
+export const getInternsWithAttendance = async (req, res) => {
+  try {
+    const { department, search, date, status } = req.query;
+
+    let filter = {};
+
+    // ✅ Only include Active, Inactive, Completed interns
+    filter.status = { $in: ['Active', 'Inactive', 'Completed'] };
+
+    // Department filter
+    if (department) {
+      filter.domain = department;
+    }
+
+    // Status filter (optional specific one)
+    if (status && ['Active', 'Inactive', 'Completed'].includes(status)) {
+      filter.status = status;
+    }
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { uniqueId: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Get interns with filters
+    const interns = await Intern.find(filter)
+      .select('fullName email mobile uniqueId domain status performance joiningDate totalMeetings meetingsAttended leavesTaken')
+      .sort({ domain: 1, fullName: 1 });
+
+    // Add attendance data for each intern
+    const internsWithAttendance = await Promise.all(
+      interns.map(async (intern) => {
+        let attendanceFilter = { intern: intern._id };
+
+        if (date) {
+          const startDate = new Date(date);
+          const endDate = new Date(date);
+          endDate.setDate(endDate.getDate() + 1);
+          attendanceFilter.meetingDate = { $gte: startDate, $lt: endDate };
+        }
+
+        const attendanceRecords = await Attendance.find(attendanceFilter);
+
+        const presentCount = attendanceRecords.filter(r => r.status === 'Present').length;
+        const absentCount = attendanceRecords.filter(r => r.status === 'Absent').length;
+        const leaveCount = attendanceRecords.filter(r => r.status === 'Leave').length;
+        const totalRecords = attendanceRecords.length;
+
+        const attendanceRate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0;
+
+        return {
+          ...intern.toObject(),
+          presentCount,
+          absentCount,
+          leaveCount,
+          totalRecords,
+          attendanceRate
+        };
+      })
+    );
+
+    // Department-level stats
+    const departmentStats = {};
+    const departments = [...new Set(interns.map(i => i.domain))];
+
+    await Promise.all(
+      departments.map(async (dept) => {
+        const deptInterns = internsWithAttendance.filter(i => i.domain === dept);
+        const deptInternIds = deptInterns.map(i => i._id);
+
+        let attendanceFilter = { intern: { $in: deptInternIds } };
+        if (date) {
+          const startDate = new Date(date);
+          const endDate = new Date(date);
+          endDate.setDate(endDate.getDate() + 1);
+          attendanceFilter.meetingDate = { $gte: startDate, $lt: endDate };
+        }
+
+        const deptAttendance = await Attendance.find(attendanceFilter);
+
+        const totalPresent = deptAttendance.filter(r => r.status === 'Present').length;
+        const totalAbsent = deptAttendance.filter(r => r.status === 'Absent').length;
+        const totalLeave = deptAttendance.filter(r => r.status === 'Leave').length;
+        const totalRecords = deptAttendance.length;
+
+        const attendanceRate = totalRecords > 0 ? Math.round((totalPresent / totalRecords) * 100) : 0;
+
+        departmentStats[dept] = {
+          totalInterns: deptInterns.length,
+          present: totalPresent,
+          absent: totalAbsent,
+          leave: totalLeave,
+          attendanceRate
+        };
+      })
+    );
+
+    // Overall stats
+    const allAttendance = await Attendance.find(date ? {
+      meetingDate: {
+        $gte: new Date(date),
+        $lt: new Date(new Date(date).setDate(new Date(date).getDate() + 1))
+      }
+    } : {});
+
+    const overallStats = {
+      totalInterns: interns.length,
+      totalPresent: allAttendance.filter(r => r.status === 'Present').length,
+      totalAbsent: allAttendance.filter(r => r.status === 'Absent').length,
+      totalLeave: allAttendance.filter(r => r.status === 'Leave').length,
+      totalDepartments: departments.length,
+      avgAttendance: allAttendance.length > 0
+        ? Math.round((allAttendance.filter(r => r.status === 'Present').length / allAttendance.length) * 100)
+        : 0
+    };
+
+    // ✅ Status summary
+    const statusStats = {
+      Active: interns.filter(i => i.status === 'Active').length,
+      Inactive: interns.filter(i => i.status === 'Inactive').length,
+      Completed: interns.filter(i => i.status === 'Completed').length
+    };
+
+    res.json({
+      success: true,
+      interns: internsWithAttendance,
+      departmentStats,
+      overallStats,
+      statusStats
+    });
+
+  } catch (error) {
+    console.error('Error fetching interns with attendance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch interns data'
+    });
+  }
+};
+
+
+
+export const getDepartments = async (req, res) => {
+  try {
+    const departments = await Intern.distinct('domain');
+    res.json({
+      success: true,
+      departments: departments.filter(dept => dept) // Remove null/undefined
+    });
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch departments' 
+    });
   }
 };

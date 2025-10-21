@@ -11,6 +11,7 @@ import InternInchargeRegister from "./Authentication/InternInchargeRegister";
 import InternInchargeLogin from "./Authentication/InternInchargeLogin";
 import InternInchargeDashboard from "./pages/Incharge/InchargeDashboard";
 import InternInchargeProfile from "./pages/Incharge/InchargeProfile";
+import AttendaceAdminPage from "./pages/Admin/AttendaceAdminPage";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path="/Admin-Dashboard/incharge/:id" element={<InternInchargeProfile />} />
         <Route path="/Admin-Dashboard/intern/:id" element={<InternDetail role="Admin" />} />
         <Route path="/Admin-Dashboard" element={<AdminDashboard />} />
+        <Route path="/Admin-Dashboard/attendance" element={<AttendaceAdminPage />} />
         <Route
           path="*"
           element={

@@ -74,9 +74,9 @@ const internSchema = new mongoose.Schema({
         default: 'No'
     },
     prevInternshipDesc: {
-    type: String,
-    default: ''
-  },
+        type: String,
+        default: ''
+    },
     performance: {
         type: String,
         enums: ['Excellent', 'Good', 'Average', 'Poor'],
@@ -113,7 +113,7 @@ const internSchema = new mongoose.Schema({
         {
             stage: {
                 type: String,
-                enum: ['Resume Shortlisted','Interviewing','Telephonic', 'Emailing', 'Selected',],
+                enum: ['Resume Shortlisted', 'Interviewing', 'Telephonic', 'Emailing', 'Selected',],
                 required: true
             },
             text: { type: String }, // optional notes
@@ -140,7 +140,17 @@ const internSchema = new mongoose.Schema({
                 default: Date.now,
             },
         },
+
     ],
+    
+    extendedDays: {
+        type: Number,
+        default: 0
+    },
+
+    totalMeetings: { type: Number, default: 0 },
+    meetingsAttended: { type: Number, default: 0 },
+    leavesTaken: { type: Number, default: 0 },
 
 }, { timestamps: true });
 

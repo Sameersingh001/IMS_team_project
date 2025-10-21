@@ -1,7 +1,9 @@
 import express from "express";
 import { verifyToken } from "../middlewares/AuthVerify.js"
 import { logoutUser } from "../controllers/AuthController.js";
-import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin, BulkJoinDate, generateBulkOfferLetters, DeleteRejectedInterns} from "../controllers/AdminControllers.js";
+import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin, BulkJoinDate, generateBulkOfferLetters, DeleteRejectedInterns
+,getInternsWithAttendance,getDepartments
+} from "../controllers/AdminControllers.js";
 
 
 const router = express.Router();
@@ -15,6 +17,12 @@ router.get("/admin/interns/:id/incharge-comments",verifyToken, InchargeComments)
 router.get("/admin/intern-head/:inchargeId",verifyToken, InchargeCommentsDetails)
 router.get("/admin/settings",verifyToken, GetApplication)
 router.get("/admin/interns/:id/hr-comments",verifyToken, getHrCommentsForAdmin)
+
+router.get('/admin/attendance/interns',verifyToken, getInternsWithAttendance);
+
+// Get all departments
+router.get('/admin/departments',verifyToken, getDepartments);
+
 
 router.put("/admin/intern-incharge/:id/add/departments",verifyToken, updateInchargeDepartments )
 router.put("/admin/intern-incharge/:id/remove/departments",verifyToken, removeInchargeDepartment)
