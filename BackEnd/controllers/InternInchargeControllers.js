@@ -832,8 +832,8 @@ try {
       <body>
           <div class="container">
               <div class="header">
-                  <h1> Internship Extended!</h1>
-                  <p>Congratulations! Your internship has been extended</p>
+                  <h1>Graphura Internship Extended!</h1>
+                  <p>Your internship has been extended</p>
               </div>
               <div class="content">
                   <h2>Hello ${intern.fullName},</h2>
