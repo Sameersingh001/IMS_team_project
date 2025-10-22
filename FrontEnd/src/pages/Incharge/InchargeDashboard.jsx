@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Users,
@@ -22,7 +22,9 @@ import {
   Clock,
   Calendar as CalendarIcon,
   Building,
-  Plus
+  Plus,
+  Download,
+  Eye
 } from "lucide-react";
 
 const InternInchargeDashboard = () => {
@@ -66,7 +68,6 @@ const InternInchargeDashboard = () => {
       if (authRes.status === 200 && authRes.data.user) {
         setUser(authRes.data.user);
         fetchAssignedInterns();
-        console.log(authRes.data.user)
       }
     } catch (err) {
       console.log("Not authenticated, redirecting to login", err);
@@ -83,12 +84,9 @@ const InternInchargeDashboard = () => {
 
       if (response.data.success) {
         setDepartmentMeetings(response.data.departmentMeetings);
-
-        // Auto-select first department if available
         const departments = Object.keys(response.data.departmentMeetings);
         if (departments.length > 0 && !selectedDepartment) {
           setSelectedDepartment(departments[0]);
-          // Auto-select first date of the first department
           const firstDeptMeetings = response.data.departmentMeetings[departments[0]];
           if (firstDeptMeetings.length > 0) {
             setSelectedMeetingDate(firstDeptMeetings[0].date);
@@ -218,7 +216,6 @@ const InternInchargeDashboard = () => {
       );
 
       if (response.data.success) {
-        // Update local state
         setInterns(prevInterns =>
           prevInterns.map(intern =>
             intern._id === internId
@@ -254,14 +251,13 @@ const InternInchargeDashboard = () => {
     setShowAttendanceModal(true);
     setSelectedDomain(user?.department?.[0] || "");
 
-    // Initialize attendance status for active interns only
     const initialStatus = {};
     const initialRemarks = {};
 
     const activeInterns = getActiveInternsByDomain(user?.department?.[0] || "");
     activeInterns.forEach(intern => {
-      initialStatus[intern._id] = "Absent"; // Default to Absent
-      initialRemarks[intern._id] = ""; // Clear remarks
+      initialStatus[intern._id] = "Absent";
+      initialRemarks[intern._id] = "";
     });
     setAttendanceStatus(initialStatus);
     setAttendanceRemarks(initialRemarks);
@@ -290,7 +286,6 @@ const InternInchargeDashboard = () => {
         { withCredentials: true }
       );
 
-      // Update local intern data
       if (response.data.updatedInterns && response.data.updatedInterns.length > 0) {
         setInterns(prevInterns =>
           prevInterns.map(intern => {
@@ -306,7 +301,6 @@ const InternInchargeDashboard = () => {
       const absentCount = attendanceData.filter(record => record.status === "Absent").length;
       const leaveCount = attendanceData.filter(record => record.status === "Leave").length;
 
-      // Create success message
       const successMessage = `✅ ${response.data.message || 'Attendance marked successfully!'}\n\n` +
         `📊 Summary:\n` +
         `• ✅ Present: ${presentCount} interns\n` +
@@ -318,7 +312,6 @@ const InternInchargeDashboard = () => {
 
     } catch (err) {
       console.error("Error marking attendance:", err);
-
       if (err.response?.data?.message) {
         alert(`❌ ${err.response.data.message}`);
       } else {
@@ -329,7 +322,6 @@ const InternInchargeDashboard = () => {
     }
   };
 
-  // Get active interns filtered by domain (incharge's department = intern's domain)
   const getActiveInternsByDomain = (domain) => {
     return interns.filter(intern =>
       intern.status === "Active" &&
@@ -337,12 +329,10 @@ const InternInchargeDashboard = () => {
     );
   };
 
-  // Get unique domains for the incharge (their departments)
   const getInchargeDomains = () => {
     return user?.department || [];
   };
 
-  // Get interns for attendance modal based on selected domain
   const getAttendanceInterns = () => {
     if (!selectedDomain) return [];
     return getActiveInternsByDomain(selectedDomain);
@@ -361,7 +351,6 @@ const InternInchargeDashboard = () => {
     return intern.comments ? intern.comments.length : 0;
   };
 
-  // Filter interns based on search and domain
   const filteredInterns = interns.filter(intern => {
     const matchesSearch = intern.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       intern.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -372,22 +361,21 @@ const InternInchargeDashboard = () => {
     return matchesSearch && matchesDomain;
   });
 
-  // Get unique domains for filter
   const domains = [...new Set(interns.map(intern => intern.domain).filter(domain => domain))];
 
   const PerformanceBadge = ({ performance }) => {
     const getPerformanceColor = (perf) => {
       switch (perf?.toLowerCase()) {
-        case "excellent": return "bg-green-100 text-green-800";
-        case "good": return "bg-blue-100 text-blue-800";
-        case "average": return "bg-yellow-100 text-yellow-800";
-        case "poor": return "bg-red-100 text-red-800";
-        default: return "bg-gray-100 text-gray-800";
+        case "excellent": return "bg-green-100 text-green-800 border border-green-200";
+        case "good": return "bg-blue-100 text-blue-800 border border-blue-200";
+        case "average": return "bg-yellow-100 text-yellow-800 border border-yellow-200";
+        case "poor": return "bg-red-100 text-red-800 border border-red-200";
+        default: return "bg-gray-100 text-gray-800 border border-gray-200";
       }
     };
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPerformanceColor(performance)}`}>
+      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getPerformanceColor(performance)}`}>
         {performance || "Not Rated"}
       </span>
     );
@@ -399,13 +387,11 @@ const InternInchargeDashboard = () => {
     const totalInterns = filteredInternsData.length;
     const activeInterns = filteredInternsData.filter(intern => intern.status === "Active").length;
 
-    // Calculate average attendance for filtered interns
     const totalAttendanceRate = filteredInternsData.reduce((acc, intern) =>
       acc + getAttendanceStats(intern).attendanceRate, 0
     );
     const avgAttendance = totalInterns > 0 ? Math.round(totalAttendanceRate / totalInterns) : 0;
 
-    // Get unique domains from filtered interns
     const filteredDomains = [...new Set(filteredInternsData.map(intern => intern.domain).filter(domain => domain))];
 
     return {
@@ -418,14 +404,14 @@ const InternInchargeDashboard = () => {
   };
 
   const AttendanceBadge = ({ attendanceRate }) => {
-    let colorClass = "bg-gray-100 text-gray-800";
-    if (attendanceRate >= 90) colorClass = "bg-green-100 text-green-800";
-    else if (attendanceRate >= 75) colorClass = "bg-blue-100 text-blue-800";
-    else if (attendanceRate >= 60) colorClass = "bg-yellow-100 text-yellow-800";
-    else if (attendanceRate > 0) colorClass = "bg-red-100 text-red-800";
+    let colorClass = "bg-gray-100 text-gray-800 border border-gray-200";
+    if (attendanceRate >= 90) colorClass = "bg-green-100 text-green-800 border border-green-200";
+    else if (attendanceRate >= 75) colorClass = "bg-blue-100 text-blue-800 border border-blue-200";
+    else if (attendanceRate >= 60) colorClass = "bg-yellow-100 text-yellow-800 border border-yellow-200";
+    else if (attendanceRate > 0) colorClass = "bg-red-100 text-red-800 border border-red-200";
 
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClass}`}>
+      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${colorClass}`}>
         {attendanceRate}%
       </span>
     );
@@ -433,56 +419,61 @@ const InternInchargeDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex w-full">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0 max-w-full overflow-x-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}  
-        <header className="bg-white shadow-sm border-b w-full">
-          <div className="flex items-center justify-between p-4 w-full">
+        <header className="bg-white shadow-lg border-b border-gray-200">
+          <div className="flex items-center justify-between p-6">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600"
+                className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
               >
-                <Menu size={20} />
+                <Menu size={24} />
               </button>
-              <h1 className="text-2xl font-bold text-gray-800">Incharge Dashboard</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Intern Incharge Dashboard</h1>
+                <p className="text-sm text-gray-600 mt-1">Welcome back, {user?.fullName}</p>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <span className="text-lg font-bold text-blue-400">👋 {user?.fullName}</span>
+            <div className="flex items-center space-x-3">
+              <span className="text-lg font-semibold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                👋 {user?.fullName}
+              </span>
               <button
                 onClick={openAttendanceModal}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200"
+                className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                <CheckCircle size={18} />
-                <span>Mark Attendance</span>
+                <CheckCircle size={20} />
+                <span className="font-semibold">Mark Attendance</span>
               </button>
               <button
                 onClick={() => {
                   setShowMeetingsModal(true);
                   fetchDepartmentMeetings();
                 }}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition duration-200"
+                className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
               >
-                <Calendar size={18} />
-                <span>View All Meetings</span>
+                <Calendar size={20} />
+                <span className="font-semibold">View Meetings</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition duration-200"
+                className="flex items-center space-x-2 px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all duration-200 font-semibold"
               >
-                <LogOut size={18} />
+                <LogOut size={20} />
                 <span>Logout</span>
               </button>
             </div>
@@ -490,65 +481,65 @@ const InternInchargeDashboard = () => {
         </header>
 
         {/* Stats Cards */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-4  w-full max-w-full">
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-200 hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Interns</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Total Interns</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
                   {filterDomain ? getFilteredStats().totalInterns : interns.length}
                 </p>
                 {filterDomain && (
                   <p className="text-xs text-gray-500 mt-1">Filtered: {filterDomain}</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                <Users className="text-blue-600" size={24} />
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Users className="text-white" size={28} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-200 hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Interns</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Active Interns</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
                   {filterDomain ? getFilteredStats().activeInterns : interns.filter(intern => intern.status === "Active").length}
                 </p>
                 {filterDomain && (
                   <p className="text-xs text-gray-500 mt-1">In selected domain</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                <User className="text-green-600" size={24} />
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                <User className="text-white" size={28} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-200 hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {filterDomain ? "Selected Domain" : "Domains"}
                 </p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">
+                <p className="text-3xl font-bold text-gray-900 mt-2">
                   {filterDomain ? 1 : domains.length}
                 </p>
                 {filterDomain && (
                   <p className="text-xs text-gray-500 mt-1">{filterDomain}</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
-                <BarChart3 className="text-purple-600" size={24} />
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <BarChart3 className="text-white" size={28} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-200 hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Attendance</p>
-                <p className="text-2xl font-bold text-gray-800 mt-1">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Avg Attendance</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
                   {filterDomain ? getFilteredStats().avgAttendance :
                     interns.length > 0
                       ? Math.round(interns.reduce((acc, intern) => acc + getAttendanceStats(intern).attendanceRate, 0) / interns.length)
@@ -559,66 +550,72 @@ const InternInchargeDashboard = () => {
                   <p className="text-xs text-gray-500 mt-1">In selected domain</p>
                 )}
               </div>
-              <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
-                <Clock className="text-orange-600" size={24} />
+              <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Clock className="text-white" size={28} />
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-200 hover:shadow-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                   {filterDomain ? "Showing Domain" : "Your Domains"}
                 </p>
-                <div className="mt-1">
+                <div className="mt-2 space-y-1">
                   {filterDomain ? (
-                    <p className="text-xs font-bold text-gray-800 truncate">{filterDomain}</p>
+                    <p className="text-sm font-bold text-gray-900 truncate">{filterDomain}</p>
                   ) : (
-                    user?.department?.map((domain, index) => (
-                      <p key={index} className="text-xs font-bold text-gray-800 truncate">
+                    user?.department?.slice(0, 2).map((domain, index) => (
+                      <p key={index} className="text-sm font-bold text-gray-900 truncate">
                         {domain}
                       </p>
                     ))
                   )}
+                  {user?.department?.length > 2 && !filterDomain && (
+                    <p className="text-xs text-gray-500">+{user.department.length - 2} more</p>
+                  )}
                 </div>
-                {filterDomain && (
-                  <p className="text-xs text-gray-500 mt-1">Currently viewing</p>
-                )}
               </div>
-              <div className="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center">
-                <Building className="text-indigo-600" size={24} />
+              <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Building className="text-white" size={28} />
               </div>
             </div>
           </div>
         </div>
 
         {/* Filters and Search */}
-        <div className="px-6 mb-6  w-full max-w-full">
-          <div className="bg-white rounded-xl shadow-sm p-4 border">
-            <div className="flex flex-col md:flex-row gap-4">
+        <div className="px-6 mb-6">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <div className="flex flex-col lg:flex-row gap-4 items-end">
               {/* Search */}
-              <div className="flex-1">
+              <div className="flex-1 w-full">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Search Interns
+                </label>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <input
                     type="text"
-                    placeholder="Search interns by name, email, or ID..."
+                    placeholder="Search by name, email, or ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
                   />
                 </div>
               </div>
 
               {/* Domain Filter */}
-              <div className="w-full md:w-64">
+              <div className="w-full lg:w-64">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Domain
+                </label>
                 <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                  <Filter className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                   <select
                     value={filterDomain}
                     onChange={(e) => setFilterDomain(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 appearance-none bg-gray-50 focus:bg-white"
                   >
                     <option value="">All Domains</option>
                     {domains.map(domain => (
@@ -628,17 +625,17 @@ const InternInchargeDashboard = () => {
                 </div>
               </div>
 
-              {/* Clear Filter Button - Only show when filter is active */}
+              {/* Clear Filter Button */}
               {(filterDomain || searchTerm) && (
-                <div className="w-full md:w-auto">
+                <div className="w-full lg:w-auto">
                   <button
                     onClick={() => {
                       setFilterDomain("");
                       setSearchTerm("");
                     }}
-                    className="w-full md:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-200 flex items-center justify-center gap-2"
+                    className="w-full lg:w-auto px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-semibold flex items-center justify-center gap-2"
                   >
-                    <X size={16} />
+                    <X size={18} />
                     Clear Filters
                   </button>
                 </div>
@@ -647,15 +644,15 @@ const InternInchargeDashboard = () => {
 
             {/* Active Filter Indicator */}
             {filterDomain && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Filter size={16} className="text-blue-600" />
-                    <span className="text-sm font-medium text-blue-800">
+                  <div className="flex items-center gap-3">
+                    <Filter size={18} className="text-blue-600" />
+                    <span className="text-sm font-semibold text-blue-800">
                       Showing data for: <strong>{filterDomain}</strong> domain
                     </span>
                   </div>
-                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                  <span className="text-sm bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full font-semibold">
                     {getFilteredStats().totalInterns} interns
                   </span>
                 </div>
@@ -665,34 +662,31 @@ const InternInchargeDashboard = () => {
         </div>
 
         {/* Interns Table */}
-        <div className="flex-1 w-full max-w-full">
-          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-            <div>
+        <div className="flex-1 px-6 pb-6 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Intern Details
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Contact
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Domain & Duration
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Performance
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Attendance
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Gender
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -700,54 +694,61 @@ const InternInchargeDashboard = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredInterns.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
-                        {interns.length === 0 ? "No interns assigned to you yet." : "No interns match your search criteria."}
+                      <td colSpan="7" className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <Users className="w-16 h-16 text-gray-300 mb-4" />
+                          <p className="text-gray-500 text-lg font-semibold">
+                            {interns.length === 0 ? "No interns assigned to you yet." : "No interns match your search criteria."}
+                          </p>
+                          <p className="text-gray-400 text-sm mt-2">
+                            {interns.length === 0 ? "Interns will appear here once assigned." : "Try adjusting your search or filter."}
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     filteredInterns.map((intern) => {
                       const stats = getAttendanceStats(intern);
                       return (
-                        <tr key={intern._id} className="hover:bg-gray-50 transition duration-150">
+                        <tr key={intern._id} className="hover:bg-gray-50 transition-colors duration-150 group">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                                  <User size={16} className="text-white" />
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-900">{intern.fullName}</p>
-                                  <p className="text-sm text-gray-500">ID: {intern.uniqueId}</p>
-                                  {getCommentCount(intern) > 0 && (
-                                    <p className="text-xs text-gray-400 mt-1">
-                                      {getCommentCount(intern)} comment{getCommentCount(intern) !== 1 ? 's' : ''}
-                                    </p>
-                                  )}
-                                </div>
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                                <User size={20} className="text-white" />
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                <Mail size={14} />
-                                <span>{intern.email}</span>
-                              </div>
-                              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                <Phone size={14} />
-                                <span>{intern.mobile}</span>
+                              <div>
+                                <p className="font-semibold text-gray-900 text-sm">{intern.fullName}</p>
+                                <p className="text-xs text-gray-500 mt-1">ID: {intern.uniqueId}</p>
+                                {getCommentCount(intern) > 0 && (
+                                  <p className="text-xs text-indigo-600 font-medium mt-1 flex items-center gap-1">
+                                    <MessageCircle size={12} />
+                                    {getCommentCount(intern)} comment{getCommentCount(intern) !== 1 ? 's' : ''}
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="space-y-2">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                              <div className="flex items-center space-x-2 text-sm text-gray-700">
+                                <Mail size={16} className="text-gray-400" />
+                                <span className="font-medium">{intern.email}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 text-sm text-gray-700">
+                                <Phone size={16} className="text-gray-400" />
+                                <span className="font-medium">{intern.mobile}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="space-y-2">
+                              <span className="inline-flex px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold border border-blue-200">
                                 {intern.domain}
                               </span>
-                              <div className="text-xs text-gray-600">
-                                <div className="font-medium">{intern.duration}</div>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <div className="font-semibold">{intern.duration}</div>
                                 {intern.extendedDays > 0 && (
-                                  <div className="text-green-600 font-semibold mt-1">
+                                  <div className="text-green-600 font-bold bg-green-50 px-2 py-1 rounded-lg">
                                     +{intern.extendedDays} days extended
                                   </div>
                                 )}
@@ -758,66 +759,71 @@ const InternInchargeDashboard = () => {
                             <PerformanceBadge performance={intern.performance} />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="space-y-1">
+                            <div className="space-y-2">
                               <AttendanceBadge attendanceRate={stats.attendanceRate} />
-                              <div className="text-xs text-gray-500">
-                                {stats.attended}/{stats.total} meetings
-                              </div>
-                              {stats.leaves > 0 && (
-                                <div className="text-xs text-orange-600">
-                                  {stats.leaves} leave{stats.leaves !== 1 ? 's' : ''}
+                              <div className="text-xs text-gray-500 space-y-1">
+                                <div className="font-medium">
+                                  {stats.attended}/{stats.total} meetings
                                 </div>
-                              )}
+                                {stats.leaves > 0 && (
+                                  <div className="text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded-lg">
+                                    {stats.leaves} leave{stats.leaves !== 1 ? 's' : ''}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${intern.gender === "Male"
-                              ? "bg-blue-100 text-blue-800"
-                              : intern.gender === "Female"
-                                ? "bg-pink-100 text-pink-800"
-                                : "bg-purple-100 text-purple-800"
-                              }`}>
-                              {intern.gender}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${intern.status === "Active"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                              }`}>
-                              {intern.status}
-                            </span>
+                            <div className="flex flex-col gap-2">
+                              <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold ${intern.status === "Active"
+                                ? "bg-green-100 text-green-800 border border-green-200"
+                                : "bg-red-100 text-red-800 border border-red-200"
+                                }`}>
+                                {intern.status}
+                              </span>
+                              <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold ${intern.gender === "Male"
+                                ? "bg-blue-100 text-blue-800 border border-blue-200"
+                                : intern.gender === "Female"
+                                  ? "bg-pink-100 text-pink-800 border border-pink-200"
+                                  : "bg-purple-100 text-purple-800 border border-purple-200"
+                                }`}>
+                                {intern.gender}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => openExtendModal(intern)}
-                                className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors"
+                                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md"
                                 title="Extend Internship"
                               >
-                                <Plus size={14} />
+                                <Plus size={16} />
                                 Extend
                               </button>
                               <button
                                 onClick={() => openCommentModal(intern)}
-                                className="flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors"
+                                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-md"
                               >
-                                <MessageCircle size={14} />
+                                <MessageCircle size={16} />
                                 {getCommentCount(intern) > 0 ? (
                                   <span>Comments ({getCommentCount(intern)})</span>
                                 ) : (
                                   <span>Comment</span>
                                 )}
                               </button>
-                              <a
-                                href={intern.resumeUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-                              >
-                                <FileText className="w-5 h-5" />
-                                Resume
-                              </a>
+                              {intern.resumeUrl && (
+                                <a
+                                  href={intern.resumeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200 transition-all duration-200"
+                                  title="View Resume"
+                                >
+                                  <Eye size={16} />
+                                  Resume
+                                </a>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -831,7 +837,7 @@ const InternInchargeDashboard = () => {
         </div>
       </div>
 
-      {/* Comment Modal */}
+      {/* Modals */}
       {showCommentModal && selectedIntern && (
         <CommentModal
           intern={selectedIntern}
@@ -844,7 +850,6 @@ const InternInchargeDashboard = () => {
         />
       )}
 
-      {/* Attendance Modal */}
       {showAttendanceModal && (
         <AttendanceModal
           domains={getInchargeDomains()}
@@ -863,7 +868,6 @@ const InternInchargeDashboard = () => {
         />
       )}
 
-      {/* Extend Internship Modal */}
       {showExtendModal && selectedInternForExtension && (
         <ExtendInternshipModal
           intern={selectedInternForExtension}
@@ -876,7 +880,6 @@ const InternInchargeDashboard = () => {
         />
       )}
 
-      {/* Meetings Modal */}
       {showMeetingsModal && (
         <MeetingsModal
           departmentMeetings={departmentMeetings}
@@ -894,7 +897,7 @@ const InternInchargeDashboard = () => {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 backdrop-blur-md bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
@@ -920,21 +923,21 @@ const ExtendInternshipModal = ({
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between p-6 border-b">
+    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-md bg-opacity-30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Extend Internship</h3>
-            <p className="text-sm text-gray-600 mt-1">{intern.fullName}</p>
+            <h3 className="text-xl font-bold text-gray-900">Extend Internship</h3>
+            <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
           </button>
         </div>
 
         <div className="p-6">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               Additional Days
             </label>
             <input
@@ -943,13 +946,13 @@ const ExtendInternshipModal = ({
               value={extendedDays}
               onChange={(e) => setExtendedDays(e.target.value)}
               placeholder="Enter number of days to extend"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-gray-50 focus:bg-white"
             />
           </div>
 
           {intern.extendedDays > 0 && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">
+            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <p className="text-sm text-blue-700 font-semibold">
                 Already extended by: <strong>{intern.extendedDays} days</strong>
               </p>
               <p className="text-xs text-blue-600 mt-1">
@@ -961,14 +964,14 @@ const ExtendInternshipModal = ({
           <div className="flex justify-end space-x-3">
             <button
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={!extendedDays || loading}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
             >
               {loading ? (
                 <>
@@ -977,7 +980,7 @@ const ExtendInternshipModal = ({
                 </>
               ) : (
                 <>
-                  <Plus size={16} />
+                  <Plus size={18} />
                   Extend Internship
                 </>
               )}
@@ -1020,10 +1023,10 @@ const MeetingsModal = ({
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Present": return "bg-green-100 text-green-800";
-      case "Absent": return "bg-red-100 text-red-800";
-      case "Leave": return "bg-yellow-100 text-yellow-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Present": return "bg-green-100 text-green-800 border border-green-200";
+      case "Absent": return "bg-red-100 text-red-800 border border-red-200";
+      case "Leave": return "bg-yellow-100 text-yellow-800 border border-yellow-200";
+      default: return "bg-gray-100 text-gray-800 border border-gray-200";
     }
   };
 
@@ -1035,62 +1038,66 @@ const MeetingsModal = ({
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b">
+    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-md bg-opacity-30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">All Department Meetings</h3>
+            <h3 className="text-xl font-bold text-gray-900">All Department Meetings</h3>
             <p className="text-sm text-gray-600 mt-1">
               View meetings by department and date
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
           </button>
         </div>
 
         <div className="flex h-[calc(90vh-8rem)]">
           {/* Left Sidebar - Departments and Dates */}
-          <div className="w-1/3 border-r p-6 overflow-y-auto">
-            <h4 className="font-semibold text-gray-900 mb-4">Departments & Meeting Dates</h4>
+          <div className="w-1/3 border-r border-gray-200 p-6 overflow-y-auto bg-gray-50">
+            <h4 className="font-bold text-gray-900 mb-4 text-lg">Departments & Meeting Dates</h4>
 
             {departments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 No meeting data available
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {departments.map(dept => (
-                  <div key={dept} className="border rounded-lg overflow-hidden">
+                  <div key={dept} className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
                     <button
                       onClick={() => handleDepartmentChange(dept)}
-                      className={`w-full p-4 text-left font-semibold transition-colors ${selectedDepartment === dept
-                        ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-500'
-                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      className={`w-full p-4 text-left font-semibold transition-all duration-200 ${selectedDepartment === dept
+                        ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
                         }`}
                     >
                       <div className="flex justify-between items-center">
-                        <span>{dept}</span>
-                        <span className="text-sm font-normal bg-white px-2 py-1 rounded-full">
+                        <span className="text-sm">{dept}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${selectedDepartment === dept
+                          ? 'bg-white text-indigo-600'
+                          : 'bg-gray-100 text-gray-600'
+                          }`}>
                           {departmentMeetings[dept].length} meetings
                         </span>
                       </div>
                     </button>
 
                     {selectedDepartment === dept && (
-                      <div className="border-t">
+                      <div className="border-t border-gray-200">
                         {currentDepartmentMeetings.map(meeting => (
                           <button
                             key={meeting.date}
                             onClick={() => handleDateChange(meeting.date)}
-                            className={`w-full p-3 text-left border-b last:border-b-0 transition-colors ${selectedMeetingDate === meeting.date
+                            className={`w-full p-4 text-left border-b border-gray-100 last:border-b-0 transition-all duration-200 ${selectedMeetingDate === meeting.date
                               ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
                               : 'hover:bg-gray-50'
                               }`}
                           >
                             <div className="flex justify-between items-start">
                               <div>
-                                <p className="font-medium">
+                                <p className="font-semibold text-sm">
                                   {new Date(meeting.date).toLocaleDateString('en-US', {
                                     weekday: 'short',
                                     year: 'numeric',
@@ -1098,7 +1105,7 @@ const MeetingsModal = ({
                                     day: 'numeric'
                                   })}
                                 </p>
-                                <div className="flex items-center gap-4 mt-1 text-xs text-gray-600">
+                                <div className="flex items-center gap-3 mt-2 text-xs text-gray-600">
                                   <span className="flex items-center gap-1">
                                     <CheckCircle size={12} className="text-green-500" />
                                     {meeting.presentCount}
@@ -1113,7 +1120,7 @@ const MeetingsModal = ({
                                   </span>
                                 </div>
                               </div>
-                              <span className={`text-xs font-semibold ${getAttendanceRateColor(meeting.attendanceRate)}`}>
+                              <span className={`text-xs font-bold ${getAttendanceRateColor(meeting.attendanceRate)}`}>
                                 {Math.round(meeting.attendanceRate)}%
                               </span>
                             </div>
@@ -1129,7 +1136,7 @@ const MeetingsModal = ({
 
           {/* Right Content - Attendance Details */}
           <div className="w-2/3 p-6 overflow-y-auto">
-            <h4 className="font-semibold text-gray-900 mb-4">
+            <h4 className="font-bold text-gray-900 mb-4 text-lg">
               Attendance Details
               {selectedDepartment && selectedMeetingDate && (
                 <span className="text-sm font-normal text-gray-600 ml-2">
@@ -1139,55 +1146,56 @@ const MeetingsModal = ({
             </h4>
 
             {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">Loading attendance data...</p>
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 font-semibold">Loading attendance data...</p>
               </div>
             ) : meetingAttendanceData.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p>No attendance records found for selected criteria</p>
+              <div className="text-center py-16 text-gray-500">
+                <Users className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+                <p className="text-lg font-semibold">No attendance records found</p>
+                <p className="text-sm text-gray-400 mt-2">Select a different department or date</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Intern</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Gender</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Remarks</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Intern</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Contact</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Gender</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remarks</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {meetingAttendanceData.map((record, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
+                      <tr key={index} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div>
-                            <p className="font-medium text-gray-900">{record.internName}</p>
-                            <p className="text-sm text-gray-500">{record.internId}</p>
+                            <p className="font-semibold text-gray-900 text-sm">{record.internName}</p>
+                            <p className="text-xs text-gray-500">{record.internId}</p>
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{record.email}</div>
-                          <div className="text-sm text-gray-500">{record.mobile}</div>
+                          <div className="text-sm text-gray-900 font-medium">{record.email}</div>
+                          <div className="text-xs text-gray-500">{record.mobile}</div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${record.gender === "Male" ? "bg-blue-100 text-blue-800" :
-                            record.gender === "Female" ? "bg-pink-100 text-pink-800" :
-                              "bg-purple-100 text-purple-800"
+                          <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold ${record.gender === "Male" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                            record.gender === "Female" ? "bg-pink-100 text-pink-800 border border-pink-200" :
+                              "bg-purple-100 text-purple-800 border border-purple-200"
                             }`}>
                             {record.gender}
                           </span>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(record.attendanceStatus)}`}>
+                          <span className={`inline-flex px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(record.attendanceStatus)}`}>
                             {record.attendanceStatus}
                           </span>
                         </td>
                         <td className="px-4 py-4">
-                          <span className="text-sm text-gray-600">{record.remarks || '-'}</span>
+                          <span className="text-sm text-gray-600 font-medium">{record.remarks || '-'}</span>
                         </td>
                       </tr>
                     ))}
@@ -1195,8 +1203,8 @@ const MeetingsModal = ({
                 </table>
 
                 {/* Summary */}
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
+                <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <p className="text-sm text-gray-700 font-semibold">
                     Total Records: <strong>{meetingAttendanceData.length}</strong> interns
                   </p>
                 </div>
@@ -1220,41 +1228,41 @@ const CommentModal = ({
   loading
 }) => {
   return (
-    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-lg bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b">
+    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-md bg-opacity-30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden transform transition-all">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Intern Comments</h3>
+            <h3 className="text-xl font-bold text-gray-900">Intern Comments</h3>
             <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row h-[calc(90vh-8rem)]">
+        <div className="flex flex-col lg:flex-row h-[calc(90vh-8rem)]">
           {/* Add Comment Section */}
-          <div className="md:w-1/3 border-r p-6">
-            <h4 className="font-semibold text-gray-900 mb-4">Add New Comment</h4>
+          <div className="lg:w-1/3 border-r border-gray-200 p-6 bg-gray-50">
+            <h4 className="font-bold text-gray-900 mb-4 text-lg">Add New Comment</h4>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
                   Your Comment
                 </label>
                 <textarea
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Add your feedback about this intern..."
-                  rows="6"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+                  rows="8"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none transition-all duration-200 bg-white"
                 />
               </div>
 
               <button
                 onClick={() => onSubmit(intern._id)}
                 disabled={!newComment.trim() || loading}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full px-4 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
               >
                 {loading ? (
                   <>
@@ -1263,7 +1271,7 @@ const CommentModal = ({
                   </>
                 ) : (
                   <>
-                    <Send size={16} />
+                    <Send size={18} />
                     Submit Comment
                   </>
                 )}
@@ -1272,16 +1280,16 @@ const CommentModal = ({
           </div>
 
           {/* Comments List */}
-          <div className="md:w-2/3 p-6 overflow-y-auto">
-            <h4 className="font-semibold text-gray-900 mb-4">
+          <div className="lg:w-2/3 p-6 overflow-y-auto">
+            <h4 className="font-bold text-gray-900 mb-4 text-lg">
               Previous Comments ({intern.comments ? intern.comments.length : 0})
             </h4>
 
             {!intern.comments || intern.comments.length === 0 ? (
-              <div className="text-center py-12">
-                <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No comments yet for this intern.</p>
-                <p className="text-gray-400 text-sm mt-1">Be the first to add a comment!</p>
+              <div className="text-center py-16">
+                <MessageCircle className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-semibold">No comments yet for this intern.</p>
+                <p className="text-gray-400 text-sm mt-2">Be the first to add a comment!</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -1335,26 +1343,22 @@ const AttendanceModal = ({
   const handleDomainChange = (domain) => {
     setSelectedDomain(domain);
 
-    // Reset attendance status and remarks when domain changes
     const initialStatus = {};
     const initialRemarks = {};
 
-    // Filter interns for the NEW domain
     const activeInternsInNewDomain = interns.filter(intern =>
       intern.domain === domain && intern.status === "Active"
     );
 
-    // Initialize all interns in the new domain with "Absent" status
     activeInternsInNewDomain.forEach(intern => {
-      initialStatus[intern._id] = "Absent"; // Default to Absent
-      initialRemarks[intern._id] = ""; // Clear remarks
+      initialStatus[intern._id] = "Absent";
+      initialRemarks[intern._id] = "";
     });
 
     setAttendanceStatus(initialStatus);
     setAttendanceRemarks(initialRemarks);
   };
 
-  // Get interns for the currently selected domain
   const getCurrentDomainInterns = () => {
     if (!selectedDomain) return [];
     return interns.filter(intern =>
@@ -1365,33 +1369,33 @@ const AttendanceModal = ({
   const currentDomainInterns = getCurrentDomainInterns();
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b">
+    <div className="fixed inset-0 backdrop-blur-sm bg-black bg-opacity-30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden transform transition-all">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Mark Attendance by Domain</h3>
+            <h3 className="text-xl font-bold text-gray-900">Mark Attendance by Domain</h3>
             <p className="text-sm text-gray-600 mt-1">
               Mark attendance for active interns on {new Date(attendanceDate).toLocaleDateString()}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X size={24} />
           </button>
         </div>
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
           {/* Domain and Date Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Select Domain
               </label>
               <div className="relative">
-                <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Building className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <select
                   value={selectedDomain}
                   onChange={(e) => handleDomainChange(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none appearance-none bg-white"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 appearance-none bg-gray-50 focus:bg-white"
                 >
                   <option value="">Select Domain</option>
                   {domains.map(domain => (
@@ -1402,17 +1406,17 @@ const AttendanceModal = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Meeting Date
               </label>
               <div className="relative">
-                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <CalendarIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="date"
                   value={attendanceDate}
                   onChange={(e) => setAttendanceDate(e.target.value)}
                   disabled
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none bg-gray-100 text-gray-600"
                 />
               </div>
             </div>
@@ -1420,8 +1424,8 @@ const AttendanceModal = ({
 
           {/* Domain Info */}
           {selectedDomain && (
-            <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">
+            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <p className="text-sm text-blue-700 font-semibold">
                 Marking attendance for <strong>{selectedDomain}</strong> domain.
                 Showing <strong>{currentDomainInterns.length}</strong> active interns.
               </p>
@@ -1432,18 +1436,18 @@ const AttendanceModal = ({
           {selectedDomain ? (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Intern
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Domain
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                       Remarks
                     </th>
                   </tr>
@@ -1451,41 +1455,46 @@ const AttendanceModal = ({
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentDomainInterns.length === 0 ? (
                     <tr>
-                      <td colSpan="4" className="px-4 py-8 text-center text-gray-500">
-                        No active interns found in {selectedDomain} domain.
+                      <td colSpan="4" className="px-4 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <User className="w-16 h-16 text-gray-300 mb-4" />
+                          <p className="text-gray-500 text-lg font-semibold">
+                            No active interns found in {selectedDomain} domain.
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   ) : (
                     currentDomainInterns.map((intern) => (
-                      <tr key={intern._id} className="hover:bg-gray-50">
+                      <tr key={intern._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                              <User size={16} className="text-white" />
+                            <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                              <User size={18} className="text-white" />
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{intern.fullName}</p>
-                              <p className="text-sm text-gray-500">{intern.uniqueId}</p>
+                              <p className="font-semibold text-gray-900 text-sm">{intern.fullName}</p>
+                              <p className="text-xs text-gray-500">{intern.uniqueId}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                          <span className="inline-flex px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold border border-blue-200">
                             {intern.domain}
                           </span>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-2">
                             {["Present", "Absent", "Leave"].map((status) => (
                               <button
                                 key={status}
                                 onClick={() => handleStatusChange(intern._id, status)}
-                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${attendanceStatus[intern._id] === status
+                                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-sm ${attendanceStatus[intern._id] === status
                                   ? status === "Present"
-                                    ? "bg-green-600 text-white"
+                                    ? "bg-green-600 text-white shadow-md"
                                     : status === "Absent"
-                                      ? "bg-red-600 text-white"
-                                      : "bg-yellow-600 text-white"
+                                      ? "bg-red-600 text-white shadow-md"
+                                      : "bg-yellow-600 text-white shadow-md"
                                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                                   }`}
                               >
@@ -1493,7 +1502,7 @@ const AttendanceModal = ({
                               </button>
                             ))}
                           </div>
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-xs text-gray-500 mt-2 font-medium">
                             Current: {attendanceStatus[intern._id] || "Absent"}
                           </div>
                         </td>
@@ -1503,7 +1512,7 @@ const AttendanceModal = ({
                             placeholder="Remarks (optional)"
                             value={attendanceRemarks[intern._id] || ""}
                             onChange={(e) => handleRemarksChange(intern._id, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-sm transition-all duration-200"
                           />
                         </td>
                       </tr>
@@ -1513,25 +1522,25 @@ const AttendanceModal = ({
               </table>
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Building className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">Please select a domain to mark attendance.</p>
+            <div className="text-center py-16">
+              <Building className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg font-semibold">Please select a domain to mark attendance.</p>
             </div>
           )}
 
           {/* Submit Button */}
           {selectedDomain && currentDomainInterns.length > 0 && (
-            <div className="flex justify-end space-x-3 mt-6 pt-6 border-t">
+            <div className="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
               <button
                 onClick={onClose}
-                className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
               >
                 Cancel
               </button>
               <button
                 onClick={onSubmit}
                 disabled={loading || !selectedDomain || currentDomainInterns.length === 0}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-xl font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
               >
                 {loading ? (
                   <>
@@ -1540,7 +1549,7 @@ const AttendanceModal = ({
                   </>
                 ) : (
                   <>
-                    <CheckCircle size={16} />
+                    <CheckCircle size={18} />
                     Mark Attendance & Send Emails
                   </>
                 )}
@@ -1558,17 +1567,17 @@ const CommentCard = ({ comment, internId, onDelete }) => {
   const canDelete = true;
 
   return (
-    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+    <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
       <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md">
             IC
           </div>
           <div>
-            <h4 className="font-medium text-gray-900 text-sm">
+            <h4 className="font-semibold text-gray-900 text-sm">
               Intern Incharge
             </h4>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
+            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
               <Calendar size={12} />
               {new Date(comment.date).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -1585,16 +1594,16 @@ const CommentCard = ({ comment, internId, onDelete }) => {
           {canDelete && (
             <button
               onClick={() => onDelete(internId, comment._id)}
-              className="text-red-500 hover:text-red-700 transition-colors"
+              className="text-red-500 hover:text-red-700 transition-colors p-1 rounded-lg hover:bg-red-50"
               title="Delete comment"
             >
-              <Trash2 size={14} />
+              <Trash2 size={16} />
             </button>
           )}
         </div>
       </div>
 
-      <p className="text-gray-700 text-sm">{comment.text}</p>
+      <p className="text-gray-700 text-sm leading-relaxed">{comment.text}</p>
     </div>
   );
 };
