@@ -32,7 +32,7 @@ const InternHeadSchema = new mongoose.Schema(
         "Sales & Marketing",
         'Data Science & Analytics',
         'Journalism',
-        'Human Resources',
+        'Human Resources',
         "Social Media Management",
         "Graphic Design",
         "Digital Marketing",
