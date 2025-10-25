@@ -109,13 +109,6 @@ export const updateStatus = async (req, res) => {
     const intern = await Intern.findById(id);
     if (!intern) return res.status(404).json({ message: "Intern not found" });
 
-    // Check if trying to update status when intern is already Active
-    if (intern.status === "Active" && status !== "Active") {
-      return res.status(400).json({ 
-        message: "Cannot update status once intern is Active. Use Incharge dashboard for attendance and completion tracking." 
-      });
-    }
-
     // Check if trying to set to Active/Inactive/Completed without required fields
     if (["Active", "Inactive", "Completed"].includes(status)) {
       if (!intern.joiningDate) {

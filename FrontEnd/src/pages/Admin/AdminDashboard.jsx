@@ -839,7 +839,7 @@ const scrollToTop = () => {
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
                 </select>
-              </td>
+              </td> 
               <td className="p-4 no-print">
                 <div className="flex gap-2">
                   <button
@@ -1556,7 +1556,7 @@ const scrollToTop = () => {
                             <select
                               value={intern.status}
                               onChange={(e) => handleStatusUpdate(intern._id, e.target.value)}
-                              disabled={updating === intern._id}
+                              disabled={intern.status === "Active"}
                               className={`${getStatusColor(
                                 intern.status
                               )} px-3 py-1 rounded-full text-sm font-medium border-0 focus:ring-2 focus:ring-purple-500 cursor-pointer no-print`}
