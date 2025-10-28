@@ -22,6 +22,8 @@ import internRoutes from './routers/InternRoutes.js'
 import hrRoutes from './routers/HrRoutes.js'
 import adminRoutes from './routers/AdminRoutes.js'
 import Incharge from "./routers/InchargeRoutes.js"
+import Feedback from "./routers/FeedbackRoutes.js";
+import ReviewTeam from "./routers/ReviewRouters.js";
 
 
 // app.get("/", (req, res) => {
@@ -36,6 +38,8 @@ app.use('/api', internRoutes);
 app.use('/api', hrRoutes);
 app.use('/api', adminRoutes);
 app.use("/api", Incharge)
+app.use("/api", Feedback)
+app.use("/api", ReviewTeam)
 
 updateInternStatus()
 

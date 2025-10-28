@@ -62,6 +62,12 @@ const HomePage = () => {
           >
             Login
           </Link>
+          <Link
+            to="/review-team-login"
+            className="px-6 sm:px-8 py-2.5 sm:py-3 border-2 border-indigo-600 text-indigo-600 rounded-full text-base sm:text-lg font-medium hover:bg-indigo-50 hover:scale-105 transition-transform duration-300 text-center"
+          >
+            Login Review Team
+          </Link>
         </div>
 
         {/* InternIncharge Specific Links */}
@@ -80,7 +86,7 @@ const HomePage = () => {
               to="/intern-incharge-register"
               className="px-4 sm:px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-medium shadow-md hover:shadow-lg hover:scale-105 transition-transform duration-300 text-center whitespace-nowrap"
             >
-              Register as Incharge
+              Register as Incharge / Review Team
             </Link>
           </div>
         </div>

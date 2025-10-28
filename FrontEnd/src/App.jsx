@@ -12,6 +12,9 @@ import InternInchargeLogin from "./Authentication/InternInchargeLogin";
 import InternInchargeDashboard from "./pages/Incharge/InchargeDashboard";
 import InternInchargeProfile from "./pages/Incharge/InchargeProfile";
 import AttendaceAdminPage from "./pages/Admin/AttendaceAdminPage";
+import FeedbackForm from "./pages/Feedback/FeedbackFrom";
+import ReviewTeamLogin from "./pages/Feedback/ReviewTeamLogin";
+import ReviewTeamDashboard from "./pages/Feedback/ReviewDashboard";
 
 function App() {
   return (
@@ -22,6 +25,11 @@ function App() {
         <Route path="/apply" element={<ApplicationForm />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/intern-incharge-register" element={<InternInchargeRegister />} />
+
+
+        <Route path="/feedback" element={<FeedbackForm />} />
+        <Route path="/review-team-login" element={<ReviewTeamLogin />} />
+        <Route path="/review-team/dashboard" element={<ReviewTeamDashboard />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/intern-incharge-login" element={<InternInchargeLogin />} />

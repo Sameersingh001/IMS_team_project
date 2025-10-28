@@ -4,7 +4,7 @@ import axios from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import Graphura from "../../public/loginPNG.webp"
 
-const InternInchargeRegister = () => {
+const TeamMemberRegister = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         fullName: "",
@@ -12,13 +12,14 @@ const InternInchargeRegister = () => {
         password: "",
         confirmPassword: "",
         mobile: "",
-        department: "", // Single department for registration
+        department: "", // Single department for Intern Incharge
         gender: "",
         address: "",
         city: "",
         state: "",
         pinCode: "",
-        Secret_Key: "" // Secret Key field
+        Secret_Key: "", // Secret Key field
+        role: "InternIncharge" // Default role
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -39,6 +40,11 @@ const InternInchargeRegister = () => {
         "UI/UX Designing",
         "Front-end Developer",
         "Back-end Developer"
+    ];
+
+    const roles = [
+        { value: "InternIncharge", label: "Intern Incharge" },
+        { value: "ReviewTeam", label: "Review Team Member" }
     ];
 
     const handleChange = (e) => {
@@ -63,10 +69,13 @@ const InternInchargeRegister = () => {
             setError("Please enter a valid 6-digit pin code");
             return false;
         }
-        if (!formData.department) {
+        
+        // Department validation only for Intern Incharge
+        if (formData.role === "InternIncharge" && !formData.department) {
             setError("Please select a department");
             return false;
         }
+        
         if (!formData.Secret_Key) {
             setError("Secret Key is required");
             return false;
@@ -85,14 +94,26 @@ const InternInchargeRegister = () => {
         }
 
         try {
-            // Convert to array format for backend (single department in array)
-            const submitData = {
-                ...formData,
-                department: [formData.department] // Convert to array for backend
-            };
+            let submitData;
+            let endpoint;
+
+            if (formData.role === "InternIncharge") {
+                // Intern Incharge registration
+                endpoint = "/api/intern-incharge/register";
+                submitData = {
+                    ...formData,
+                    department: [formData.department] // Convert to array for backend
+                };
+            } else {
+                // Review Team registration
+                endpoint = "/api/review-team/register";
+                // Remove department for Review Team
+                const { ...reviewTeamData } = formData;
+                submitData = reviewTeamData;
+            }
 
             const response = await axios.post(
-                "/api/intern-incharge/register",
+                endpoint,
                 submitData,
                 {
                     headers: { "Content-Type": "application/json" },
@@ -102,7 +123,11 @@ const InternInchargeRegister = () => {
             if (response.status === 201) {
                 setSuccess(true);
                 setTimeout(() => {
-                    navigate("/intern-incharge-login");
+                    // Redirect to appropriate login based on role
+                    const loginPath = formData.role === "InternIncharge" 
+                        ? "/intern-incharge-login" 
+                        : "/review-team-login";
+                    navigate(loginPath);
                 }, 2000);
             }
         } catch (err) {
@@ -124,14 +149,13 @@ const InternInchargeRegister = () => {
                 className="w-1/3 h-full object-cover rounded-3xl shadow-lg"
             />
 
-
             <div className="bg-white/80 backdrop-blur-lg shadow-xl rounded-3xl p-6 sm:p-8 w-full max-w-2xl">
                 <div className="text-center mb-8">
                     <h2 className="text-3xl sm:text-4xl font-bold text-indigo-700 mb-2">
-                        Register as Intern Incharge
+                        Register as Team Member
                     </h2>
                     <p className="text-gray-600 text-sm">
-                        Create your account to manage interns
+                        Create your account to manage interns or review applications
                     </p>
                 </div>
 
@@ -148,6 +172,47 @@ const InternInchargeRegister = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Role Selection */}
+                        <div className="md:col-span-2">
+                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                Register As *
+                            </label>
+                            <div className="grid grid-cols-2 gap-4">
+                                {roles.map((role) => (
+                                    <label
+                                        key={role.value}
+                                        className={`flex items-center p-4 border-2 rounded-xl cursor-pointer transition duration-200 ${
+                                            formData.role === role.value
+                                                ? "border-indigo-500 bg-indigo-50"
+                                                : "border-gray-300 bg-gray-50 hover:border-indigo-300"
+                                        }`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="role"
+                                            value={role.value}
+                                            checked={formData.role === role.value}
+                                            onChange={handleChange}
+                                            className="sr-only"
+                                            disabled={loading}
+                                        />
+                                        <div className={`w-4 h-4 border-2 rounded-full mr-3 flex items-center justify-center ${
+                                            formData.role === role.value
+                                                ? "border-indigo-500"
+                                                : "border-gray-400"
+                                        }`}>
+                                            {formData.role === role.value && (
+                                                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <span className="font-medium text-gray-700">
+                                            {role.label}
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Full Name */}
                         <div>
                             <label className="block text-gray-700 font-semibold mb-2 text-sm">
@@ -199,33 +264,35 @@ const InternInchargeRegister = () => {
                             />
                         </div>
 
-                        {/* Department - Single Selection */}
-                        <div>
-                            <label className="block text-gray-700 font-semibold mb-2 text-sm">
-                                Department *
-                            </label>
-                            <select
-                                name="department"
-                                value={formData.department}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
-                                required
-                                disabled={loading}
-                            >
-                                <option value="">Select Department</option>
-                                {departments.map((dept) => (
-                                    <option key={dept} value={dept}>
-                                        {dept}
-                                    </option>
-                                ))}
-                            </select>
-                            <p className="text-xs text-gray-500 mt-1">
-                                You can be assigned more departments by admin later
-                            </p>
-                        </div>
+                        {/* Department - Only for Intern Incharge */}
+                        {formData.role === "InternIncharge" && (
+                            <div>
+                                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                                    Department *
+                                </label>
+                                <select
+                                    name="department"
+                                    value={formData.department}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition duration-200 bg-gray-50"
+                                    required={formData.role === "InternIncharge"}
+                                    disabled={loading}
+                                >
+                                    <option value="">Select Department</option>
+                                    {departments.map((dept) => (
+                                        <option key={dept} value={dept}>
+                                            {dept}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    You can be assigned more departments by admin later
+                                </p>
+                            </div>
+                        )}
 
                         {/* Gender */}
-                        <div>
+                        <div className={formData.role === "ReviewTeam" ? "md:col-span-2" : ""}>
                             <label className="block text-gray-700 font-semibold mb-2 text-sm">
                                 Gender *
                             </label>
@@ -387,7 +454,10 @@ const InternInchargeRegister = () => {
                         disabled={loading}
                         className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
                     >
-                        {loading ? "Registering..." : "Register as Intern Incharge"}
+                        {loading 
+                            ? "Registering..." 
+                            : `Register as ${formData.role === "InternIncharge" ? "Intern Incharge" : "Review Team Member"}`
+                        }
                     </button>
                 </form>
 
@@ -396,7 +466,7 @@ const InternInchargeRegister = () => {
                     <p className="text-gray-600 text-sm">
                         Already have an account?{" "}
                         <Link
-                            to="/intern-incharge-login"
+                            to={formData.role === "InternIncharge" ? "/intern-incharge-login" : "/review-team-login"}
                             className="text-indigo-600 font-semibold hover:text-indigo-800 hover:underline transition duration-200"
                         >
                             Login here
@@ -416,4 +486,4 @@ const InternInchargeRegister = () => {
     );
 };
 
-export default InternInchargeRegister;
+export default TeamMemberRegister;
