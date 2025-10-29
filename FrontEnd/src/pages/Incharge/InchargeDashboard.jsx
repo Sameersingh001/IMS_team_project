@@ -24,7 +24,9 @@ import {
   Building,
   Plus,
   Download,
-  Eye
+  Eye,
+  Star,
+  TrendingUp
 } from "lucide-react";
 
 const InternInchargeDashboard = () => {
@@ -54,6 +56,10 @@ const InternInchargeDashboard = () => {
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [selectedInternForExtension, setSelectedInternForExtension] = useState(null);
   const [extendLoading, setExtendLoading] = useState(false);
+  const [showPerformanceModal, setShowPerformanceModal] = useState(false);
+  const [selectedInternForPerformance, setSelectedInternForPerformance] = useState(null);
+  const [performanceLoading, setPerformanceLoading] = useState(false);
+  const [performanceData, setPerformanceData] = useState([]);
 
   useEffect(() => {
     checkAuthAndFetchData();
@@ -133,6 +139,141 @@ const InternInchargeDashboard = () => {
     }
   };
 
+  const fetchPerformanceData = async (internId) => {
+    try {
+      setPerformanceLoading(true);
+      const response = await axios.get(`/api/intern-incharge/interns/${internId}/performance`, {
+        withCredentials: true,
+      });
+
+      if (response.data.success) {
+        setPerformanceData(response.data.performance.monthlyPerformance);
+      }
+    } catch (error) {
+      console.error("Error fetching performance data:", error);
+      if (error.response?.status === 404) {
+        await initializePerformanceData(internId);
+      } else {
+        alert("Failed to fetch performance data");
+      }
+    } finally {
+      setPerformanceLoading(false);
+    }
+  };
+
+  const initializePerformanceData = async (internId) => {
+    try {
+      const intern = interns.find(i => i._id === internId);
+      if (!intern) return;
+
+      const durationMonths = calculateDurationInMonths(intern.duration);
+      const monthlyPerformance = [];
+
+      for (let i = 1; i <= durationMonths; i++) {
+        monthlyPerformance.push({
+          monthLabel: `Month ${i}`,
+          totalTasks: 0,
+          tasksCompleted: 0,
+          ratings: {
+            initiative: 0,
+            communication: 0,
+            behaviour: 0
+          },
+          overallRating: 0,
+          completionPercentage: 0,
+          inchargeRemarks: ""
+        });
+      }
+
+      setPerformanceData(monthlyPerformance);
+    } catch (error) {
+      console.error("Error initializing performance data:", error);
+    }
+  };
+
+  const calculateDurationInMonths = (duration) => {
+    const match = duration.match(/(\d+)\s*month/i);
+    return match ? parseInt(match[1]) : 3;
+  };
+
+  const handleUpdatePerformance = async (internId) => {
+    try {
+      setPerformanceLoading(true);
+      
+      const response = await axios.put(
+        `/api/intern-incharge/interns/${internId}/performance`,
+        {
+          monthlyPerformance: performanceData
+        },
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        setInterns(prevInterns =>
+          prevInterns.map(intern =>
+            intern._id === internId
+              ? { 
+                  ...intern, 
+                  performance: calculateOverallPerformance(performanceData)
+                }
+              : intern
+          )
+        );
+        
+        setShowPerformanceModal(false);
+        setSelectedInternForPerformance(null);
+        alert("✅ Performance updated successfully!");
+      }
+    } catch (error) {
+      console.error("Error updating performance:", error);
+      alert(error.response?.data?.message || "Failed to update performance");
+    } finally {
+      setPerformanceLoading(false);
+    }
+  };
+
+  const calculateOverallPerformance = (monthlyPerformance) => {
+    if (!monthlyPerformance || monthlyPerformance.length === 0) return "Not Rated";
+    
+    const validMonths = monthlyPerformance.filter(month => month.overallRating > 0);
+    if (validMonths.length === 0) return "Not Rated";
+    
+    const avgRating = validMonths.reduce((sum, month) => sum + month.overallRating, 0) / validMonths.length;
+    
+    if (avgRating >= 8.5) return "Excellent";
+    if (avgRating >= 7) return "Good";
+    if (avgRating >= 5) return "Average";
+    return "Poor";
+  };
+
+  const openPerformanceModal = async (intern) => {
+    setSelectedInternForPerformance(intern);
+    setShowPerformanceModal(true);
+    await fetchPerformanceData(intern._id);
+  };
+
+  const handlePerformanceFieldChange = (monthIndex, field, value) => {
+    const updatedPerformance = [...performanceData];
+    
+    if (field.startsWith('ratings.')) {
+      const ratingField = field.split('.')[1];
+      updatedPerformance[monthIndex].ratings[ratingField] = parseFloat(value) || 0;
+      
+      const { initiative, communication, behaviour } = updatedPerformance[monthIndex].ratings;
+      updatedPerformance[monthIndex].overallRating = parseFloat(((initiative + communication + behaviour) / 3).toFixed(1));
+    } else if (field === 'totalTasks' || field === 'tasksCompleted') {
+      updatedPerformance[monthIndex][field] = parseInt(value) || 0;
+      
+      const total = updatedPerformance[monthIndex].totalTasks;
+      const completed = updatedPerformance[monthIndex].tasksCompleted;
+      updatedPerformance[monthIndex].completionPercentage = total > 0 ? parseFloat(((completed / total) * 100).toFixed(1)) : 0;
+    } else {
+      updatedPerformance[monthIndex][field] = value;
+    }
+    
+    setPerformanceData(updatedPerformance);
+  };
+
   const handleLogout = async () => {
     try {
       await axios.post("/api/intern-incharge/logout", {}, { withCredentials: true });
@@ -187,7 +328,6 @@ const InternInchargeDashboard = () => {
         { withCredentials: true }
       );
 
-      window.location.reload()
       setInterns(prevInterns =>
         prevInterns.map(intern =>
           intern._id === internId
@@ -802,6 +942,13 @@ const InternInchargeDashboard = () => {
                                 Extend
                               </button>
                               <button
+                                onClick={() => openPerformanceModal(intern)}
+                                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg text-sm font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-md"
+                              >
+                                <TrendingUp size={16} />
+                                Performance
+                              </button>
+                              <button
                                 onClick={() => openCommentModal(intern)}
                                 className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-md"
                               >
@@ -880,6 +1027,21 @@ const InternInchargeDashboard = () => {
         />
       )}
 
+      {showPerformanceModal && selectedInternForPerformance && (
+        <PerformanceModal
+          intern={selectedInternForPerformance}
+          performanceData={performanceData}
+          onPerformanceFieldChange={handlePerformanceFieldChange}
+          onClose={() => {
+            setShowPerformanceModal(false);
+            setSelectedInternForPerformance(null);
+            setPerformanceData([]);
+          }}
+          onSubmit={handleUpdatePerformance}
+          loading={performanceLoading}
+        />
+      )}
+
       {showMeetingsModal && (
         <MeetingsModal
           departmentMeetings={departmentMeetings}
@@ -905,6 +1067,223 @@ const InternInchargeDashboard = () => {
   );
 };
 
+// Performance Modal Component
+const PerformanceModal = ({
+  intern,
+  performanceData,
+  onPerformanceFieldChange,
+  onClose,
+  onSubmit,
+  loading
+}) => {
+  const [activeMonth, setActiveMonth] = useState(0);
+
+  const getRatingColor = (rating) => {
+    if (rating >= 8.5) return "text-green-600 bg-green-50 border-green-200";
+    if (rating >= 7) return "text-blue-600 bg-blue-50 border-blue-200";
+    if (rating >= 5) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    return "text-red-600 bg-red-50 border-red-200";
+  };
+
+  const getCompletionColor = (percentage) => {
+    if (percentage >= 90) return "text-green-600 bg-green-50 border-green-200";
+    if (percentage >= 75) return "text-blue-600 bg-blue-50 border-blue-200";
+    if (percentage >= 60) return "text-yellow-600 bg-yellow-50 border-yellow-200";
+    return "text-red-600 bg-red-50 border-red-200";
+  };
+
+  const currentMonthData = performanceData[activeMonth] || {};
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden transform transition-all">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Update Intern Performance</h3>
+            <p className="text-sm text-gray-600 mt-1">{intern.fullName} - {intern.domain}</p>
+            <p className="text-xs text-gray-500 mt-1">Duration: {intern.duration}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="flex flex-col lg:flex-row h-[calc(90vh-8rem)]">
+          {/* Month Navigation Sidebar */}
+          <div className="lg:w-1/4 border-r border-gray-200 p-6 bg-gray-50 overflow-y-auto">
+            <h4 className="font-bold text-gray-900 mb-4 text-lg">Monthly Performance</h4>
+            
+            <div className="space-y-2">
+              {performanceData.map((month, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveMonth(index)}
+                  className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ${
+                    activeMonth === index
+                      ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                      : 'border-gray-200 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-semibold text-gray-900">{month.monthLabel}</p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <Star size={14} className="text-yellow-500" />
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${getRatingColor(month.overallRating)}`}>
+                          {month.overallRating}/10
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${getCompletionColor(month.completionPercentage)}`}>
+                        {month.completionPercentage}%
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Performance Form */}
+          <div className="lg:w-3/4 p-6 overflow-y-auto">
+            {performanceData.length > 0 ? (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-gray-900 text-lg">
+                    {currentMonthData.monthLabel} Details
+                  </h4>
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <p className="text-xs text-gray-600">Overall Rating</p>
+                      <span className={`text-lg font-bold px-3 py-2 rounded-full ${getRatingColor(currentMonthData.overallRating)}`}>
+                        {currentMonthData.overallRating}/10
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-gray-600">Task Completion</p>
+                      <span className={`text-lg font-bold px-3 py-2 rounded-full ${getCompletionColor(currentMonthData.completionPercentage)}`}>
+                        {currentMonthData.completionPercentage}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Task Management */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Total Tasks Assigned
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={currentMonthData.totalTasks || 0}
+                      onChange={(e) => onPerformanceFieldChange(activeMonth, 'totalTasks', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-white"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Tasks Completed
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={currentMonthData.totalTasks || 0}
+                      value={currentMonthData.tasksCompleted || 0}
+                      onChange={(e) => onPerformanceFieldChange(activeMonth, 'tasksCompleted', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Ratings */}
+                <div className="space-y-4">
+                  <h5 className="font-semibold text-gray-900">Performance Ratings (0-10)</h5>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { key: 'initiative', label: 'Initiative & Proactiveness' },
+                      { key: 'communication', label: 'Communication Skills' },
+                      { key: 'behaviour', label: 'Behavior & Professionalism' }
+                    ].map((rating) => (
+                      <div key={rating.key} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          {rating.label}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.5"
+                          value={currentMonthData.ratings?.[rating.key] || 0}
+                          onChange={(e) => onPerformanceFieldChange(activeMonth, `ratings.${rating.key}`, e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-white"
+                        />
+                        <div className="mt-2 text-xs text-gray-500">
+                          Current: {currentMonthData.ratings?.[rating.key] || 0}/10
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Remarks */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Remarks & Feedback
+                  </label>
+                  <textarea
+                    value={currentMonthData.inchargeRemarks || ""}
+                    onChange={(e) => onPerformanceFieldChange(activeMonth, 'inchargeRemarks', e.target.value)}
+                    placeholder="Add your remarks and feedback for this month..."
+                    rows="4"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-white resize-none"
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                  <button
+                    onClick={onClose}
+                    className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-all duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => onSubmit(intern._id)}
+                    disabled={loading}
+                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp size={18} />
+                        Update Performance
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-16">
+                <TrendingUp className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-semibold">Loading performance data...</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Extend Internship Modal Component
 const ExtendInternshipModal = ({
   intern,
@@ -923,7 +1302,7 @@ const ExtendInternshipModal = ({
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-md bg-opacity-30 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -1038,7 +1417,7 @@ const MeetingsModal = ({
   };
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-md bg-opacity-30 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden transform transition-all">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -1228,7 +1607,7 @@ const CommentModal = ({
   loading
 }) => {
   return (
-    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-md bg-opacity-30 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden transform transition-all">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -1369,7 +1748,7 @@ const AttendanceModal = ({
   const currentDomainInterns = getCurrentDomainInterns();
 
   return (
-    <div className="fixed inset-0 backdrop-blur-sm backdrop-blur-lg bg-opacity-30 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden transform transition-all">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>

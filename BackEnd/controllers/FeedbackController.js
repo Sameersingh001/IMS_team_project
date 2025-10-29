@@ -402,14 +402,20 @@ export const submitFeedback = async (req, res) => {
     } else {
       // 🔹 Generate NEW certificate number
       certificateNumber = await CertificateGenerator.generateCertificateNumber();
-      
+
       // 🔹 Save certificate number to intern record
-      await Intern.findByIdAndUpdate(intern._id, {
-        certificateNumber: certificateNumber,
-        certificateIssuedAt: new Date(),
-        certificateStatus: 'issued'
-      });
-      
+      await Intern.findByIdAndUpdate(
+        intern._id,
+        {
+          $set: {
+            certificateNumber: certificateNumber,
+            certificateIssuedAt: new Date(),
+            certificateStatus: "issued",
+          },
+        },
+        { new: true }
+      );
+
       console.log(`🆕 New certificate issued: ${certificateNumber}`);
     }
 
@@ -418,10 +424,12 @@ export const submitFeedback = async (req, res) => {
     certificateBuffer = await CertificateGenerator.generateCertificate(internData);
 
     // 🔹 Send certificate via email
-    await CertificateGenerator.sendCertificateEmail(intern.email, intern.fullName, certificateBuffer, {
-      ...internData,
-      certificateNumber
-    });
+    await CertificateGenerator.sendCertificateEmail(
+      intern.email,
+      intern.fullName,
+      certificateBuffer,
+      { ...internData, certificateNumber }
+    );
 
     // 🔹 Handle media files
     const photoUrl = req.files?.photo ? req.files.photo[0].path : null;
@@ -449,16 +457,27 @@ export const submitFeedback = async (req, res) => {
         email: intern.email,
         mobile: intern.mobile,
         dob: intern.dob,
-      }
+      },
     };
 
     await Feedback.create(feedbackData);
 
+    // ✅ Also ensure intern record is updated (if reused certificate)
+    if (existingCertificate && !intern.certificateNumber) {
+      await Intern.findByIdAndUpdate(intern._id, {
+        $set: {
+          certificateNumber: certificateNumber,
+          certificateIssuedAt: new Date(),
+          certificateStatus: "issued",
+        },
+      });
+    }
+
     // 🔹 Send success response
     res.status(201).json({
       success: true,
-      message: existingCertificate 
-        ? "Feedback submitted and certificate resent successfully!" 
+      message: existingCertificate
+        ? "Feedback submitted and certificate resent successfully!"
         : "Feedback submitted and new certificate generated successfully!",
       certificateNumber: certificateNumber,
       isResent: !!existingCertificate,
@@ -473,6 +492,7 @@ export const submitFeedback = async (req, res) => {
     });
   }
 };
+
 
 
 

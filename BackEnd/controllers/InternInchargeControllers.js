@@ -4,6 +4,7 @@ import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import { sendEmail } from "../config/emailConfig.js"
 import Attendance from "../models/Attendance.js"
+import Performance from "../models/Performance.js"
 
 export const registerInternIncharge = async (req, res) => {
   try {
@@ -891,3 +892,165 @@ try {
     });
   }
 }
+
+
+
+const calculateDurationInMonths = (duration) => {
+  if (!duration) return 3; // Default to 3 months
+  
+  const match = duration.toString().match(/(\d+)\s*month/i);
+  return match ? parseInt(match[1]) : 3;
+};
+
+const calculateOverallPerformance = (monthlyPerformance) => {
+  if (!monthlyPerformance || monthlyPerformance.length === 0) return "Not Rated";
+  
+  const validMonths = monthlyPerformance.filter(month => month.overallRating > 0);
+  if (validMonths.length === 0) return "Not Rated";
+  
+  const avgRating = validMonths.reduce((sum, month) => sum + month.overallRating, 0) / validMonths.length;
+  
+  if (avgRating >= 8.5) return "Excellent";
+  if (avgRating >= 7) return "Good";
+  if (avgRating >= 5) return "Average";
+  return "Poor";
+};
+
+
+
+export const getInternPerformance = async (req, res) => {
+  try {
+    const { internId } = req.params;
+
+    let performance = await Performance.findOne({ intern: internId })
+      .populate('intern', 'fullName domain duration status');
+
+    if (!performance) {
+      // If no performance record exists, create one with initial structure
+      const intern = await Intern.findById(internId);
+      if (!intern) {
+        return res.status(404).json({ 
+          success: false,
+          message: 'Intern not found' 
+        });
+      }
+
+      // Calculate duration in months
+      const durationMonths = calculateDurationInMonths(intern.duration);
+      const monthlyPerformance = [];
+
+      for (let i = 1; i <= durationMonths; i++) {
+        monthlyPerformance.push({
+          monthLabel: `Month ${i}`,
+          totalTasks: 0,
+          tasksCompleted: 0,
+          ratings: {
+            initiative: 0,
+            communication: 0,
+            behaviour: 0
+          },
+          overallRating: 0,
+          completionPercentage: 0,
+          inchargeRemarks: ""
+        });
+      }
+
+      performance = new Performance({
+        intern: internId,
+        monthlyPerformance
+      });
+
+      await performance.save();
+      await performance.populate('intern', 'fullName domain duration status');
+    }
+
+    res.json({
+      success: true,
+      performance
+    });
+
+  } catch (error) {
+    console.error('Error fetching performance:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching performance data' 
+    });
+  }
+};
+
+// Update performance data for an intern
+export const updateInternPerformance = async (req, res) => {
+  try {
+    const { internId } = req.params;
+    const { monthlyPerformance } = req.body;
+
+    // Validate input
+    if (!monthlyPerformance || !Array.isArray(monthlyPerformance)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Monthly performance data is required and must be an array'
+      });
+    }
+
+    // Validate each month's data
+    for (let month of monthlyPerformance) {
+      if (!month.monthLabel) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each month must have a monthLabel'
+        });
+      }
+
+      // Validate ratings
+      if (month.ratings) {
+        const { initiative, communication, behaviour } = month.ratings;
+        if (initiative < 0 || initiative > 10 || 
+            communication < 0 || communication > 10 || 
+            behaviour < 0 || behaviour > 10) {
+          return res.status(400).json({
+            success: false,
+            message: 'Ratings must be between 0 and 10'
+          });
+        }
+      }
+    }
+
+    let performance = await Performance.findOne({ intern: internId });
+
+    if (!performance) {
+      performance = new Performance({ 
+        intern: internId,
+        monthlyPerformance: [] 
+      });
+    }
+
+    // Update monthly performance
+    performance.monthlyPerformance = monthlyPerformance;
+    
+    // The pre-save middleware will automatically calculate overallRating and completionPercentage
+    await performance.save();
+
+    // Update intern's overall performance
+    const overallPerformance = calculateOverallPerformance(monthlyPerformance);
+    await Intern.findByIdAndUpdate(internId, { 
+      performance: overallPerformance 
+    });
+
+    // Populate the response
+    await performance.populate('intern', 'fullName domain duration status performance');
+
+    res.json({
+      success: true,
+      message: 'Performance updated successfully',
+      performance,
+      overallPerformance
+    });
+
+  } catch (error) {
+    console.error('Error updating performance:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while updating performance data' 
+    });
+  }
+};

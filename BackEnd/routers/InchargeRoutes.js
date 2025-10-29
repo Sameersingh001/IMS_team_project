@@ -1,5 +1,7 @@
 import express from "express"
-import {registerInternIncharge, loginInternIncharge, checkInternInchargeAuth, logoutInternIncharge, DomainWiseInterns, forgotPassword, verifyOtp, resendOtp, resetPassword, InternComments, DeleteComments, markAttendance,ExtendedDays, meetingDateDetails, MeetingData} from "../controllers/InternInchargeControllers.js"
+import {registerInternIncharge, loginInternIncharge, checkInternInchargeAuth, logoutInternIncharge, DomainWiseInterns, forgotPassword, verifyOtp, resendOtp, resetPassword, InternComments, DeleteComments, markAttendance,ExtendedDays, meetingDateDetails, MeetingData,
+    updateInternPerformance,getInternPerformance
+} from "../controllers/InternInchargeControllers.js"
 import {protectInternIncharge} from "../middlewares/InchargeMiddle.js"
 
 const router = express.Router()
@@ -12,8 +14,14 @@ router.post("/incharge/resend-otp", resendOtp)
 router.post("/incharge/reset-password", resetPassword)
 router.post("/incharge/attendance", markAttendance)
 router.post("/intern-incharge/interns/:internId/comments",protectInternIncharge, InternComments)
+
+
+router.put("/intern-incharge/interns/:internId/performance",protectInternIncharge, updateInternPerformance)
+
+
 router.delete("/intern-incharge/interns/:internId/comments/:commentId",protectInternIncharge, DeleteComments)
 
+router.get("/intern-incharge/interns/:internId/performance", protectInternIncharge, getInternPerformance )
 router.get("/intern-incharge/department-meeting-details", protectInternIncharge, MeetingData )
 router.get("/intern-incharge/department-meeting-dates", protectInternIncharge, meetingDateDetails )
 router.get("/intern-incharge/check-auth", protectInternIncharge, checkInternInchargeAuth )

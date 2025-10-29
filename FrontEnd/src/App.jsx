@@ -15,6 +15,7 @@ import AttendaceAdminPage from "./pages/Admin/AttendaceAdminPage";
 import FeedbackForm from "./pages/Feedback/FeedbackFrom";
 import ReviewTeamLogin from "./pages/Feedback/ReviewTeamLogin";
 import ReviewTeamDashboard from "./pages/Feedback/ReviewDashboard";
+import InternVerificationPortal from "./pages/VerifyPortal/VerificationIntern";
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/apply" element={<ApplicationForm />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/Verify/intern" element={<InternVerificationPortal />} />
+
         <Route path="/intern-incharge-register" element={<InternInchargeRegister />} />
 
 

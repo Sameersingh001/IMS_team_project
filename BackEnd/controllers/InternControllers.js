@@ -1,6 +1,7 @@
 import Intern from '../models/InternDatabase.js';
 import { sendEmail } from "../config/emailConfig.js"
 import Setting from "../models/SettingDB.js"
+import Performance from "../models/Performance.js"
 
 
 
@@ -93,6 +94,98 @@ export const getApplicationStatus = async (req, res) => {
       success: false,
       message: "Error fetching application status",
       error: error.message,
+    });
+  }
+};
+
+
+
+export const verifyIntern = async (req, res) => {
+  try {
+    const { uniqueId, joiningDate, email } = req.body;
+
+    // 🔹 Validate inputs
+    if (!uniqueId || !joiningDate || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    // 🔹 Normalize joining date (format: YYYY-MM-DD)
+    const inputDate = new Date(joiningDate);
+    if (isNaN(inputDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid joining date format",
+      });
+    }
+
+    const normalizedInputDate = inputDate.toISOString().split("T")[0];
+
+    // 🔹 Find intern by ID and email
+    const interns = await Intern.find({
+      uniqueId: uniqueId.trim(),
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!interns.length) {
+      return res.status(404).json({
+        success: false,
+        message: "Intern not found. Please check your unique ID and email.",
+      });
+    }
+
+    // 🔹 Match by joining date
+    const intern = interns.find((i) => {
+      const dbDate = new Date(i.joiningDate);
+      const normalizedDbDate = dbDate.toISOString().split("T")[0];
+      return normalizedDbDate === normalizedInputDate;
+    });
+
+    if (!intern) {
+      return res.status(404).json({
+        success: false,
+        message: "No matching record found for the provided joining date.",
+      });
+    }
+
+    // 🔹 Find performance data
+    const performance = await Performance.findOne({ intern: intern._id });
+
+    // 🔹 Prepare full response data
+    const responseData = {
+      fullName: intern.fullName,
+      email: intern.email,
+      mobile: intern.mobile,
+      dob: intern.dob,
+      joiningDate: intern.joiningDate,
+      uniqueId: intern.uniqueId,
+      college: intern.college,
+      status:intern.status,
+      course: intern.course,
+      educationLevel: intern.educationLevel,
+      domain: intern.domain,
+      duration: intern.duration,
+      totalMeetings: intern.totalMeetings || 0,
+      meetingsAttended: intern.meetingsAttended || 0,
+      certificateStatus: intern.certificateStatus || "not issued",
+      certificateNumber: intern.certificateNumber || null,
+      certificateIssuedAt: intern.certificateIssuedAt || null,
+      performance: performance || { monthlyPerformance: [] },
+    };
+
+    // 🔹 Send response (wrapped in object for frontend)
+    return res.status(200).json({
+      success: true,
+      message: "Intern verified successfully",
+      responseData,
+    });
+  } catch (error) {
+    console.error("❌ Error verifying intern:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while verifying intern",
     });
   }
 };

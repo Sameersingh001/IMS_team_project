@@ -142,7 +142,7 @@ const internSchema = new mongoose.Schema({
         },
 
     ],
-    
+
     extendedDays: {
         type: Number,
         default: 0
@@ -151,6 +151,21 @@ const internSchema = new mongoose.Schema({
     totalMeetings: { type: Number, default: 0 },
     meetingsAttended: { type: Number, default: 0 },
     leavesTaken: { type: Number, default: 0 },
+
+    certificateNumber: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    certificateIssuedAt: {
+        type: Date,
+    },
+    certificateStatus: {
+        type: String,
+        enum: ["pending", "issued"],
+        default: "pending"
+    },
+
 
 }, { timestamps: true });
 
