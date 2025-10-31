@@ -199,7 +199,7 @@ const InternInchargeDashboard = () => {
   const handleUpdatePerformance = async (internId) => {
     try {
       setPerformanceLoading(true);
-      
+
       const response = await axios.put(
         `/api/intern-incharge/interns/${internId}/performance`,
         {
@@ -212,14 +212,14 @@ const InternInchargeDashboard = () => {
         setInterns(prevInterns =>
           prevInterns.map(intern =>
             intern._id === internId
-              ? { 
-                  ...intern, 
-                  performance: calculateOverallPerformance(performanceData)
-                }
+              ? {
+                ...intern,
+                performance: calculateOverallPerformance(performanceData)
+              }
               : intern
           )
         );
-        
+
         setShowPerformanceModal(false);
         setSelectedInternForPerformance(null);
         alert("✅ Performance updated successfully!");
@@ -234,12 +234,12 @@ const InternInchargeDashboard = () => {
 
   const calculateOverallPerformance = (monthlyPerformance) => {
     if (!monthlyPerformance || monthlyPerformance.length === 0) return "Not Rated";
-    
+
     const validMonths = monthlyPerformance.filter(month => month.overallRating > 0);
     if (validMonths.length === 0) return "Not Rated";
-    
+
     const avgRating = validMonths.reduce((sum, month) => sum + month.overallRating, 0) / validMonths.length;
-    
+
     if (avgRating >= 8.5) return "Excellent";
     if (avgRating >= 7) return "Good";
     if (avgRating >= 5) return "Average";
@@ -254,23 +254,23 @@ const InternInchargeDashboard = () => {
 
   const handlePerformanceFieldChange = (monthIndex, field, value) => {
     const updatedPerformance = [...performanceData];
-    
+
     if (field.startsWith('ratings.')) {
       const ratingField = field.split('.')[1];
       updatedPerformance[monthIndex].ratings[ratingField] = parseFloat(value) || 0;
-      
+
       const { initiative, communication, behaviour } = updatedPerformance[monthIndex].ratings;
       updatedPerformance[monthIndex].overallRating = parseFloat(((initiative + communication + behaviour) / 3).toFixed(1));
     } else if (field === 'totalTasks' || field === 'tasksCompleted') {
       updatedPerformance[monthIndex][field] = parseInt(value) || 0;
-      
+
       const total = updatedPerformance[monthIndex].totalTasks;
       const completed = updatedPerformance[monthIndex].tasksCompleted;
       updatedPerformance[monthIndex].completionPercentage = total > 0 ? parseFloat(((completed / total) * 100).toFixed(1)) : 0;
     } else {
       updatedPerformance[monthIndex][field] = value;
     }
-    
+
     setPerformanceData(updatedPerformance);
   };
 
@@ -363,7 +363,7 @@ const InternInchargeDashboard = () => {
               : intern
           )
         );
-        
+
         setShowExtendModal(false);
         setSelectedInternForExtension(null);
         alert(`✅ ${response.data.message}`);
@@ -572,7 +572,7 @@ const InternInchargeDashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex">
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}  
+        {/* Header */}
         <header className="bg-white shadow-lg border-b border-gray-200">
           <div className="flex items-center justify-between p-6">
             <div className="flex items-center space-x-4">
@@ -859,6 +859,10 @@ const InternInchargeDashboard = () => {
                               <div>
                                 <p className="font-semibold text-gray-900 text-sm">{intern.fullName}</p>
                                 <p className="text-xs text-gray-500 mt-1">ID: {intern.uniqueId}</p>
+                                <p className="text-xs text-green-500 mt-1">
+                                 Joining Date : {new Date(intern.joiningDate).toLocaleDateString()}
+                                </p>    
+
                                 {getCommentCount(intern) > 0 && (
                                   <p className="text-xs text-indigo-600 font-medium mt-1 flex items-center gap-1">
                                     <MessageCircle size={12} />
@@ -932,7 +936,7 @@ const InternInchargeDashboard = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 whitespace-nowrap grid grid-cols-2">
                               <button
                                 onClick={() => openExtendModal(intern)}
                                 className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-sm font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md"
@@ -973,6 +977,7 @@ const InternInchargeDashboard = () => {
                               )}
                             </div>
                           </td>
+                          
                         </tr>
                       );
                     })
@@ -1112,17 +1117,16 @@ const PerformanceModal = ({
           {/* Month Navigation Sidebar */}
           <div className="lg:w-1/4 border-r border-gray-200 p-6 bg-gray-50 overflow-y-auto">
             <h4 className="font-bold text-gray-900 mb-4 text-lg">Monthly Performance</h4>
-            
+
             <div className="space-y-2">
               {performanceData.map((month, index) => (
                 <button
                   key={index}
                   onClick={() => setActiveMonth(index)}
-                  className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ${
-                    activeMonth === index
+                  className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ${activeMonth === index
                       ? 'border-indigo-500 bg-indigo-50 shadow-md'
                       : 'border-gray-200 bg-white hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -1183,7 +1187,7 @@ const PerformanceModal = ({
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all duration-200 bg-white"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Tasks Completed
@@ -1202,7 +1206,7 @@ const PerformanceModal = ({
                 {/* Ratings */}
                 <div className="space-y-4">
                   <h5 className="font-semibold text-gray-900">Performance Ratings (0-10)</h5>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
                       { key: 'initiative', label: 'Initiative & Proactiveness' },

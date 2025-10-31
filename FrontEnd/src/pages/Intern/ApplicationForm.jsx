@@ -499,7 +499,7 @@ const ApplicationForm = () => {
                   <option value="">Select Domain</option>
                   <option>Sales & Marketing</option>
                   <option>Data Science & Analytics</option>
-                  <option>Journalism</option>
+                  <option>Email and Outreaching</option>
                   <option>Human Resources</option>
                   <option>Social Media Management</option>
                   <option>Graphic Design</option>
@@ -571,14 +571,11 @@ const ApplicationForm = () => {
                   disabled={loading}
                 >
                   <option value="">Select Duration</option>
-                  <option>1 Month</option>
                   <option>3 Months</option>
                   <option>4 Months</option>
                   <option>6 Months</option>
+                  <option>8 Months</option>
                 </select>
-                <p className="text-yellow-300 text-sm mt-1 flex items-center gap-1">
-                  ⚠️ <span>The 1-Month internship is available only for Entrepreneurship candidates.</span>
-                </p>
               </div>
               <div className="space-y-1 sm:col-span-2">
                 <label className="block text-sm font-medium text-white mb-2">

@@ -43,7 +43,7 @@ const ReviewTeamDashboard = () => {
     const [mediaErrors, setMediaErrors] = useState(new Set());
 
     const domains = [
-        "Sales & Marketing", "Data Science & Analytics", "Journalism",
+        "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",
         "Human Resources", "Social Media Management", "Graphic Design",
         "Digital Marketing", "Video Editing", "Content Writing",
         "UI/UX Designing", "Front-end Developer", "Back-end Developer"

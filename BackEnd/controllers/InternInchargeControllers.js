@@ -721,6 +721,7 @@ export const MeetingData = async (req, res) =>{
       }
     }).populate('intern', 'fullName uniqueId email mobile gender status domain');
 
+
     // Filter by department and format data
     const filteredRecords = attendanceRecords
       .filter(record => record.intern && record.intern.domain === department)
