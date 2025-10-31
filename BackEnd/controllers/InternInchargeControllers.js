@@ -792,7 +792,7 @@ try {
     const endDate = new Date(joinDate);
 
     // Calculate base duration from joining date
-    if (intern.duration === "1 Month") endDate.setMonth(joinDate.getMonth() + 1);
+    if (intern.duration === "8 Months") endDate.setMonth(joinDate.getMonth() + 8);
     else if (intern.duration === "3 Months") endDate.setMonth(joinDate.getMonth() + 3);
     else if (intern.duration === "4 Months") endDate.setMonth(joinDate.getMonth() + 4);
     else if (intern.duration === "6 Months") endDate.setMonth(joinDate.getMonth() + 6);

@@ -662,10 +662,10 @@ const InternDetail = ({ role }) => {
                       className="w-full border-2 border-gray-300 rounded-xl p-3 text-center font-medium focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="">Select Duration</option>
-                      <option value="1 month">1 Month</option>
                       <option value="3 months">3 Months</option>
                       <option value="4 months">4 Months</option>
                       <option value="6 months">6 Months</option>
+                      <option value="8 months">8 Months</option>
                     </select>
                     <div className="flex gap-2">
                       <button
