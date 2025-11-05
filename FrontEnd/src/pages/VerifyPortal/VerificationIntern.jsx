@@ -15,6 +15,7 @@ const InternVerificationPortal = () => {
   const [captchaText, setCaptchaText] = useState('');
   const [isMobile, setIsMobile] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [expandedRemarks, setExpandedRemarks] = useState({});
 
   const canvasRef = useRef(null);
 
@@ -84,18 +85,12 @@ const InternVerificationPortal = () => {
     }
   };
 
-
   const speakCaptcha = () => {
     if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
 
       const speech = new SpeechSynthesisUtterance();
-
-      // Break the CAPTCHA into characters
       const characters = captchaText.split('');
-
-      // Convert each character to a spoken format
       const spokenCharacters = characters.map(char => {
         if (/[a-z]/.test(char)) {
           return `small ${char}`;
@@ -111,8 +106,8 @@ const InternVerificationPortal = () => {
       const spokenText = `Captcha code: ${spokenCharacters.join('... ')}`;
 
       speech.text = spokenText;
-      speech.rate = 0.7; // slower for clarity
-      speech.pitch = 0.9; // slightly lower pitch
+      speech.rate = 0.7;
+      speech.pitch = 0.9;
       speech.volume = 1;
 
       setAudioEnabled(true);
@@ -136,8 +131,6 @@ const InternVerificationPortal = () => {
     }
   };
 
-
-
   // Handle input changes
   const handleChange = (e) => {
     setFormData({
@@ -146,12 +139,20 @@ const InternVerificationPortal = () => {
     });
   };
 
+  // Toggle remarks expansion
+  const toggleRemarks = (monthIndex) => {
+    setExpandedRemarks(prev => ({
+      ...prev,
+      [monthIndex]: !prev[monthIndex]
+    }));
+  };
+
   // Format date to numeric format
   const formatDateToNumeric = (dateString) => {
     if (!dateString) return 'N/A';
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+      return date.toLocaleDateString('en-GB');
     } catch (err) {
       return 'Invalid Date' + err;
     }
@@ -172,7 +173,7 @@ const InternVerificationPortal = () => {
     return 'Poor';
   };
 
-  // Print report function
+  // Print report function with remarks
   const printReport = () => {
     const printWindow = window.open('', '_blank');
 
@@ -184,7 +185,7 @@ const InternVerificationPortal = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title> Graphura Intern Report - ${internData?.fullName || 'Unknown'}</title>
+          <title>Graphura Intern Report - ${internData?.fullName || 'Unknown'}</title>
           <style>
             body { 
               font-family: Arial, sans-serif; 
@@ -284,6 +285,29 @@ const InternVerificationPortal = () => {
             .rating-good { background: #dbeafe; color: #1e40af; }
             .rating-average { background: #fef3c7; color: #92400e; }
             .rating-poor { background: #fee2e2; color: #991b1b; }
+            .remarks-section {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 8px;
+              padding: 12px;
+              margin-top: 8px;
+            }
+            .remarks-label {
+              font-weight: bold;
+              color: #374151;
+              margin-bottom: 5px;
+              font-size: 12px;
+            }
+            .remarks-content {
+              color: #4b5563;
+              font-size: 12px;
+              line-height: 1.4;
+            }
+            .no-remarks {
+              color: #9ca3af;
+              font-style: italic;
+              font-size: 12px;
+            }
             .footer { 
               text-align: center; 
               margin-top: 40px; 
@@ -379,8 +403,8 @@ const InternVerificationPortal = () => {
                   <div class="stat-label">Attendance Rate</div>
                   <div class="stat-value">
                     ${internData.totalMeetings > 0
-          ? Math.round((internData.meetingsAttended / internData.totalMeetings) * 100)
-          : 0}%
+                      ? Math.round((internData.meetingsAttended / internData.totalMeetings) * 100)
+                      : 0}%
                   </div>
                 </div>
               </div>
@@ -399,6 +423,7 @@ const InternVerificationPortal = () => {
                       <th>Communication</th>
                       <th>Behavior</th>
                       <th>Overall Rating</th>
+                      <th>Remarks</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -408,9 +433,9 @@ const InternVerificationPortal = () => {
                         <td>${month.tasksCompleted || 0} / ${month.totalTasks || 0}</td>
                         <td>
                           <span class="rating-badge ${month.completionPercentage >= 80 ? 'rating-excellent' :
-              month.completionPercentage >= 60 ? 'rating-good' :
-                month.completionPercentage >= 40 ? 'rating-average' : 'rating-poor'
-            }">
+                          month.completionPercentage >= 60 ? 'rating-good' :
+                          month.completionPercentage >= 40 ? 'rating-average' : 'rating-poor'
+                        }">
                             ${month.completionPercentage || 0}%
                           </span>
                         </td>
@@ -419,11 +444,20 @@ const InternVerificationPortal = () => {
                         <td>${month.ratings?.behaviour || 0}/10</td>
                         <td>
                           <span class="rating-badge ${month.overallRating >= 8 ? 'rating-excellent' :
-              month.overallRating >= 6 ? 'rating-good' :
-                month.overallRating >= 4 ? 'rating-average' : 'rating-poor'
-            }">
+                          month.overallRating >= 6 ? 'rating-good' :
+                          month.overallRating >= 4 ? 'rating-average' : 'rating-poor'
+                        }">
                             ${month.overallRating || 0}/10
                           </span>
+                        </td>
+                        <td>
+                          ${month.inchargeRemarks ? `
+                            <div class="remarks-section">
+                              <div class="remarks-content">${month.inchargeRemarks}</div>
+                            </div>
+                          ` : `
+                            <div class="no-remarks">No remarks provided</div>
+                          `}
                         </td>
                       </tr>
                     `).join('')}
@@ -472,11 +506,7 @@ const InternVerificationPortal = () => {
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
           <div className="bg-white rounded-xl md:rounded-2xl shadow-lg p-4 md:p-8 mb-4 md:mb-6 relative overflow-hidden">
-
-            {/* 🔹 Background Branding Pattern */}
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-50 via-blue-50 to-white opacity-80"></div>
-
-            {/* 🔹 Branding Logo & Title */}
             <div className="relative z-10">
               <div className="flex flex-col items-center mb-4 md:mb-6">
                 <img
@@ -489,8 +519,6 @@ const InternVerificationPortal = () => {
                 </h1>
                 <p className="text-gray-600 italic text-xs md:text-base mt-1">Empowering Interns, Empowering Future</p>
               </div>
-
-              {/* 🔹 Portal Heading */}
               <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-2 md:mb-3">
                 Intern Verification Portal
               </h2>
@@ -504,12 +532,10 @@ const InternVerificationPortal = () => {
         {/* Verification Form */}
         {!internData && (
           <div className="bg-white rounded-xl md:rounded-2xl lg:rounded-3xl shadow-lg md:shadow-xl lg:shadow-2xl p-4 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 border border-gray-100 relative overflow-hidden">
-            {/* Animated Background Elements */}
             <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 md:h-2 bg-gradient-to-r from-blue-500 to-purple-600"></div>
             <div className="absolute -top-10 -right-10 sm:-top-12 sm:-right-12 md:-top-16 md:-right-16 lg:-top-20 lg:-right-20 w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 bg-blue-100 rounded-full opacity-30 sm:opacity-40 md:opacity-50"></div>
             <div className="absolute -bottom-10 -left-10 sm:-bottom-12 sm:-left-12 md:-bottom-16 md:-left-16 lg:-bottom-20 lg:-left-20 w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 bg-purple-100 rounded-full opacity-30 sm:opacity-40 md:opacity-50"></div>
 
-            {/* Header Section */}
             <div className="text-center mb-4 sm:mb-6 md:mb-8 relative z-10">
               <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center shadow-md sm:shadow-lg transform hover:scale-105 transition-transform duration-300">
                 <span className="text-xl sm:text-2xl md:text-3xl text-white">🔍</span>
@@ -635,7 +661,6 @@ const InternVerificationPortal = () => {
                   </label>
 
                   <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-3 sm:p-4 md:p-5 lg:p-6 rounded-lg sm:rounded-xl md:rounded-2xl border border-gray-200 sm:border-2 hover:border-blue-300 transition-all duration-300">
-                    {/* CAPTCHA Header */}
                     <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
                       <div className="flex items-center space-x-2 sm:space-x-3">
                         <div className="relative">
@@ -680,7 +705,6 @@ const InternVerificationPortal = () => {
                       </div>
                     </div>
 
-                    {/* CAPTCHA Input */}
                     <div className="relative">
                       <input
                         type="text"
@@ -704,7 +728,6 @@ const InternVerificationPortal = () => {
                       )}
                     </div>
 
-                    {/* Security Indicator */}
                     <div className="flex items-center justify-between mt-2 sm:mt-3 md:mt-4">
                       <div className="flex items-center space-x-1.5 sm:space-x-2">
                         <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse"></div>
@@ -724,7 +747,6 @@ const InternVerificationPortal = () => {
                 </div>
               </div>
 
-              {/* Enhanced Error Message */}
               {error && (
                 <div className="bg-red-50 border-l-2 sm:border-l-4 border-red-500 text-red-700 p-3 sm:p-4 md:p-5 lg:p-6 rounded-lg sm:rounded-xl flex items-start animate-shake">
                   <span className="text-lg sm:text-xl mr-2 sm:mr-3 flex-shrink-0">⚠️</span>
@@ -741,19 +763,13 @@ const InternVerificationPortal = () => {
                 </div>
               )}
 
-              {/* Enhanced Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 sm:py-4 md:py-5 lg:py-6 px-4 sm:px-5 md:px-6 lg:px-8 rounded-lg sm:rounded-xl md:rounded-2xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-200 focus:ring-offset-1 sm:focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm sm:text-base md:text-lg lg:text-xl shadow-lg sm:shadow-xl md:shadow-2xl hover:shadow-2xl sm:hover:shadow-3xl transform hover:-translate-y-0.5 sm:hover:-translate-y-1"
               >
-                {/* Animated background */}
                 <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-700 to-purple-700 rounded-lg sm:rounded-xl md:rounded-2xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
-
-                {/* Shine effect */}
                 <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-30 sm:opacity-40 group-hover:animate-shine"></div>
-
-                {/* Button content */}
                 <span className="relative z-10 flex items-center justify-center space-x-2 sm:space-x-3">
                   {loading ? (
                     <>
@@ -770,7 +786,6 @@ const InternVerificationPortal = () => {
                 </span>
               </button>
 
-              {/* Help Text */}
               <div className="text-center pt-2 sm:pt-3 md:pt-4">
                 <p className="text-xs text-gray-500 flex flex-col xs:flex-row xs:items-center justify-center space-y-1 xs:space-y-0 xs:space-x-2">
                   <span className="flex items-center justify-center xs:justify-start">
@@ -879,7 +894,7 @@ const InternVerificationPortal = () => {
               </div>
             </div>
 
-            {/* Monthly Performance Table */}
+            {/* Monthly Performance Table with Remarks */}
             {monthlyPerformance.length > 0 && (
               <div className="bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl p-4 md:p-8">
                 <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6">Monthly Performance</h2>
@@ -895,6 +910,7 @@ const InternVerificationPortal = () => {
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Communication</th>
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Behavior</th>
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Overall</th>
+                          <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remarks</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -930,6 +946,31 @@ const InternVerificationPortal = () => {
                                 }`}>
                                 {month.overallRating || 0}/10
                               </span>
+                            </td>
+                            <td className="px-3 md:px-6 py-2 md:py-4 text-xs md:text-sm">
+                              {month.inchargeRemarks ? (
+                                <div className="max-w-xs">
+                                  <div 
+                                    className={`cursor-pointer transition-colors ${expandedRemarks[index] ? 'text-blue-600' : 'text-gray-600'}`}
+                                    onClick={() => toggleRemarks(index)}
+                                  >
+                                    <div className="font-medium mb-1 flex items-center">
+                                      <span className="mr-1">💬</span>
+                                      Incharge Remarks
+                                      <span className="ml-1 text-xs">
+                                        {expandedRemarks[index] ? '▲' : '▼'}
+                                      </span>
+                                    </div>
+                                    {expandedRemarks[index] && (
+                                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-1 text-gray-700 leading-relaxed">
+                                        {month.inchargeRemarks}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic">No remarks</span>
+                              )}
                             </td>
                           </tr>
                         ))}
