@@ -14,8 +14,6 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true })); 
 app.use(cookieParser());
 
-// import authRoutes from "./routers/authRoutes.js";
-// import internRoutes from "./routes/internRoutes.js";
 
 import authRoutes from './routers/AuthRoutes.js'
 import internRoutes from './routers/InternRoutes.js'
@@ -25,10 +23,6 @@ import Incharge from "./routers/InchargeRoutes.js"
 import Feedback from "./routers/FeedbackRoutes.js";
 import ReviewTeam from "./routers/ReviewRouters.js";
 
-
-// app.get("/", (req, res) => {
-//   res.send("Welcome to the Intern Management System API");
-// });
 
 // connecting to database
 await ConnectDB();

@@ -14,6 +14,7 @@ const InternVerificationPortal = () => {
   const [error, setError] = useState('');
   const [captchaText, setCaptchaText] = useState('');
   const [isMobile, setIsMobile] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   const canvasRef = useRef(null);
 
@@ -25,7 +26,7 @@ const InternVerificationPortal = () => {
 
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -82,6 +83,60 @@ const InternVerificationPortal = () => {
       setLoading(false);
     }
   };
+
+
+const speakCaptcha = () => {
+  if ('speechSynthesis' in window) {
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const speech = new SpeechSynthesisUtterance();
+
+    // Break the CAPTCHA into characters
+    const characters = captchaText.split('');
+
+    // Convert each character to a spoken format
+    const spokenCharacters = characters.map(char => {
+      if (/[a-z]/.test(char)) {
+        return `small ${char}`;
+      } else if (/[A-Z]/.test(char)) {
+        return `capital ${char}`;
+      } else if (/[0-9]/.test(char)) {
+        return `${char}`;
+      } else {
+        return `symbol ${char}`;
+      }
+    });
+
+    const spokenText = `Captcha code: ${spokenCharacters.join('... ')}`;
+
+    speech.text = spokenText;
+    speech.rate = 0.7; // slower for clarity
+    speech.pitch = 0.9; // slightly lower pitch
+    speech.volume = 1;
+
+    setAudioEnabled(true);
+
+    speech.onend = () => {
+      setAudioEnabled(false);
+    };
+
+    speech.onerror = () => {
+      setAudioEnabled(false);
+      setError('Failed to play audio. Please try again.');
+    };
+
+    window.addEventListener('beforeunload', () => {
+      window.speechSynthesis.cancel();
+    });
+
+    window.speechSynthesis.speak(speech);
+  } else {
+    setError('Audio CAPTCHA not supported in your browser. Please use the visual CAPTCHA.');
+  }
+};
+
+
 
   // Handle input changes
   const handleChange = (e) => {
@@ -448,105 +503,291 @@ const InternVerificationPortal = () => {
 
         {/* Verification Form */}
         {!internData && (
-          <div className="bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl p-4 md:p-8 mb-6 md:mb-8">
-            <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-              <div className="grid grid-cols-1 gap-4 md:gap-6">
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Unique ID *
-                  </label>
-                  <input
-                    type="text"
-                    name="uniqueId"
-                    value={formData.uniqueId}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                    placeholder="Enter your unique ID"
-                  />
-                </div>
+          <div className="bg-white rounded-xl md:rounded-2xl lg:rounded-3xl shadow-lg md:shadow-xl lg:shadow-2xl p-4 sm:p-6 md:p-8 lg:p-10 mb-6 md:mb-8 border border-gray-100 relative overflow-hidden">
+            {/* Animated Background Elements */}
+            <div className="absolute top-0 left-0 w-full h-1 sm:h-1.5 md:h-2 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+            <div className="absolute -top-10 -right-10 sm:-top-12 sm:-right-12 md:-top-16 md:-right-16 lg:-top-20 lg:-right-20 w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 bg-blue-100 rounded-full opacity-30 sm:opacity-40 md:opacity-50"></div>
+            <div className="absolute -bottom-10 -left-10 sm:-bottom-12 sm:-left-12 md:-bottom-16 md:-left-16 lg:-bottom-20 lg:-left-20 w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 bg-purple-100 rounded-full opacity-30 sm:opacity-40 md:opacity-50"></div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Joining Date *
-                  </label>
-                  <input
-                    type="date"
-                    name="joiningDate"
-                    value={formData.joiningDate}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                  />
-                </div>
+            {/* Header Section */}
+            <div className="text-center mb-4 sm:mb-6 md:mb-8 relative z-10">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg sm:rounded-xl md:rounded-2xl flex items-center justify-center shadow-md sm:shadow-lg transform hover:scale-105 transition-transform duration-300">
+                <span className="text-xl sm:text-2xl md:text-3xl text-white">🔍</span>
+              </div>
+              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 mb-2 sm:mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
+                Verify Your Internship
+              </h2>
+              <p className="text-gray-600 text-xs sm:text-sm md:text-base max-w-xs sm:max-w-sm md:max-w-md mx-auto leading-relaxed sm:leading-loose">
+                Enter your details to access your personalized internship dashboard and performance insights
+              </p>
+            </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                    placeholder="Enter your registered email"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700">
-                    CAPTCHA Verification *
-                  </label>
-                  <div className="flex items-center space-x-3 md:space-x-4">
-                    <canvas
-                      ref={canvasRef}
-                      width={isMobile ? "120" : "150"}
-                      height={isMobile ? "40" : "50"}
-                      className="border-2 border-gray-300 rounded-lg shadow-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={generateCaptcha}
-                      className="text-blue-600 hover:text-blue-800 font-semibold text-xs md:text-sm transition-colors duration-200 whitespace-nowrap"
-                    >
-                      🔄 Refresh
-                    </button>
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6 lg:space-y-8 relative z-10">
+              <div className="grid grid-cols-1 gap-4 sm:gap-5 md:gap-6 lg:gap-8">
+                {/* Unique ID Field */}
+                <div className="space-y-2 sm:space-y-3 group">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs sm:text-sm font-semibold text-gray-700 group-focus-within:text-blue-600 transition-colors duration-200">
+                      <span className="flex items-center">
+                        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mr-1.5 sm:mr-2"></span>
+                        Unique ID *
+                      </span>
+                    </label>
+                    <span className={`text-xs transition-all duration-300 ${formData.uniqueId.length > 0 ? 'text-green-500 font-semibold' : 'text-gray-400'
+                      }`}>
+                      {formData.uniqueId.length}/20
+                    </span>
                   </div>
-                  <input
-                    type="text"
-                    name="captcha"
-                    value={formData.captcha}
-                    onChange={handleChange}
-                    required
-                    className="w-full mt-2 px-3 md:px-4 py-2 md:py-3 border border-gray-300 rounded-lg md:rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-base"
-                    placeholder="Enter CAPTCHA code shown above"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      name="uniqueId"
+                      value={formData.uniqueId}
+                      onChange={handleChange}
+                      maxLength="20"
+                      required
+                      className="w-full px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-3.5 md:py-4 lg:py-5 border border-gray-200 sm:border-2 rounded-lg sm:rounded-xl md:rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-sm sm:text-base bg-white shadow-sm hover:shadow-md"
+                      placeholder="Enter your unique identification code"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center">
+                      {formData.uniqueId && (
+                        <span className="text-green-500 text-sm sm:text-base">✓</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Joining Date Field */}
+                <div className="space-y-2 sm:space-y-3 group">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 group-focus-within:text-blue-600 transition-colors duration-200">
+                    <span className="flex items-center">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mr-1.5 sm:mr-2"></span>
+                      Joining Date *
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="date"
+                      name="joiningDate"
+                      value={formData.joiningDate}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-3.5 md:py-4 lg:py-5 border border-gray-200 sm:border-2 rounded-lg sm:rounded-xl md:rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-sm sm:text-base bg-white shadow-sm hover:shadow-md appearance-none"
+                    />
+                    <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-base sm:text-lg">
+                      📅
+                    </div>
+                  </div>
+                  {formData.joiningDate && (
+                    <div className="flex items-center text-xs sm:text-sm text-green-600 bg-green-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md sm:rounded-lg animate-pulse">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full mr-1.5 sm:mr-2"></span>
+                      Selected: <strong className="ml-1 text-xs sm:text-sm">{new Date(formData.joiningDate).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {/* Email Field */}
+                <div className="space-y-2 sm:space-y-3 group">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 group-focus-within:text-blue-600 transition-colors duration-200">
+                    <span className="flex items-center">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mr-1.5 sm:mr-2"></span>
+                      Email Address *
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-3.5 md:py-4 lg:py-5 border border-gray-200 sm:border-2 rounded-lg sm:rounded-xl md:rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-sm sm:text-base bg-white shadow-sm hover:shadow-md"
+                      placeholder="your.email@example.com"
+                    />
+                    <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
+                      {formData.email && (
+                        <span className={`text-base sm:text-lg ${/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+                          ? 'text-green-500 animate-bounce'
+                          : 'text-red-500 animate-pulse'
+                          }`}>
+                          {/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? '✓' : '✗'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                    <div className="flex items-center text-xs sm:text-sm text-red-600 bg-red-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md sm:rounded-lg">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-500 rounded-full mr-1.5 sm:mr-2"></span>
+                      Please enter a valid email address
+                    </div>
+                  )}
+                </div>
+
+                {/* Enhanced CAPTCHA Section */}
+                <div className="space-y-3 sm:space-y-4 group">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 group-focus-within:text-blue-600 transition-colors duration-200">
+                    <span className="flex items-center">
+                      <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mr-1.5 sm:mr-2"></span>
+                      Security Verification *
+                    </span>
+                  </label>
+
+                  <div className="bg-gradient-to-r from-gray-50 to-blue-50 p-3 sm:p-4 md:p-5 lg:p-6 rounded-lg sm:rounded-xl md:rounded-2xl border border-gray-200 sm:border-2 hover:border-blue-300 transition-all duration-300">
+                    {/* CAPTCHA Header */}
+                    <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4">
+                      <div className="flex items-center space-x-2 sm:space-x-3">
+                        <div className="relative">
+                          <canvas
+                            ref={canvasRef}
+                            width={isMobile ? "120" : "140"}
+                            height={isMobile ? "40" : "50"}
+                            className="border border-gray-300 sm:border-2 rounded-md sm:rounded-lg shadow-sm sm:shadow-md bg-white"
+                          />
+                          <div className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 md:-top-2 md:-right-2 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-[8px] sm:text-xs">🔒</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex space-x-2 sm:space-x-3 mt-2 xs:mt-0">
+                        <button
+                          type="button"
+                          onClick={generateCaptcha}
+                          className="flex items-center space-x-1 sm:space-x-2 bg-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg border border-gray-200 sm:border-2 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 shadow-sm hover:shadow-md text-xs sm:text-sm"
+                        >
+                          <span className="text-blue-600 text-sm sm:text-base">🔄</span>
+                          <span className="font-semibold text-gray-700 whitespace-nowrap">Refresh</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={speakCaptcha}
+                          disabled={audioEnabled}
+                          className={`flex items-center space-x-1 sm:space-x-2 bg-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg border border-gray-200 sm:border-2 transition-all duration-200 shadow-sm hover:shadow-md text-xs sm:text-sm ${audioEnabled
+                              ? 'opacity-50 cursor-not-allowed border-gray-300'
+                              : 'hover:border-green-500 hover:bg-green-50'
+                            }`}
+                        >
+                          <span className={`text-sm sm:text-base ${audioEnabled ? 'text-gray-400' : 'text-green-600'
+                            }`}>
+                            {audioEnabled ? '🔇' : '🔊'}
+                          </span>
+                          <span className="font-semibold text-gray-700 whitespace-nowrap">
+                            {audioEnabled ? 'Playing...' : 'Audio'}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* CAPTCHA Input */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        name="captcha"
+                        value={formData.captcha}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-3 sm:px-4 md:px-5 lg:px-6 py-2.5 sm:py-3 md:py-4 text-center border border-gray-300 sm:border-2 rounded-lg sm:rounded-xl md:rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-sm sm:text-base md:text-lg font-mono tracking-widest bg-white shadow-inner"
+                        placeholder="Type the code above"
+                        style={{ letterSpacing: '0.2em' }}
+                      />
+                      {formData.captcha && (
+                        <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
+                          <span className={`text-base sm:text-lg ${formData.captcha === captchaText
+                            ? 'text-green-500 animate-pulse'
+                            : 'text-orange-500'
+                            }`}>
+                            {formData.captcha === captchaText ? '✓' : '!'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Security Indicator */}
+                    <div className="flex items-center justify-between mt-2 sm:mt-3 md:mt-4">
+                      <div className="flex items-center space-x-1.5 sm:space-x-2">
+                        <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-gray-600 font-medium">Secure verification</span>
+                      </div>
+                      <div className="flex items-center space-x-0.5 sm:space-x-1">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 ${level <= 4 ? 'bg-green-400' : 'bg-gray-300'
+                              } ${level <= 3 ? 'animate-pulse' : ''}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Enhanced Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-3 md:px-4 py-2 md:py-3 rounded-lg md:rounded-xl flex items-center text-sm">
-                  <span className="text-base mr-2">⚠️</span>
-                  {error}
+                <div className="bg-red-50 border-l-2 sm:border-l-4 border-red-500 text-red-700 p-3 sm:p-4 md:p-5 lg:p-6 rounded-lg sm:rounded-xl flex items-start animate-shake">
+                  <span className="text-lg sm:text-xl mr-2 sm:mr-3 flex-shrink-0">⚠️</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-xs sm:text-sm md:text-base">Verification Failed</p>
+                    <p className="text-xs sm:text-sm mt-0.5 sm:mt-1 opacity-90">{error}</p>
+                  </div>
+                  <button
+                    onClick={() => setError('')}
+                    className="text-red-500 hover:text-red-700 text-base sm:text-lg font-bold ml-1 sm:ml-2"
+                  >
+                    ✕
+                  </button>
                 </div>
               )}
 
+              {/* Enhanced Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 md:py-4 px-4 md:px-6 rounded-lg md:rounded-xl hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-base md:text-lg shadow-lg"
+                className="w-full group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 sm:py-4 md:py-5 lg:py-6 px-4 sm:px-5 md:px-6 lg:px-8 rounded-lg sm:rounded-xl md:rounded-2xl hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-200 focus:ring-offset-1 sm:focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-sm sm:text-base md:text-lg lg:text-xl shadow-lg sm:shadow-xl md:shadow-2xl hover:shadow-2xl sm:hover:shadow-3xl transform hover:-translate-y-0.5 sm:hover:-translate-y-1"
               >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-4 w-4 md:h-5 md:w-5 border-b-2 border-white mr-2 md:mr-3"></div>
-                    Verifying Details...
-                  </span>
-                ) : (
-                  'Verify Intern Details'
-                )}
+                {/* Animated background */}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-700 to-purple-700 rounded-lg sm:rounded-xl md:rounded-2xl transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left"></div>
+
+                {/* Shine effect */}
+                <div className="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-30 sm:opacity-40 group-hover:animate-shine"></div>
+
+                {/* Button content */}
+                <span className="relative z-10 flex items-center justify-center space-x-2 sm:space-x-3">
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 border-b-2 border-white"></div>
+                      <span className="animate-pulse text-xs sm:text-sm md:text-base">Verifying Your Details...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-base sm:text-lg md:text-xl">🔍</span>
+                      <span className="text-xs sm:text-sm md:text-base lg:text-lg">Verify Internship Details</span>
+                      <span className="transform group-hover:translate-x-1 sm:group-hover:translate-x-2 transition-transform duration-300 text-base sm:text-lg md:text-xl">→</span>
+                    </>
+                  )}
+                </span>
               </button>
+
+              {/* Help Text */}
+              <div className="text-center pt-2 sm:pt-3 md:pt-4">
+                <p className="text-xs text-gray-500 flex flex-col xs:flex-row xs:items-center justify-center space-y-1 xs:space-y-0 xs:space-x-2">
+                  <span className="flex items-center justify-center xs:justify-start">
+                    <span className="mr-1">💡</span>
+                    Having trouble?
+                  </span>
+                  <span>
+                    Contact our support team at{" "}
+                    <a href="mailto:Hr@graphura.in" className="text-blue-600 hover:text-blue-800 underline font-semibold whitespace-nowrap">
+                      Hr@graphura.in
+                    </a>
+                  </span>
+                </p>
+              </div>
             </form>
           </div>
         )}
@@ -670,8 +911,8 @@ const InternVerificationPortal = () => {
                             </td>
                             <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${(month.completionPercentage || 0) >= 80 ? 'bg-green-100 text-green-800' :
-                                  (month.completionPercentage || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-red-100 text-red-800'
+                                (month.completionPercentage || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
                                 }`}>
                                 {month.completionPercentage || 0}%
                               </span>
@@ -687,8 +928,8 @@ const InternVerificationPortal = () => {
                             </td>
                             <td className="px-3 md:px-6 py-2 md:py-4 whitespace-nowrap">
                               <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold ${(month.overallRating || 0) >= 8 ? 'bg-green-100 text-green-800' :
-                                  (month.overallRating || 0) >= 6 ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-red-100 text-red-800'
+                                (month.overallRating || 0) >= 6 ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
                                 }`}>
                                 {month.overallRating || 0}/10
                               </span>
