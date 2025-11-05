@@ -85,56 +85,56 @@ const InternVerificationPortal = () => {
   };
 
 
-const speakCaptcha = () => {
-  if ('speechSynthesis' in window) {
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const speech = new SpeechSynthesisUtterance();
-
-    // Break the CAPTCHA into characters
-    const characters = captchaText.split('');
-
-    // Convert each character to a spoken format
-    const spokenCharacters = characters.map(char => {
-      if (/[a-z]/.test(char)) {
-        return `small ${char}`;
-      } else if (/[A-Z]/.test(char)) {
-        return `capital ${char}`;
-      } else if (/[0-9]/.test(char)) {
-        return `${char}`;
-      } else {
-        return `symbol ${char}`;
-      }
-    });
-
-    const spokenText = `Captcha code: ${spokenCharacters.join('... ')}`;
-
-    speech.text = spokenText;
-    speech.rate = 0.7; // slower for clarity
-    speech.pitch = 0.9; // slightly lower pitch
-    speech.volume = 1;
-
-    setAudioEnabled(true);
-
-    speech.onend = () => {
-      setAudioEnabled(false);
-    };
-
-    speech.onerror = () => {
-      setAudioEnabled(false);
-      setError('Failed to play audio. Please try again.');
-    };
-
-    window.addEventListener('beforeunload', () => {
+  const speakCaptcha = () => {
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
-    });
 
-    window.speechSynthesis.speak(speech);
-  } else {
-    setError('Audio CAPTCHA not supported in your browser. Please use the visual CAPTCHA.');
-  }
-};
+      const speech = new SpeechSynthesisUtterance();
+
+      // Break the CAPTCHA into characters
+      const characters = captchaText.split('');
+
+      // Convert each character to a spoken format
+      const spokenCharacters = characters.map(char => {
+        if (/[a-z]/.test(char)) {
+          return `small ${char}`;
+        } else if (/[A-Z]/.test(char)) {
+          return `capital ${char}`;
+        } else if (/[0-9]/.test(char)) {
+          return `${char}`;
+        } else {
+          return `symbol ${char}`;
+        }
+      });
+
+      const spokenText = `Captcha code: ${spokenCharacters.join('... ')}`;
+
+      speech.text = spokenText;
+      speech.rate = 0.7; // slower for clarity
+      speech.pitch = 0.9; // slightly lower pitch
+      speech.volume = 1;
+
+      setAudioEnabled(true);
+
+      speech.onend = () => {
+        setAudioEnabled(false);
+      };
+
+      speech.onerror = () => {
+        setAudioEnabled(false);
+        setError('Failed to play audio. Please try again.');
+      };
+
+      window.addEventListener('beforeunload', () => {
+        window.speechSynthesis.cancel();
+      });
+
+      window.speechSynthesis.speak(speech);
+    } else {
+      setError('Audio CAPTCHA not supported in your browser. Please use the visual CAPTCHA.');
+    }
+  };
 
 
 
@@ -485,7 +485,7 @@ const speakCaptcha = () => {
                   className="w-12 h-12 md:w-20 md:h-20 mb-2 md:mb-3 rounded-full shadow-md border border-gray-200"
                 />
                 <h1 className="text-xl md:text-4xl font-extrabold text-indigo-800 tracking-tight">
-                  Graphura India Pvt. Ltd.
+                  Graphura India Private Limited
                 </h1>
                 <p className="text-gray-600 italic text-xs md:text-base mt-1">Empowering Interns, Empowering Future</p>
               </div>
@@ -574,9 +574,6 @@ const speakCaptcha = () => {
                       required
                       className="w-full px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-3.5 md:py-4 lg:py-5 border border-gray-200 sm:border-2 rounded-lg sm:rounded-xl md:rounded-2xl focus:outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-3 md:focus:ring-4 focus:ring-blue-100 transition-all duration-300 text-sm sm:text-base bg-white shadow-sm hover:shadow-md appearance-none"
                     />
-                    <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-base sm:text-lg">
-                      📅
-                    </div>
                   </div>
                   {formData.joiningDate && (
                     <div className="flex items-center text-xs sm:text-sm text-green-600 bg-green-50 px-2 sm:px-3 py-1.5 sm:py-2 rounded-md sm:rounded-lg animate-pulse">
@@ -668,8 +665,8 @@ const speakCaptcha = () => {
                           onClick={speakCaptcha}
                           disabled={audioEnabled}
                           className={`flex items-center space-x-1 sm:space-x-2 bg-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-md sm:rounded-lg border border-gray-200 sm:border-2 transition-all duration-200 shadow-sm hover:shadow-md text-xs sm:text-sm ${audioEnabled
-                              ? 'opacity-50 cursor-not-allowed border-gray-300'
-                              : 'hover:border-green-500 hover:bg-green-50'
+                            ? 'opacity-50 cursor-not-allowed border-gray-300'
+                            : 'hover:border-green-500 hover:bg-green-50'
                             }`}
                         >
                           <span className={`text-sm sm:text-base ${audioEnabled ? 'text-gray-400' : 'text-green-600'
@@ -895,7 +892,7 @@ const speakCaptcha = () => {
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Tasks</th>
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Completion</th>
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Initiative</th>
-                          <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Comm</th>
+                          <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Communication</th>
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Behavior</th>
                           <th className="px-3 md:px-6 py-2 md:py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Overall</th>
                         </tr>
