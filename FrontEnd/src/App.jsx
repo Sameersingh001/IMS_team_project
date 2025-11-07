@@ -16,6 +16,7 @@ import FeedbackForm from "./pages/Feedback/FeedbackFrom";
 import ReviewTeamLogin from "./pages/Feedback/ReviewTeamLogin";
 import ReviewTeamDashboard from "./pages/Feedback/ReviewDashboard";
 import InternVerificationPortal from "./pages/VerifyPortal/VerificationIntern";
+import LeaveApplicationForm from "./pages/Leave/Leavepage";
 
 function App() {
   return (
@@ -25,7 +26,11 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/apply" element={<ApplicationForm />} />
         <Route path="/register" element={<RegisterPage />} />
+
         <Route path="/Verify/intern" element={<InternVerificationPortal />} />
+        <Route path="/leave/intern" element={<LeaveApplicationForm />} />
+
+
 
         <Route path="/intern-incharge-register" element={<InternInchargeRegister />} />
 
@@ -47,6 +52,12 @@ function App() {
         <Route path="/Admin-Dashboard/intern/:id" element={<InternDetail role="Admin" />} />
         <Route path="/Admin-Dashboard" element={<AdminDashboard />} />
         <Route path="/Admin-Dashboard/attendance" element={<AttendaceAdminPage />} />
+
+
+
+
+
+
         <Route
           path="*"
           element={

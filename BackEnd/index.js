@@ -28,7 +28,7 @@ import ReviewTeam from "./routers/ReviewRouters.js";
 await ConnectDB();
 // routers
 app.use('/api', authRoutes);
-app.use('/api', internRoutes);
+app.use('/api', internRoutes);  
 app.use('/api', hrRoutes);
 app.use('/api', adminRoutes);
 app.use("/api", Incharge)

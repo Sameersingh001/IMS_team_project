@@ -904,17 +904,15 @@ const calculateDurationInMonths = (duration) => {
 };
 
 const calculateOverallPerformance = (monthlyPerformance) => {
-  if (!monthlyPerformance || monthlyPerformance.length === 0) return "Not Rated";
+  if (!monthlyPerformance || monthlyPerformance.length === 0);
   
   const validMonths = monthlyPerformance.filter(month => month.overallRating > 0);
-  if (validMonths.length === 0) return "Not Rated";
-  
+  if (validMonths.length === 0) return "Good";  
   const avgRating = validMonths.reduce((sum, month) => sum + month.overallRating, 0) / validMonths.length;
   
   if (avgRating >= 8.5) return "Excellent";
   if (avgRating >= 7) return "Good";
-  if (avgRating >= 5) return "Average";
-  return "Poor";
+  return "Good"
 };
 
 
@@ -924,7 +922,7 @@ export const getInternPerformance = async (req, res) => {
     const { internId } = req.params;
 
     let performance = await Performance.findOne({ intern: internId })
-      .populate('intern', 'fullName domain duration status');
+      .populate('intern', 'fullName domain duration');
 
     if (!performance) {
       // If no performance record exists, create one with initial structure
@@ -1031,13 +1029,13 @@ export const updateInternPerformance = async (req, res) => {
     // The pre-save middleware will automatically calculate overallRating and completionPercentage
     await performance.save();
 
-    // Update intern's overall performance
+    // Update intern's overall performance (ONLY performance field, not status)
     const overallPerformance = calculateOverallPerformance(monthlyPerformance);
     await Intern.findByIdAndUpdate(internId, { 
       performance: overallPerformance 
     });
 
-    // Populate the response
+    // Populate the response (status will remain unchanged)
     await performance.populate('intern', 'fullName domain duration status performance');
 
     res.json({

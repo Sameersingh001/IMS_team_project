@@ -233,17 +233,16 @@ const InternInchargeDashboard = () => {
   };
 
   const calculateOverallPerformance = (monthlyPerformance) => {
-    if (!monthlyPerformance || monthlyPerformance.length === 0) return "Not Rated";
+    if (!monthlyPerformance || monthlyPerformance.length === 0) return "Good";
 
     const validMonths = monthlyPerformance.filter(month => month.overallRating > 0);
-    if (validMonths.length === 0) return "Not Rated";
+    if (validMonths.length === 0) return "Good";
 
     const avgRating = validMonths.reduce((sum, month) => sum + month.overallRating, 0) / validMonths.length;
 
     if (avgRating >= 8.5) return "Excellent";
     if (avgRating >= 7) return "Good";
-    if (avgRating >= 5) return "Average";
-    return "Poor";
+    return "Good"
   };
 
   const openPerformanceModal = async (intern) => {

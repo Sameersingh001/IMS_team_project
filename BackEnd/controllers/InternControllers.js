@@ -2,8 +2,7 @@ import Intern from '../models/InternDatabase.js';
 import { sendEmail } from "../config/emailConfig.js"
 import Setting from "../models/SettingDB.js"
 import Performance from "../models/Performance.js"
-
-
+import Leave from "../models/LeaveDB.js"
 
 export const createIntern = async (req, res) => {
   try {
@@ -187,5 +186,71 @@ export const verifyIntern = async (req, res) => {
       success: false,
       message: "Server error while verifying intern",
     });
+  }
+};
+
+
+export const LeaveApplication = async (req, res) => {
+  try {
+    const { internId, leaveType, startDate, endDate, reason, totalDays } = req.body;
+
+    // ✅ Validate fields
+    if (!internId || !leaveType || !startDate || !endDate || !reason || !totalDays) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // ✅ Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ error: "Invalid date format" });
+    }
+
+    if (start > end) {
+      return res.status(400).json({ error: "End date must be after start date" });
+    }
+
+    // ✅ Find intern by uniqueId (you type this in frontend)
+    const intern = await Intern.findOne({ uniqueId: internId });
+    if (!intern) {
+      return res.status(404).json({ error: "Intern ID not found" });
+    }
+
+    // ✅ Check overlapping leaves
+    const overlapping = await Leave.findOne({
+      internId: intern._id,
+      $or: [
+        { startDate: { $lte: end }, endDate: { $gte: start } }
+      ],
+      status: { $in: ["Pending", "Approved"] }
+    });
+
+    if (overlapping) {
+      return res.status(400).json({
+        error: "You already have a leave request in this date range"
+      });
+    }
+
+    // ✅ CREATE LEAVE (Matches frontend)
+    const leave = await Leave.create({
+      uniqueId: internId,   // text ID from UI
+      internId: intern._id, // ObjectId ref
+      leaveType,
+      startDate: start,
+      endDate: end,
+      totalDays,
+      reason,
+      status: "Pending"
+    });
+
+    return res.status(201).json({
+      message: "Leave application submitted successfully",
+      leave
+    });
+
+  } catch (error) {
+    console.error("Leave Application Error:", error);
+    return res.status(500).json({ error: "Server error", details: error.message });
   }
 };
