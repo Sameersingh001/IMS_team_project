@@ -41,6 +41,7 @@ const ReviewTeamDashboard = () => {
         loading: false
     });
     const [mediaErrors, setMediaErrors] = useState(new Set());
+    const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
     const domains = [
         "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",
@@ -72,6 +73,7 @@ const ReviewTeamDashboard = () => {
             setLoading(false);
         } catch (error) {
             console.error("Error fetching feedbacks:", error);
+            alert("Failed to load feedbacks. Please try again.");
             setLoading(false);
         }
     };
@@ -163,6 +165,87 @@ const ReviewTeamDashboard = () => {
         }
     };
 
+const updateCertificateStatus = async (feedbackId, newStatus) => {
+    if (!feedbackId || !newStatus) {
+        console.error("Missing feedbackId or newStatus");
+        alert("Error: Missing required information");
+        return;
+    }
+
+    setUpdatingStatus(prev => new Set(prev).add(feedbackId));
+
+    try {
+        const token = localStorage.getItem("reviewTeamToken");
+        if (!token) {
+            throw new Error("No authentication token found");
+        }
+
+        console.log("Updating status for:", feedbackId, "to:", newStatus);
+
+        // Use the PUT endpoint consistently
+        const response = await axios.put(
+            `/api/review-team/feedbacks/${feedbackId}/certificate`,
+            { 
+                certificateStatus: newStatus
+            },
+            {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        // ✅ Use the updated feedback from backend response
+        const updatedFeedback = response.data.feedback;
+
+        window.location.reload();
+        
+        // Update local state with the actual data from backend
+        setFeedbacks(prevFeedbacks => 
+            prevFeedbacks.map(feedback => 
+                feedback._id === feedbackId 
+                    ? { ...feedback, certificateStatus: updatedFeedback.certificateStatus }
+                    : feedback
+            )
+        );
+
+        console.log("✅ Status updated successfully:", updatedFeedback.certificateStatus);
+        alert(`✅ Certificate status updated to ${newStatus}`);
+
+    } catch (error) {
+        console.error("Error updating certificate status:", error);
+        
+        let errorMessage = "Failed to update certificate status. ";
+        
+        if (error.response) {
+            errorMessage += `Server error: ${error.response.status} - ${error.response.data?.message || 'Unknown error'}`;
+            console.error("Server response:", error.response.data);
+        } else if (error.request) {
+            errorMessage += "No response from server. Please check your connection.";
+        } else {
+            errorMessage += error.message;
+        }
+        
+        alert(errorMessage);
+        
+        // Revert the status in UI if update failed
+        setFeedbacks(prevFeedbacks => 
+            prevFeedbacks.map(feedback => 
+                feedback._id === feedbackId 
+                    ? { ...feedback } // Keep original status
+                    : feedback
+            )
+        );
+    } finally {
+        setUpdatingStatus(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(feedbackId);
+            return newSet;
+        });
+    }
+};
+
     const handleLogout = () => {
         localStorage.removeItem("reviewTeamToken");
         localStorage.removeItem("reviewTeamMember");
@@ -170,6 +253,10 @@ const ReviewTeamDashboard = () => {
     };
 
     const openMediaPreview = async (type, url) => {
+        if (!url) {
+            alert(`No ${type} available for this feedback`);
+            return;
+        }
         setPreviewMedia({ type, url, show: true, loading: true });
         setMediaErrors(prev => {
             const newErrors = new Set(prev);
@@ -221,6 +308,50 @@ const ReviewTeamDashboard = () => {
         if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
         return new Date(date).toLocaleDateString();
     };
+
+const StatusBadge = ({ status, feedbackId, onStatusUpdate }) => {
+    const statusColors = {
+        pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        issued: "bg-green-100 text-green-800 border-green-200",
+        rejected: "bg-red-100 text-red-800 border-red-200"
+    };
+
+    const statusOptions = ["pending", "issued", "rejected"];
+    const isUpdating = updatingStatus.has(feedbackId);
+    const isDisabled = status === "issued"; // Disable when status is "issued"
+
+    return (
+        <div className="flex items-center space-x-2">
+            <span className={`px-3 py-1 text-xs font-medium rounded-full border ${statusColors[status]}`}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+            <div className="relative">
+                <select
+                    value={status}
+                    onChange={(e) => onStatusUpdate(feedbackId, e.target.value)}
+                    disabled={isDisabled || isUpdating}
+                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed min-w-[100px]"
+                >
+                    {statusOptions.map(option => (
+                        <option key={option} value={option}>
+                            {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </option>
+                    ))}
+                </select>
+                {isUpdating && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded">
+                        <Loader size={12} className="animate-spin text-blue-600" />
+                    </div>
+                )}
+                {isDisabled && !isUpdating && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-green-50 bg-opacity-50 rounded cursor-not-allowed">
+                        <CheckCircle size={12} className="text-green-600" />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
     if (loading) {
         return (
@@ -482,14 +613,21 @@ const ReviewTeamDashboard = () => {
 
                                                 {/* Certificate Info */}
                                                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-4 border border-blue-100">
-                                                    <div className="flex items-center space-x-3">
-                                                        <FileText className="h-5 w-5 text-blue-600" />
-                                                        <div>
-                                                            <div className="text-sm font-medium text-gray-700">Certificate Number</div>
-                                                            <div className="text-lg font-bold text-gray-900 font-mono">
-                                                                {feedback.internshipInfo?.certificateNumber || 'Not Available'}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                        <div className="flex items-center space-x-3">
+                                                            <FileText className="h-5 w-5 text-blue-600" />
+                                                            <div>
+                                                                <div className="text-sm font-medium text-gray-700">Certificate Number</div>
+                                                                <div className="text-lg font-bold text-gray-900 font-mono">
+                                                                    {feedback.internshipInfo?.certificateNumber || 'Not Available'}
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                        <StatusBadge 
+                                                            status={feedback.certificateStatus || 'pending'}
+                                                            feedbackId={feedback._id}
+                                                            onStatusUpdate={updateCertificateStatus}
+                                                        />
                                                     </div>
                                                 </div>
 
@@ -525,25 +663,32 @@ const ReviewTeamDashboard = () => {
 
                                                 {/* Media Actions */}
                                                 <div className="flex flex-wrap gap-3">
-                                                    <button
-                                                        onClick={() => openMediaPreview('photo', feedback.media?.photoUrl)}
-                                                        onMouseEnter={() => {
-                                                            const img = new Image();
-                                                            img.src = optimizeCloudinaryUrl(feedback.media?.photoUrl, { quality: 30, width: 300 });
-                                                        }}
-                                                        className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200 text-sm font-medium text-gray-700"
-                                                    >
-                                                        <Image size={16} className="mr-2" />
-                                                        View Photo
-                                                    </button>
-                                                    <button
-                                                        onClick={() => openMediaPreview('video', feedback.media?.videoUrl)}
-                                                        className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200 text-sm font-medium text-gray-700"
-                                                    >
-                                                        <Video size={16} className="mr-2" />
-                                                        Play Video
-                                                        <Play size={14} className="ml-2" />
-                                                    </button>
+                                                    {feedback.media?.photoUrl && (
+                                                        <button
+                                                            onClick={() => openMediaPreview('photo', feedback.media.photoUrl)}
+                                                            onMouseEnter={() => {
+                                                                const img = new Image();
+                                                                img.src = optimizeCloudinaryUrl(feedback.media.photoUrl, { quality: 30, width: 300 });
+                                                            }}
+                                                            className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200 text-sm font-medium text-gray-700"
+                                                        >
+                                                            <Image size={16} className="mr-2" />
+                                                            View Photo
+                                                        </button>
+                                                    )}
+                                                    {feedback.media?.videoUrl && (
+                                                        <button
+                                                            onClick={() => openMediaPreview('video', feedback.media.videoUrl)}
+                                                            className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition duration-200 text-sm font-medium text-gray-700"
+                                                        >
+                                                            <Video size={16} className="mr-2" />
+                                                            Play Video
+                                                            <Play size={14} className="ml-2" />
+                                                        </button>
+                                                    )}
+                                                    {!feedback.media?.photoUrl && !feedback.media?.videoUrl && (
+                                                        <span className="text-sm text-gray-500 italic">No media files available</span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -687,6 +832,12 @@ const ReviewTeamDashboard = () => {
                                 <div className="text-center text-gray-500">
                                     <p className="text-lg font-medium mb-2">Unable to load media</p>
                                     <p className="text-sm mb-4">The {previewMedia.type} may have been moved or deleted</p>
+                                    <button
+                                        onClick={closeMediaPreview}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition duration-200"
+                                    >
+                                        Close
+                                    </button>
                                 </div>
                             ) : previewMedia.type === 'photo' ? (
                                 <img

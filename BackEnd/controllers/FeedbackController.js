@@ -1,10 +1,6 @@
 import Intern from '../models/InternDatabase.js'
 import Feedback from '../models/Feedback.js'
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import fs from 'fs';
-import path from 'path';
-import axios from 'axios';
-import *as fontkit from "fontkit"; 
+
 
 export const getInternDetails = async (req, res) => {
   try {
@@ -118,238 +114,243 @@ export const getInternDetails = async (req, res) => {
 };
 
 
-export class CertificateGenerator {
-  // 🆔 Generate auto-incremented certificate number (Fixed)
-static async generateCertificateNumber() {
-  try {
-    let newNumber;
-    let isDuplicate = true;
+// export class CertificateGenerator {
+//   // 🆔 Generate auto-incremented certificate number (Fixed)
+// static async generateCertificateNumber() {
+//   try {
+//     let newNumber;
+//     let isDuplicate = true;
 
-    // Keep generating until a unique one is found
-    while (isDuplicate) {
-      // 🔹 Generate a random 9-digit number starting with 10016
-      const randomPart = Math.floor(10000 + Math.random() * 89999); // 5 random digits
-      newNumber = `10016${randomPart}`; // e.g. 1001653842 (total 9 digits)
+//     // Keep generating until a unique one is found
+//     while (isDuplicate) {
+//       // 🔹 Generate a random 9-digit number starting with 10016
+//       const randomPart = Math.floor(10000 + Math.random() * 89999); // 5 random digits
+//       newNumber = `10016${randomPart}`; // e.g. 1001653842 (total 9 digits)
 
-      // 🔍 Check in DB if it already exists
-      const existing = await Intern.findOne({ certificateNumber: newNumber });
-      if (!existing) isDuplicate = false;
-    }
+//       // 🔍 Check in DB if it already exists
+//       const existing = await Intern.findOne({ certificateNumber: newNumber });
+//       if (!existing) isDuplicate = false;
+//     }
 
-    console.log(`🆕 Generated unique 9-digit certificate number: ${newNumber}`);
-    return newNumber;
-  } catch (error) {
-    console.error("❌ Error generating certificate number:", error);
-    // Fallback — unique pattern
-    return `100${Date.now().toString().slice(-6)}`;
-  }
-}
+//     console.log(`🆕 Generated unique 9-digit certificate number: ${newNumber}`);
+//     return newNumber;
+//   } catch (error) {
+//     console.error("❌ Error generating certificate number:", error);
+//     // Fallback — unique pattern
+//     return `100${Date.now().toString().slice(-6)}`;
+//   }
+// }
 
 
-  // ✅ Check if certificate already exists
-  static async getExistingCertificate(internEmail) {
-    return await Intern.findOne({
-      email: internEmail,
-      certificateNumber: { $exists: true, $ne: null },
-    });
-  }
+//   // ✅ Check if certificate already exists
+//   static async getExistingCertificate(internEmail) {
+//     return await Intern.findOne({
+//       email: internEmail,
+//       certificateNumber: { $exists: true, $ne: null },
+//     });
+//   }
 
-  // 🎓 Generate certificate using stored PNG template
-  static async generateCertificate(internData) {
-    try {
-      if (!internData.certificateNumber) {
-        throw new Error("Certificate number is required but was not provided");
-      }
+//   // 🎓 Generate certificate using stored PNG template
+//   static async generateCertificate(internData) {
+//     try {
+//       if (!internData.certificateNumber) {
+//         throw new Error("Certificate number is required but was not provided");
+//       }
 
-      // ✅ Template path
-      const templatePath = path.join(process.cwd(), "public", "templates", "certificate-template.png");
-      if (!fs.existsSync(templatePath)) {
-        throw new Error(`Certificate template not found at: ${templatePath}`);
-      }
-      const templateImage = fs.readFileSync(templatePath);
+//       // ✅ Template path
+//       const templatePath = path.join(process.cwd(), "public", "templates", "certificate-template.png");
+//       if (!fs.existsSync(templatePath)) {
+//         throw new Error(`Certificate template not found at: ${templatePath}`);
+//       }
+//       const templateImage = fs.readFileSync(templatePath);
 
-      // ✅ Load font
-      const fontPath = path.join(process.cwd(), "public", "fonts", "BerkshireSwash-Regular.ttf");
-      if (!fs.existsSync(fontPath)) {
-        throw new Error(`Font not found at: ${fontPath}`);
-      }
-      const pacificoFontBytes = fs.readFileSync(fontPath);
+//       // ✅ Load font
+//       const fontPath = path.join(process.cwd(), "public", "fonts", "BerkshireSwash-Regular.ttf");
+//       if (!fs.existsSync(fontPath)) {
+//         throw new Error(`Font not found at: ${fontPath}`);
+//       }
+//       const pacificoFontBytes = fs.readFileSync(fontPath);
 
-      // ✅ Create PDF and register fontkit
-      const pdfDoc = await PDFDocument.create();
-      pdfDoc.registerFontkit(fontkit);
+//       // ✅ Create PDF and register fontkit
+//       const pdfDoc = await PDFDocument.create();
+//       pdfDoc.registerFontkit(fontkit);
 
-      // ✅ Add page (A4 Landscape)
-      const page = pdfDoc.addPage([842, 595]);
+//       // ✅ Add page (A4 Landscape)
+//       const page = pdfDoc.addPage([842, 595]);
 
-      // ✅ Embed background image
-      const image = await pdfDoc.embedPng(templateImage);
-      page.drawImage(image, {
-        x: 0,
-        y: 0,
-        width: 842,
-        height: 595,
-      });
+//       // ✅ Embed background image
+//       const image = await pdfDoc.embedPng(templateImage);
+//       page.drawImage(image, {
+//         x: 0,
+//         y: 0,
+//         width: 842,
+//         height: 595,
+//       });
 
-      // ✅ Embed fonts
-      const pacificoFont = await pdfDoc.embedFont(pacificoFontBytes);
-      const defaultFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+//       // ✅ Embed fonts
+//       const pacificoFont = await pdfDoc.embedFont(pacificoFontBytes);
+//       const defaultFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+//       const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-      // 1️⃣ Intern Name — Pacifico
-      const name = internData.fullName || "";
-      const nameWidth = this.getTextWidth(name, pacificoFont, 58);
-      page.drawText(name, {
-        x: 480 - nameWidth / 2,
-        y: 283,
-        size: 58,
-        font: pacificoFont,
-        color: rgb(0, 0, 0),
-      });
+//       // 1️⃣ Intern Name — Pacifico
+//       const name = internData.fullName || "";
+//       const nameWidth = this.getTextWidth(name, pacificoFont, 58);
+//       page.drawText(name, {
+//         x: 480 - nameWidth / 2,
+//         y: 283,
+//         size: 58,
+//         font: pacificoFont,
+//         color: rgb(0, 0, 0),
+//       });
 
-      // 2️⃣ Completion Text — Default font
-      const completionText = `Has completed the internship program from ${internData.startMonth} to ${internData.endMonth} demonstrating exceptional dedication as an intern of the ${internData.domain} Department at Graphura India Private Limited.`;
+//       // 2️⃣ Completion Text — Default font
+//       const completionText = `Has completed the internship program from ${internData.startMonth} to ${internData.endMonth} demonstrating exceptional dedication as an intern of the ${internData.domain} Department at Graphura India Private Limited.`;
 
-      const lines = this.splitTextIntoLines(completionText, defaultFont, 15, 500);
-      const lineHeight = 22;
-      const totalTextHeight = lines.length * lineHeight;
-      const startY = 272 - totalTextHeight / 2;
+//       const lines = this.splitTextIntoLines(completionText, defaultFont, 15, 500);
+//       const lineHeight = 22;
+//       const totalTextHeight = lines.length * lineHeight;
+//       const startY = 272 - totalTextHeight / 2;
 
-      lines.forEach((line, index) => {
-        const lineWidth = this.getTextWidth(line, defaultFont, 15);
-        page.drawText(line, {
-          x: 490 - lineWidth / 2,
-          y: startY - index * lineHeight,
-          size: 15,
-          font: defaultFont,
-          color: rgb(0, 0, 0),
-        });
-      });
+//       lines.forEach((line, index) => {
+//         const lineWidth = this.getTextWidth(line, defaultFont, 15);
+//         page.drawText(line, {
+//           x: 490 - lineWidth / 2,
+//           y: startY - index * lineHeight,
+//           size: 15,
+//           font: defaultFont,
+//           color: rgb(0, 0, 0),
+//         });
+//       });
 
-      // 3️⃣ Certificate ID — Bold
-      page.drawText(`Certificate ID: ${internData.certificateNumber}`, {
-        x: 50,
-        y: 27,
-        size: 10,
-        font: boldFont,
-        color: rgb(0, 0, 0),
-      });
+//       // 3️⃣ Certificate ID — Bold
+//       page.drawText(`Certificate ID: ${internData.certificateNumber}`, {
+//         x: 50,
+//         y: 27,
+//         size: 10,
+//         font: boldFont,
+//         color: rgb(0, 0, 0),
+//       });
 
-      // 4️⃣ Unique ID — Bold
-      page.drawText(`Unique ID: ${internData.uniqueId || "GRAPH/GR/101"}`, {
-        x: 560,
-        y: 27,
-        size: 10,
-        font: boldFont,
-        color: rgb(0, 0, 0),
-      });
+//       // 4️⃣ Unique ID — Bold
+//       page.drawText(`Unique ID: ${internData.uniqueId || "GRAPH/GR/101"}`, {
+//         x: 560,
+//         y: 27,
+//         size: 10,
+//         font: boldFont,
+//         color: rgb(0, 0, 0),
+//       });
 
-      const pdfBytes = await pdfDoc.save();
-      return Buffer.from(pdfBytes);
-    } catch (error) {
-      console.error("❌ Certificate generation error:", error);
-      throw new Error(`Failed to generate certificate: ${error.message}`);
-    }
-  }
+//       const pdfBytes = await pdfDoc.save();
+//       return Buffer.from(pdfBytes);
+//     } catch (error) {
+//       console.error("❌ Certificate generation error:", error);
+//       throw new Error(`Failed to generate certificate: ${error.message}`);
+//     }
+//   }
 
-  // Helper function to calculate text width
-  static getTextWidth(text, font, fontSize) {
-    return text.length * (fontSize * 0.6);
-  }
+//   // Helper function to calculate text width
+//   static getTextWidth(text, font, fontSize) {
+//     return text.length * (fontSize * 0.6);
+//   }
 
-  // Helper function to split long text into multiple lines
-  static splitTextIntoLines(text, font, fontSize, maxWidth) {
-    const words = text.split(" ");
-    const lines = [];
-    let currentLine = words[0];
+//   // Helper function to split long text into multiple lines
+//   static splitTextIntoLines(text, font, fontSize, maxWidth) {
+//     const words = text.split(" ");
+//     const lines = [];
+//     let currentLine = words[0];
 
-    for (let i = 1; i < words.length; i++) {
-      const word = words[i];
-      const width = font.widthOfTextAtSize(currentLine + " " + word, fontSize);
-      if (width < maxWidth) {
-        currentLine += " " + word;
-      } else {
-        lines.push(currentLine);
-        currentLine = word;
-      }
-    }
-    lines.push(currentLine);
-    return lines;
-  }
+//     for (let i = 1; i < words.length; i++) {
+//       const word = words[i];
+//       const width = font.widthOfTextAtSize(currentLine + " " + word, fontSize);
+//       if (width < maxWidth) {
+//         currentLine += " " + word;
+//       } else {
+//         lines.push(currentLine);
+//         currentLine = word;
+//       }
+//     }
+//     lines.push(currentLine);
+//     return lines;
+//   }
 
-  // ✉️ Send certificate email
-  static async sendCertificateEmail(internEmail, internName, certificateBuffer, internData) {
-    try {
-      const subject = `🎓 Your Internship Completion Certificate - ${internName}`;
-      const certificateBase64 = certificateBuffer.toString("base64");
+//   // ✉️ Send certificate email
+//   static async sendCertificateEmail(internEmail, internName, certificateBuffer, internData) {
+//     try {
+//       const subject = `🎓 Your Internship Completion Certificate - ${internName}`;
+//       const certificateBase64 = certificateBuffer.toString("base64");
 
-      const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-    .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-    .content { padding: 20px; }
-    .footer { text-align: center; padding: 20px; color: #666; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h2>🎓 Congratulations ${internName}!</h2>
-      <p>Your Internship Certificate is Ready</p>
-    </div>
-    <div class="content">
-      <p>Dear <strong>${internName}</strong>,</p>
-      <p>Congratulations on successfully completing your internship at <strong>Graphura India Pvt. Ltd.</strong></p>
-      <p>Your certificate is attached to this email. You can download and share it on professional platforms like LinkedIn.</p>
-      <ul>
-        <li>Certificate ID: ${internData.certificateNumber}</li>
-        <li>Unique ID: ${internData.uniqueId}</li>
-        <li>Domain: ${internData.domain}</li>
-        <li>Duration: ${internData.duration}</li>
-        <li>Period: ${internData.startMonth} to ${internData.endMonth}</li>
-      </ul>
-    </div>
-    <div class="footer">
-      <p>Best regards,<br>Team Graphura</p>
-    </div>
-  </div>
-</body>
-</html>`;
+//       const htmlContent = `
+// <!DOCTYPE html>
+// <html>
+// <head>
+//   <style>
+//     body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+//     .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+//     .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
+//     .content { padding: 20px; }
+//     .footer { text-align: center; padding: 20px; color: #666; }
+//   </style>
+// </head>
+// <body>
+//   <div class="container">
+//     <div class="header">
+//       <h2>🎓 Congratulations ${internName}!</h2>
+//       <p>Your Internship Certificate is Ready</p>
+//     </div>
+//     <div class="content">
+//       <p>Dear <strong>${internName}</strong>,</p>
+//       <p>Congratulations on successfully completing your internship at <strong>Graphura India Pvt. Ltd.</strong></p>
+//       <p>Your certificate is attached to this email. You can download and share it on professional platforms like LinkedIn.</p>
+//       <ul>
+//         <li>Certificate ID: ${internData.certificateNumber}</li>
+//         <li>Unique ID: ${internData.uniqueId}</li>
+//         <li>Domain: ${internData.domain}</li>
+//         <li>Duration: ${internData.duration}</li>
+//         <li>Period: ${internData.startMonth} to ${internData.endMonth}</li>
+//       </ul>
+//     </div>
+//     <div class="footer">
+//       <p>Best regards,<br>Team Graphura</p>
+//     </div>
+//   </div>
+// </body>
+// </html>`;
 
-      const emailData = {
-        sender: { name: "Graphura", email: process.env.FROM_EMAIL },
-        to: [{ email: internEmail }],
-        subject,
-        htmlContent,
-        attachment: [
-          {
-            name: `Certificate_${internName.replace(/\s+/g, "_")}.pdf`,
-            content: certificateBase64,
-          },
-        ],
-      };
+//       const emailData = {
+//         sender: { name: "Graphura", email: process.env.FROM_EMAIL },
+//         to: [{ email: internEmail }],
+//         subject,
+//         htmlContent,
+//         attachment: [
+//           {
+//             name: `Certificate_${internName.replace(/\s+/g, "_")}.pdf`,
+//             content: certificateBase64,
+//           },
+//         ],
+//       };
 
-      const response = await axios.post("https://api.brevo.com/v3/smtp/email", emailData, {
-        headers: {
-          "api-key": process.env.BREVO_API_KEY,
-          "Content-Type": "application/json",
-        },
-      });
+//       const response = await axios.post("https://api.brevo.com/v3/smtp/email", emailData, {
+//         headers: {
+//           "api-key": process.env.BREVO_API_KEY,
+//           "Content-Type": "application/json",
+//         },
+//       });
 
-      console.log("✅ Certificate email sent successfully");
-      return response.data;
-    } catch (error) {
-      console.error("❌ Email sending error:", error.response?.data || error.message);
-      throw new Error(`Failed to send certificate email: ${error.message}`);
-    }
-  }
-}
+//       console.log("✅ Certificate email sent successfully");
+//       return response.data;
+//     } catch (error) {
+//       console.error("❌ Email sending error:", error.response?.data || error.message);
+//       throw new Error(`Failed to send certificate email: ${error.message}`);
+//     }
+//   }
+// }
 
-// Main Feedback Submission Function (SIMPLIFIED)
+
+
+
+
+
+
 export const submitFeedback = async (req, res) => {
   try {
     const { uniqueId, feedbackText } = req.body;
@@ -364,9 +365,6 @@ export const submitFeedback = async (req, res) => {
       return res.status(404).json({ success: false, message: "Completed intern not found" });
     }
 
-    // 🔹 Check if certificate already exists
-    const existingCertificate = await CertificateGenerator.getExistingCertificate(intern.email);
-    
     // 🔹 Calculate duration and dates
     let durationMonths = 0;
     if (intern.duration) {
@@ -381,57 +379,7 @@ export const submitFeedback = async (req, res) => {
     const startMonth = joining.toLocaleString("default", { month: "long", year: "numeric" });
     const endMonth = endDate.toLocaleString("default", { month: "long", year: "numeric" });
 
-    let certificateNumber;
-    let certificateBuffer;
-
-    // 🔹 Prepare intern data for certificate
-    const internData = {
-      fullName: intern.fullName,
-      email: intern.email,
-      uniqueId: intern.uniqueId,
-      domain: intern.domain,
-      duration: `${durationMonths} months`,
-      startMonth,
-      endMonth,
-    };
-
-    if (existingCertificate) {
-      // ✅ Reuse existing certificate number
-      certificateNumber = existingCertificate.certificateNumber;
-      console.log(`♻️ Reissuing certificate: ${certificateNumber}`);
-    } else {
-      // 🔹 Generate NEW certificate number
-      certificateNumber = await CertificateGenerator.generateCertificateNumber();
-
-      // 🔹 Save certificate number to intern record
-      await Intern.findByIdAndUpdate(
-        intern._id,
-        {
-          $set: {
-            certificateNumber: certificateNumber,
-            certificateIssuedAt: new Date(),
-            certificateStatus: "issued",
-          },
-        },
-        { new: true }
-      );
-
-      console.log(`🆕 New certificate issued: ${certificateNumber}`);
-    }
-
-    // 🔹 Generate certificate
-    internData.certificateNumber = certificateNumber;
-    certificateBuffer = await CertificateGenerator.generateCertificate(internData);
-
-    // 🔹 Send certificate via email
-    await CertificateGenerator.sendCertificateEmail(
-      intern.email,
-      intern.fullName,
-      certificateBuffer,
-      { ...internData, certificateNumber }
-    );
-
-    // 🔹 Handle media files
+    // 🔹 Handle uploaded media
     const photoUrl = req.files?.photo ? req.files.photo[0].path : null;
     const videoUrl = req.files?.video ? req.files.video[0].path : null;
 
@@ -446,7 +394,6 @@ export const submitFeedback = async (req, res) => {
       feedbackText,
       media: { photoUrl, videoUrl },
       internshipInfo: {
-        certificateNumber: certificateNumber,
         domain: intern.domain,
         duration: `${durationMonths} months`,
         startMonth,
@@ -462,25 +409,10 @@ export const submitFeedback = async (req, res) => {
 
     await Feedback.create(feedbackData);
 
-    // ✅ Also ensure intern record is updated (if reused certificate)
-    if (existingCertificate && !intern.certificateNumber) {
-      await Intern.findByIdAndUpdate(intern._id, {
-        $set: {
-          certificateNumber: certificateNumber,
-          certificateIssuedAt: new Date(),
-          certificateStatus: "issued",
-        },
-      });
-    }
-
-    // 🔹 Send success response
+    // ✅ Success response (no certificate)
     res.status(201).json({
       success: true,
-      message: existingCertificate
-        ? "Feedback submitted and certificate resent successfully!"
-        : "Feedback submitted and new certificate generated successfully!",
-      certificateNumber: certificateNumber,
-      isResent: !!existingCertificate,
+      message: "Feedback submitted successfully",
     });
 
   } catch (error) {
@@ -492,6 +424,7 @@ export const submitFeedback = async (req, res) => {
     });
   }
 };
+
 
 
 

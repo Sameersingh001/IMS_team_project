@@ -1017,6 +1017,83 @@ const InternDetail = ({ role }) => {
               </div>
             </div>
 
+
+            {/* Certificate Details */}
+            { isAdmin &&
+            <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                🎓 Certificate Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">🔢</span>
+                    <div>
+                      <div className="text-sm font-medium text-gray-600">Certificate Number</div>
+                      <div className={`text-gray-800 font-medium ${!intern.certificateNumber ? 'text-gray-400' : ''}`}>
+                        {intern.certificateNumber || "Not issued"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">📅</span>
+                    <div>
+                      <div className="text-sm font-medium text-gray-600">Issued Date</div>
+                      <div className={`text-gray-800 font-medium ${!intern.certificateIssuedAt ? 'text-gray-400' : ''}`}>
+                        {intern.certificateIssuedAt
+                          ? new Date(intern.certificateIssuedAt).toLocaleDateString()
+                          : "Not issued"
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">📊</span>
+                    <div>
+                      <div className="text-sm font-medium text-gray-600">Status</div>
+                      <div className={`font-medium capitalize ${intern.certificateStatus === "issued"
+                          ? "text-green-600"
+                          : "text-yellow-600"
+                        }`}>
+                        {intern.certificateStatus || "pending"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">⏱️</span>
+                    <div>
+                      <div className="text-sm font-medium text-gray-600">Internship Duration</div>
+                      <div className="text-gray-800 font-medium">
+                        {intern.duration || "Not specified"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {intern.certificateStatus === "issued" && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-green-700">
+                    <span>✅</span>
+                    <span className="text-sm font-medium">
+                      Certificate successfully issued to {intern.fullName}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+            }
+
+
             {/* HR Comment Section - HR Can Add Comments */}
             {isHR && (
               <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">

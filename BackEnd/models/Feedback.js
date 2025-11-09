@@ -28,8 +28,7 @@ const feedbackSchema = new mongoose.Schema({
     endMonth: { type: String, required: true },
     certificateNumber: { 
       type: String, 
-      required: true,
-    }, // Added certificate number
+    },
   },
 
   // Feedback section
@@ -47,8 +46,8 @@ const feedbackSchema = new mongoose.Schema({
   // Certificate status
   certificateStatus: {
     type: String,
-    enum: ["issued", "resent", "pending"],
-    default: "issued"
+    enum: ["pending", "issued", "rejected"],
+    default: "pending",
   },
 
   submittedAt: {
