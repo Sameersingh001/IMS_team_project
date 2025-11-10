@@ -46,8 +46,8 @@ const ReviewTeamDashboard = () => {
     const domains = [
         "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",
         "Human Resources", "Social Media Management", "Graphic Design",
-        "Digital Marketing", "Video Editing", "Content Writing",
-        "UI/UX Designing", "Front-end Developer", "Back-end Developer"
+        "Digital Marketing", "Video Editing", "Content Creator", "Full Stack Development",
+        "Email and Outreaching","UI/UX Designing", "Front-end Developer", "Back-end Developer"
     ];
 
     const months = [

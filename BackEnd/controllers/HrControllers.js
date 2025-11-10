@@ -312,7 +312,9 @@ export const ImportedIntern = async (req, res) => {
       'Graphic Design',
       'Digital Marketing',
       'Video Editing',
-      'Content Writing',
+      "Full Stack Development",
+      'Email and Outreaching',
+      'Content Creator',
       'UI/UX Designing',
       'Front-end Developer',
       'Back-end Developer'

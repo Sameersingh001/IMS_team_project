@@ -1606,7 +1606,9 @@ const scrollToTop = () => {
                               <option>Graphic Design</option>
                               <option>Digital Marketing</option>
                               <option>Video Editing</option>
-                              <option>Content Writing</option>
+                              <option>Full Stack Development</option>
+                              <option>Email and Outreaching</option>
+                              <option>Content Creator</option>
                               <option>UI/UX Designing</option>
                               <option>Front-end Developer</option>
                               <option>Back-end Developer</option>
