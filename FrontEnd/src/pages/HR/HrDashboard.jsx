@@ -1073,7 +1073,7 @@ const HRDashboard = () => {
                             <option>Full Stack Development</option>
                             <option>MERN Stack Development</option>
                             <option>Email and Outreaching</option>
-                            <option>Content Writer</option>
+                            <option>Content Writing</option>
                             <option>Content Creator</option>
                             <option>UI/UX Designing</option>
                             <option>Front-end Developer</option>

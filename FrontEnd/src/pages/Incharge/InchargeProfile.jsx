@@ -566,7 +566,7 @@ const EditDepartmentsModal = ({ incharge, onClose, onAddDepartment, editingDepar
     "MERN Stack Development",
     "Email and Outreaching",
     "Content Creator",
-    "Content Writer",
+    "Content Writing",
     "UI/UX Designing",
     "Front-end Developer",
     "Back-end Developer",

@@ -44,7 +44,7 @@ const ReviewTeamDashboard = () => {
     const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
     const domains = [
-        "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",'Content Writer',
+        "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",'Content Writing',
         "Human Resources", "Social Media Management", "Graphic Design",
         "Digital Marketing", "Video Editing", "Content Creator", "Full Stack Development",
         "UI/UX Designing", "Front-end Developer", "Back-end Developer","MERN Stack Development"

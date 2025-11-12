@@ -31,7 +31,7 @@ const InternHeadSchema = new mongoose.Schema(
       enum: [
         "Sales & Marketing",
         'Data Science & Analytics',
-        'Content Writer',
+        'Content Writing',
         'Human Resources',
         "Social Media Management",
         "Graphic Design",

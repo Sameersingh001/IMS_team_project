@@ -307,7 +307,7 @@ export const ImportedIntern = async (req, res) => {
       'Sales & Marketing',
       'Data Science & Analytics',
       'Email and Outreaching',
-      'Content Writer',
+      'Content writing',
       'Human Resources',
       'Social Media Management',
       'Graphic Design',
