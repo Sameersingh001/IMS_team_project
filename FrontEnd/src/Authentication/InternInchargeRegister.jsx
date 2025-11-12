@@ -30,15 +30,16 @@ const TeamMemberRegister = () => {
     const departments = [
         "Sales & Marketing",
         "Data Science & Analytics",
-        "Email and Outreaching",
         "Human Resources",
         "Social Media Management",
         "Graphic Design",
         "Digital Marketing",
         "Video Editing",
         "Full Stack Development",
+        "MERN Stack Development",
         "Email and Outreaching",
         "Content Creator",
+        "Content Writer",
         "UI/UX Designing",
         "Front-end Developer",
         "Back-end Developer"

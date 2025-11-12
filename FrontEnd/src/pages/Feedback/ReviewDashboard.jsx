@@ -44,10 +44,10 @@ const ReviewTeamDashboard = () => {
     const [updatingStatus, setUpdatingStatus] = useState(new Set());
 
     const domains = [
-        "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",
+        "Sales & Marketing", "Data Science & Analytics", "Email and Outreaching",'Content Writer',
         "Human Resources", "Social Media Management", "Graphic Design",
         "Digital Marketing", "Video Editing", "Content Creator", "Full Stack Development",
-        "Email and Outreaching","UI/UX Designing", "Front-end Developer", "Back-end Developer"
+        "UI/UX Designing", "Front-end Developer", "Back-end Developer","MERN Stack Development"
     ];
 
     const months = [
