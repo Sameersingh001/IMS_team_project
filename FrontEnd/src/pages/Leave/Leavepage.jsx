@@ -17,6 +17,7 @@ const LeaveApplicationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showNotice, setShowNotice] = useState(false);
   const [noticeMessage, setNoticeMessage] = useState('');
+  const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
 
   // Available leave reasons with icons
   const leaveReasons = [
@@ -86,6 +87,11 @@ const LeaveApplicationForm = () => {
         [name]: ''
       }));
     }
+
+    // Clear submit status when user makes changes
+    if (submitStatus.message) {
+      setSubmitStatus({ type: '', message: '' });
+    }
   };
 
   // Validate form
@@ -104,23 +110,104 @@ const LeaveApplicationForm = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle backend errors
+  const handleBackendError = (error) => {
+    if (error.response) {
+      // Server responded with error status
+      const { status, data } = error.response;
+      
+      switch (status) {
+        case 400:
+          if (data.error === "All fields are required") {
+            setSubmitStatus({ 
+              type: 'error', 
+              message: '❌ Please fill in all required fields' 
+            });
+          } else if (data.error === "Invalid date format") {
+            setSubmitStatus({ 
+              type: 'error', 
+              message: '❌ Invalid date format. Please check your dates.' 
+            });
+          } else if (data.error === "End date must be after start date") {
+            setSubmitStatus({ 
+              type: 'error', 
+              message: '❌ End date must be after start date' 
+            });
+          } else if (data.error === "You already have a leave request in this date range") {
+            setSubmitStatus({ 
+              type: 'error', 
+              message: '❌ You already have a pending or approved leave request for these dates' 
+            });
+          } else {
+            setSubmitStatus({ 
+              type: 'error', 
+              message: `❌ ${data.error || 'Validation error'}` 
+            });
+          }
+          break;
+          
+        case 404:
+          setSubmitStatus({ 
+            type: 'error', 
+            message: '❌ Intern ID not found. Please check your Intern ID.' 
+          });
+          break;
+          
+        case 500:
+          setSubmitStatus({ 
+            type: 'error', 
+            message: '❌ Server error. Please try again later.' 
+          });
+          break;
+          
+        default:
+          setSubmitStatus({ 
+            type: 'error', 
+            message: `❌ Unexpected error: ${data.error || 'Please try again'}` 
+          });
+      }
+    } else if (error.request) {
+      // Network error
+      setSubmitStatus({ 
+        type: 'error', 
+        message: '❌ Network error. Please check your connection and try again.' 
+      });
+    } else {
+      // Other errors
+      setSubmitStatus({ 
+        type: 'error', 
+        message: `❌ Application error: ${error.message}` 
+      });
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setSubmitStatus({ 
+        type: 'error', 
+        message: '❌ Please fix the errors above before submitting.' 
+      });
+      return;
+    }
     
     setIsSubmitting(true);
-    
-    try {
+    setSubmitStatus({ type: '', message: '' });
 
+    try {
       const response = await axios.post('/api/intern/leaves', formData);
+      
       if (response.status === 201) {
         // Show success message with confetti effect
         document.body.classList.add('celebrate');
         setTimeout(() => document.body.classList.remove('celebrate'), 2000);
         
-        alert('🎉 Leave application submitted successfully!');
+        setSubmitStatus({ 
+          type: 'success', 
+          message: '🎉 Leave application submitted successfully!' 
+        });
         
         // Reset form
         setFormData({
@@ -133,13 +220,19 @@ const LeaveApplicationForm = () => {
           status: 'Pending'
         });
         setShowNotice(false);
+        setErrors({});
       }
     } catch (error) {
       console.error('Error submitting leave application:', error);
-      
+      handleBackendError(error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Clear status message
+  const clearStatus = () => {
+    setSubmitStatus({ type: '', message: '' });
   };
 
   return (
@@ -171,6 +264,48 @@ const LeaveApplicationForm = () => {
             </div>
           </div>
         </div>
+
+        {/* Submit Status Message */}
+        {submitStatus.message && (
+          <div 
+            className={`mx-4 sm:mx-6 mt-4 sm:mt-6 p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all duration-300 transform ${
+              submitStatus.type === 'success' 
+                ? 'bg-gradient-to-r from-green-100 to-emerald-100 border-green-300 text-green-800' 
+                : 'bg-gradient-to-r from-red-100 to-pink-100 border-red-300 text-red-800'
+            } ${submitStatus.type === 'error' ? 'animate-shake' : ''}`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center flex-1">
+                <div className={`flex-shrink-0 mr-3 ${submitStatus.type === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                  {submitStatus.type === 'success' ? (
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <p className="text-sm sm:text-base font-medium leading-relaxed flex-1">
+                  {submitStatus.message}
+                </p>
+              </div>
+              <button
+                onClick={clearStatus}
+                className={`flex-shrink-0 ml-2 p-1 rounded-full hover:bg-opacity-20 transition-colors ${
+                  submitStatus.type === 'success' 
+                    ? 'hover:bg-green-500 text-green-600' 
+                    : 'hover:bg-red-500 text-red-600'
+                }`}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Notice Section */}
         {showNotice && (
@@ -404,8 +539,6 @@ const LeaveApplicationForm = () => {
               </div>
             </div>
           </div>
-
-          
         </form>
       </div>
 
@@ -418,6 +551,16 @@ const LeaveApplicationForm = () => {
         @keyframes celebrate {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.02); }
+        }
+
+        .animate-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
         }
 
         /* Improve mobile form experience */
