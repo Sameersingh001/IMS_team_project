@@ -372,19 +372,35 @@ export const generateOfferLetterWithPNG = async (req, res) => {
     const fileName = `OfferLetter-${intern.fullName.replace(/\s+/g, "_")}.pdf`;
 
     // Email content
-    const emailText = `Dear ${intern.fullName},
+const emailText = `Dear ${intern.fullName},
 
-It is our pleasure to offer you the position of intern at Graphura India Private Limited.
-This internship is scheduled to commence on ${formattedJoiningDate}. During this period, you will have the opportunity to gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
+Congratulations and a warm welcome to Graphura India Private Limited.
+
+We’re delighted to have you onboard as an intern. Your internship is scheduled to commence on ${formattedJoiningDate}. During this period, you will gain valuable industry exposure, enhance your professional skills, and contribute meaningfully to assigned projects. Upon successful completion, you will be awarded a Certificate of Internship from Graphura India Private Limited.
+
+To help you get started, we have scheduled a two-day virtual induction program designed to introduce you to our organization, work culture, and internship structure.
+
+Induction Details:
+• Duration: 2 Days
+• Mode: Virtual (meeting link will be shared in the official WhatsApp group)
+
+Please join the official WhatsApp group to receive all induction-related updates and meeting details:
+👉 <a href="https://chat.whatsapp.com/Iy7CSD2ZG6UCLOWiJWPlgG?mode=wwt">Join Induction Group</a>
+
+We encourage you to attend both sessions on time and participate actively. This induction will serve as your first step in understanding Graphura’s values, processes, and expectations.
 
 We kindly request you to review the attached document carefully.
-We look forward to welcoming you to Graphura and are confident that this internship will provide you with a rewarding and enriching experience.
+
+If you have any queries, feel free to reach out to the HR Department.
 
 Best regards,
 HR Department
 Graphura India Private Limited
+📧 Official@graphura.in
 🌐 www.graphura.online
+🔗 LinkedIn: <a href="https://www.linkedin.com/company/graphura-india-private-limited/">Graphura India Private Limited</a>
 `;
+
 
     // 6️⃣ Send Email with PDF attachment using Brevo API
     try {
