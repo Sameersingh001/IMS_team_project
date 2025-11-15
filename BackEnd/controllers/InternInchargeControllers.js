@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"
 import { sendEmail } from "../config/emailConfig.js"
 import Attendance from "../models/Attendance.js"
 import Performance from "../models/Performance.js"
+import Leave from "../models/LeaveDB.js"
 
 export const registerInternIncharge = async (req, res) => {
   try {
@@ -603,8 +604,8 @@ const getStatusMessage = (status) => {
 };
 
 
-export const meetingDateDetails = async (req, res) =>{
-try {
+export const meetingDateDetails = async (req, res) => {
+  try {
     // Get all unique meeting dates grouped by department
     const meetingDatesByDept = await Attendance.aggregate([
       {
@@ -704,13 +705,13 @@ try {
 
 
 
-export const MeetingData = async (req, res) =>{
+export const MeetingData = async (req, res) => {
   try {
     const { department, date } = req.query;
-    
+
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
-    
+
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
 
@@ -756,8 +757,8 @@ export const MeetingData = async (req, res) =>{
 
 
 
-export const ExtendedDays = async (req, res) =>{
-try {
+export const ExtendedDays = async (req, res) => {
+  try {
     const { extendedDays } = req.body;
     const internId = req.params.id;
 
@@ -769,7 +770,7 @@ try {
     }
 
     const intern = await Intern.findById(internId);
-    
+
     if (!intern) {
       return res.status(404).json({
         success: false,
@@ -786,7 +787,7 @@ try {
 
     // Calculate new total extended days
     const totalExtendedDays = (intern.extendedDays || 0) + parseInt(extendedDays);
-    
+
     // Calculate end date from original joining date
     const joinDate = new Date(intern.joiningDate);
     const endDate = new Date(joinDate);
@@ -804,7 +805,7 @@ try {
 
     // Update extended days in database
     intern.extendedDays = totalExtendedDays;
-    
+
     // If intern was completed but the new extended end date is in future, reactivate
     if (intern.status === "Completed" && now < endDate) {
       intern.status = "Active";
@@ -869,7 +870,7 @@ try {
       // Don't throw error - email failure shouldn't prevent extension
     });
 
-    const message = intern.status === "Active" 
+    const message = intern.status === "Active"
       ? `Internship extended by ${extendedDays} days. New end date: ${endDate.toDateString()}`
       : `Internship extended by ${extendedDays} days. Intern remains completed as end date (${endDate.toDateString()}) has passed`;
 
@@ -898,18 +899,18 @@ try {
 
 const calculateDurationInMonths = (duration) => {
   if (!duration) return 3; // Default to 3 months
-  
+
   const match = duration.toString().match(/(\d+)\s*month/i);
   return match ? parseInt(match[1]) : 3;
 };
 
 const calculateOverallPerformance = (monthlyPerformance) => {
   if (!monthlyPerformance || monthlyPerformance.length === 0);
-  
+
   const validMonths = monthlyPerformance.filter(month => month.overallRating > 0);
-  if (validMonths.length === 0) return "Good";  
+  if (validMonths.length === 0) return "Good";
   const avgRating = validMonths.reduce((sum, month) => sum + month.overallRating, 0) / validMonths.length;
-  
+
   if (avgRating >= 8.5) return "Excellent";
   if (avgRating >= 7) return "Good";
   return "Good"
@@ -928,9 +929,9 @@ export const getInternPerformance = async (req, res) => {
       // If no performance record exists, create one with initial structure
       const intern = await Intern.findById(internId);
       if (!intern) {
-        return res.status(404).json({ 
+        return res.status(404).json({
           success: false,
-          message: 'Intern not found' 
+          message: 'Intern not found'
         });
       }
 
@@ -970,9 +971,9 @@ export const getInternPerformance = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching performance:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error while fetching performance data' 
+      message: 'Server error while fetching performance data'
     });
   }
 };
@@ -1003,9 +1004,9 @@ export const updateInternPerformance = async (req, res) => {
       // Validate ratings
       if (month.ratings) {
         const { initiative, communication, behaviour } = month.ratings;
-        if (initiative < 0 || initiative > 10 || 
-            communication < 0 || communication > 10 || 
-            behaviour < 0 || behaviour > 10) {
+        if (initiative < 0 || initiative > 10 ||
+          communication < 0 || communication > 10 ||
+          behaviour < 0 || behaviour > 10) {
           return res.status(400).json({
             success: false,
             message: 'Ratings must be between 0 and 10'
@@ -1017,22 +1018,22 @@ export const updateInternPerformance = async (req, res) => {
     let performance = await Performance.findOne({ intern: internId });
 
     if (!performance) {
-      performance = new Performance({ 
+      performance = new Performance({
         intern: internId,
-        monthlyPerformance: [] 
+        monthlyPerformance: []
       });
     }
 
     // Update monthly performance
     performance.monthlyPerformance = monthlyPerformance;
-    
+
     // The pre-save middleware will automatically calculate overallRating and completionPercentage
     await performance.save();
 
     // Update intern's overall performance (ONLY performance field, not status)
     const overallPerformance = calculateOverallPerformance(monthlyPerformance);
-    await Intern.findByIdAndUpdate(internId, { 
-      performance: overallPerformance 
+    await Intern.findByIdAndUpdate(internId, {
+      performance: overallPerformance
     });
 
     // Populate the response (status will remain unchanged)
@@ -1047,9 +1048,214 @@ export const updateInternPerformance = async (req, res) => {
 
   } catch (error) {
     console.error('Error updating performance:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error while updating performance data' 
+      message: 'Server error while updating performance data'
     });
   }
 };
+
+
+
+export const LeaveRequests = async (req, res) => {
+  try {
+    const incharge = req.user;
+
+    const leaves = await Leave.find({
+      status: { $in: ['Pending', 'Approved'] }
+    })
+      .populate('internId', 'fullName uniqueId domain mobile email')
+      .sort({ createdAt: -1 });
+
+    const filteredLeaves = leaves.filter(leave =>
+      leave?.internId?.domain &&
+      Array.isArray(incharge?.departments) &&
+      incharge.departments.includes(leave.internId.domain)
+    );
+
+    res.json({
+      success: true,
+      leaves: filteredLeaves
+    });
+  } catch (error) {
+    console.error('Error fetching pending leaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch pending leaves'
+    });
+  }
+}
+
+
+
+export const approvedLeaveStatus = async (req, res) => {
+  try {
+    const { leaveId } = req.params;
+
+    const leave = await Leave.findById(leaveId).populate('internId');
+
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+
+    // Update leave status
+    leave.status = 'Approved';
+    await leave.save();
+
+    // Update intern's leave count
+    await Intern.findByIdAndUpdate(leave.internId._id, {
+      $inc: { leavesTaken: leave.totalDays }
+    });
+
+    // Send approval email to intern
+    const subject = `Leave Request Approved - Graphura Internship Program`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .status-approved { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
+          .details { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Leave Request Approved</h1>
+            <p>Graphura Internship Program</p>
+          </div>
+          <div class="content">
+            <div class="status-approved">
+              ✅ Your leave request has been approved
+            </div>
+            <div class="details">
+              <h3>Leave Details:</h3>
+              <p><strong>Intern Name:</strong> ${leave.internId.fullName}</p>
+              <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+              <p><strong>Duration:</strong> ${leave.totalDays} day(s)</p>
+              <p><strong>From:</strong> ${new Date(leave.startDate).toLocaleDateString()}</p>
+              <p><strong>To:</strong> ${new Date(leave.endDate).toLocaleDateString()}</p>
+              <p><strong>Reason:</strong> ${leave.reason}</p>
+              <p><strong>Approved On:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <p>Your leave has been approved by your Manager. Please ensure a smooth handover of your work before proceeding on leave.</p>
+            <p>If you have any questions, please contact your Intern Incharge.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated notification from Graphura Internship Program.</p>
+            <p>© ${new Date().getFullYear()} Graphura India Private Limited. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Send email to intern
+    await sendEmail(leave.internId.email, subject, htmlContent);
+
+    res.json({
+      success: true,
+      message: 'Leave approved successfully and email sent to intern'
+    });
+  } catch (error) {
+    console.error('Error approving leave:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve leave'
+    });
+  }
+}
+
+
+
+export const rejectLeaveStatus = async (req, res) => {
+  try {
+    const { leaveId } = req.params;
+
+    const leave = await Leave.findById(leaveId).populate('internId');
+
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+
+    // Update leave status
+    leave.status = 'Rejected';
+    await leave.save();
+
+    // Send rejection email to intern
+    const subject = `Leave Request Update - Graphura Internship Program`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .status-rejected { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
+          .details { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          .contact-info { background: #e9ecef; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Leave Request Update</h1>
+            <p>Graphura Internship Program</p>
+          </div>
+          <div class="content">
+            <div class="status-rejected">
+              ❌ Your leave request has been rejected
+            </div>
+            <div class="details">
+              <h3>Leave Details:</h3>
+              <p><strong>Intern Name:</strong> ${leave.internId.fullName}</p>
+              <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+              <p><strong>Duration:</strong> ${leave.totalDays} day(s)</p>
+              <p><strong>From:</strong> ${new Date(leave.startDate).toLocaleDateString()}</p>
+              <p><strong>To:</strong> ${new Date(leave.endDate).toLocaleDateString()}</p>
+              <p><strong>Reason:</strong> ${leave.reason}</p>
+              <p><strong>Status Updated On:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <div class="contact-info">
+              <p><strong>Note:</strong> Your leave request has been rejected. Please contact your Manager for more details or clarification regarding this decision.</p>
+            </div>
+            <p>If you believe this is an error or have additional information to share, please reach out to your Intern Incharge directly.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated notification from Graphura Internship Program.</p>
+            <p>© ${new Date().getFullYear()} Graphura India Private Limited . All rights reserved.</p>
+          </div>
+        </div>
+      </body> 
+      </html>
+    `;
+
+    // Send email to intern
+    await sendEmail(leave.internId.email, subject, htmlContent);
+
+    res.json({
+      success: true,
+      message: 'Leave rejected successfully and email sent to intern'
+    });
+  } catch (error) {
+    console.error('Error rejecting leave:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject leave'
+    });
+  }
+}

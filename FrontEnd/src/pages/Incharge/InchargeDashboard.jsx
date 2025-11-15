@@ -61,6 +61,11 @@ const InternInchargeDashboard = () => {
   const [performanceLoading, setPerformanceLoading] = useState(false);
   const [performanceData, setPerformanceData] = useState([]);
 
+  const [showLeavesModal, setShowLeavesModal] = useState(false);
+  const [pendingLeaves, setPendingLeaves] = useState([]);
+  const [leavesLoading, setLeavesLoading] = useState(false);
+  const [leaveActionLoading, setLeaveActionLoading] = useState(false);
+
   useEffect(() => {
     checkAuthAndFetchData();
   }, []);
@@ -106,6 +111,70 @@ const InternInchargeDashboard = () => {
     } finally {
       setMeetingsLoading(false);
     }
+  };
+
+
+
+
+  const fetchPendingLeaves = async () => {
+    try {
+      setLeavesLoading(true);
+      const response = await axios.get("/api/intern-incharge/pending-leaves", {
+        withCredentials: true,
+      });
+
+      if (response.data.success) {
+        setPendingLeaves(response.data.leaves);
+      }
+    } catch (error) {
+      console.error("Error fetching pending leaves:", error);
+      alert("Failed to fetch pending leaves");
+    } finally {
+      setLeavesLoading(false);
+    }
+  };
+
+  const handleLeaveAction = async (leaveId, action, internName) => {
+    // Add confirmation dialog
+    const confirmMessage = action === 'approve'
+      ? `Are you sure you want to APPROVE the leave request for ${internName}?`
+      : `Are you sure you want to REJECT the leave request for ${internName}?`;
+
+    const userConfirmed = window.confirm(confirmMessage);
+
+    if (!userConfirmed) {
+      return; // User cancelled the action
+    }
+
+    try {
+      setLeaveActionLoading(true);
+      const response = await axios.post(
+        `/api/intern-incharge/leaves/${leaveId}/${action}`,
+        {},
+        { withCredentials: true }
+      );
+
+      if (response.data.success) {
+        // Remove the processed leave from pending list
+        setPendingLeaves(prev => prev.filter(leave => leave._id !== leaveId));
+
+        // Show success message
+        alert(`Leave ${action === 'approve' ? 'approved' : 'rejected'} successfully!`);
+
+        // Refresh interns data to update leave counts
+        fetchAssignedInterns();
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing leave:`, error);
+      alert(`Failed to ${action} leave`);
+    } finally {
+      setLeaveActionLoading(false);
+    }
+  };
+
+  const openLeavesModal = async () => {
+    setShowLeavesModal(true);
+    await fetchPendingLeaves();
   };
 
   const fetchMeetingDetails = async (department, date) => {
@@ -609,6 +678,20 @@ const InternInchargeDashboard = () => {
                 <span className="font-semibold">View Meetings</span>
               </button>
               <button
+                onClick={openLeavesModal}
+                className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                <FileText size={20} />
+                <span className="font-semibold">
+                  Manage Leaves
+                  {pendingLeaves.length > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      {pendingLeaves.length}
+                    </span>
+                  )}
+                </span>
+              </button>
+              <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 px-4 py-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl transition-all duration-200 font-semibold"
               >
@@ -859,8 +942,8 @@ const InternInchargeDashboard = () => {
                                 <p className="font-semibold text-gray-900 text-sm">{intern.fullName}</p>
                                 <p className="text-xs text-gray-500 mt-1">ID: {intern.uniqueId}</p>
                                 <p className="text-xs text-green-500 mt-1">
-                                 Joining Date : {new Date(intern.joiningDate).toLocaleDateString()}
-                                </p>    
+                                  Joining Date : {new Date(intern.joiningDate).toLocaleDateString()}
+                                </p>
 
                                 {getCommentCount(intern) > 0 && (
                                   <p className="text-xs text-indigo-600 font-medium mt-1 flex items-center gap-1">
@@ -976,7 +1059,7 @@ const InternInchargeDashboard = () => {
                               )}
                             </div>
                           </td>
-                          
+
                         </tr>
                       );
                     })
@@ -998,6 +1081,16 @@ const InternInchargeDashboard = () => {
           onSubmit={handleAddComment}
           onDeleteComment={handleDeleteComment}
           loading={commentLoading}
+        />
+      )}
+
+      {showLeavesModal && (
+        <LeavesModal
+          leaves={pendingLeaves}
+          loading={leavesLoading}
+          onClose={() => setShowLeavesModal(false)}
+          onLeaveAction={handleLeaveAction}
+          actionLoading={leaveActionLoading}
         />
       )}
 
@@ -1123,8 +1216,8 @@ const PerformanceModal = ({
                   key={index}
                   onClick={() => setActiveMonth(index)}
                   className={`w-full p-4 text-left rounded-xl border-2 transition-all duration-200 ${activeMonth === index
-                      ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                      : 'border-gray-200 bg-white hover:bg-gray-50'
+                    ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                    : 'border-gray-200 bg-white hover:bg-gray-50'
                     }`}
                 >
                   <div className="flex justify-between items-start">
@@ -1281,6 +1374,170 @@ const PerformanceModal = ({
               </div>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// Leaves Modal Component
+const LeavesModal = ({
+  leaves,
+  loading,
+  onClose,
+  onLeaveAction,
+  actionLoading
+}) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Pending": return "bg-yellow-100 text-yellow-800 border border-yellow-200";
+      case "Approved": return "bg-green-100 text-green-800 border border-green-200";
+      case "Rejected": return "bg-red-100 text-red-800 border border-red-200";
+      default: return "bg-gray-100 text-gray-800 border border-gray-200";
+    }
+  };
+
+  const getLeaveTypeColor = (type) => {
+    switch (type?.toLowerCase()) {
+      case "sick": return "bg-red-50 text-red-700 border border-red-200";
+      case "casual": return "bg-blue-50 text-blue-700 border border-blue-200";
+      case "emergency": return "bg-orange-50 text-orange-700 border border-orange-200";
+      default: return "bg-gray-50 text-gray-700 border border-gray-200";
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 backdrop-blur-sm bg-opacity-30 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden transform transition-all">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Manage Leave Requests</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Approve or reject leave applications from your interns
+            </p>
+          </div>
+
+
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-8rem)]">
+          {leaves.length > 0 && (
+            <div className="mb-6 p-4 bg-orange-50 rounded-xl border border-orange-200">
+              <p className="text-sm text-orange-700 font-semibold">
+                Total Pending Requests: <strong>{leaves.length}</strong>
+              </p>
+            </div>
+          )}
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-semibold">Loading leave requests...</p>
+            </div>
+          ) : leaves.length === 0 ? (
+            <div className="text-center py-16">
+              <FileText className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 text-lg font-semibold">No pending leave requests</p>
+              <p className="text-gray-400 text-sm mt-2">
+                All leave requests have been processed.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {leaves.map((leave) => (
+                <div
+                  key={leave._id}
+                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    {/* Leave Details */}
+                    <div className="flex-1">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-lg">{leave.internId?.fullName}</h4>
+                          <p className="text-sm text-gray-600 mt-1">
+                            ID: {leave.uniqueId} • {leave.internId?.domain}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(leave.status)}`}>
+                            {leave.status}
+                          </span>
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${getLeaveTypeColor(leave.leaveType)}`}>
+                            {leave.leaveType}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Leave Dates</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Total Days</p>
+                          <p className="text-sm font-semibold text-gray-900">{leave.totalDays} day(s)</p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Applied On</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            {new Date(leave.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Contact</p>
+                          <p className="text-sm font-semibold text-gray-900">{leave.internId?.mobile}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Reason</p>
+                        <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                          {leave.reason}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex lg:flex-col gap-2 lg:gap-3">
+                      <button
+                        onClick={() => onLeaveAction(leave._id, 'approve', leave.internId?.fullName)}
+                        disabled={actionLoading}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex-1 lg:flex-none justify-center"
+                      >
+                        {actionLoading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <CheckCircle size={18} />
+                        )}
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => onLeaveAction(leave._id, 'reject', leave.internId?.fullName)}
+                        disabled={actionLoading}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex-1 lg:flex-none justify-center"
+                      >
+                        {actionLoading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <XCircle size={18} />
+                        )}
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+
+
         </div>
       </div>
     </div>

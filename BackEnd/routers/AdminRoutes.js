@@ -2,7 +2,7 @@ import express from "express";
 import { verifyToken } from "../middlewares/AuthVerify.js"
 import { logoutUser } from "../controllers/AuthController.js";
 import { getAllInterns, getInternById, updateDomain,updateDuration, updatePerformance, updateStatus, deleteIntern, generateOfferLetterWithPNG, updateJoiningDate, InternIncharges, InchargeProfile, updateInchargeDepartments, removeInchargeDepartment, deleteIncharge, ToggleInchargeStatus, getHRManagers, toggleHRStatus, deleteHR,InchargeComments,InchargeCommentsDetails, InchargeDeleteComments, GetApplication, toggleApplicationStatus, getHrCommentsForAdmin, BulkJoinDate, generateBulkOfferLetters, DeleteRejectedInterns
-,getInternsWithAttendance,getDepartments
+,getInternsWithAttendance,getDepartments,getLeaves,approveLeave,rejectLeave
 } from "../controllers/AdminControllers.js";
 
 
@@ -19,6 +19,7 @@ router.get("/admin/settings",verifyToken, GetApplication)
 router.get("/admin/interns/:id/hr-comments",verifyToken, getHrCommentsForAdmin)
 
 router.get('/admin/attendance/interns',verifyToken, getInternsWithAttendance);
+router.get('/admin/leaves',verifyToken, getLeaves);
 
 // Get all departments
 router.get('/admin/departments',verifyToken, getDepartments);
@@ -40,6 +41,8 @@ router.put("/admin/interns/:id/duration", verifyToken,updateDuration )
 
 router.post("/admin/logout", verifyToken, logoutUser)
 router.post("/admin/interns/:id/generate-offer-letter",verifyToken, generateOfferLetterWithPNG)
+router.post("/admin/leaves/:leaveId/approve",verifyToken, approveLeave)
+router.post("/admin/leaves/:leaveId/reject",verifyToken, rejectLeave)
 
 router.put("/admin/interns/bulk-joining-date",verifyToken, BulkJoinDate)
 router.post("/admin/interns/bulk-offer-letters",verifyToken, generateBulkOfferLetters)

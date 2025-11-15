@@ -965,9 +965,15 @@ const scrollToTop = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => navigate('/Admin-Dashboard/attendance')}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium flex items-center gap-2"
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium flex items-center gap-2"
               >
-                📊 Check Attendance
+                Check Attendance
+              </button>
+              <button
+                onClick={() => navigate('/Admin-Dashboard/leaves')}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+              >
+                Manage Leaves
               </button>
               <button
                 onClick={handlePrint}

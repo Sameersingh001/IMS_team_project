@@ -4,7 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import Intern from "../models/InternDatabase.js"
 import InternIncharge from '../models/InternHead.js';
+import Leave from '../models/LeaveDB.js'
 import nodemailer from "nodemailer"
+import { sendEmail } from '../config/emailConfig.js';
 import User from "../models/UserDB.js"
 import Setting from "../models/SettingDB.js"
 import bcrypt from "bcrypt"
@@ -1341,3 +1343,192 @@ export const getDepartments = async (req, res) => {
     });
   }
 };
+
+
+
+export const getLeaves = async (req, res) => {
+    try {
+    const leaves = await Leave.find()
+      .populate('internId', 'fullName email mobile domain status')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      leaves
+    });
+
+  } catch (error) {
+    console.error('Error fetching leaves:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch leaves'
+    });
+  }
+}
+
+
+
+export const approveLeave = async (req, res) => {
+ try {
+    const { leaveId } = req.params;
+    
+    const leave = await Leave.findById(leaveId).populate('internId');
+    
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+
+    // Update leave status
+    leave.status = 'Approved';
+    await leave.save();
+
+    // Update intern's leave count
+    await Intern.findByIdAndUpdate(leave.internId._id, {
+      $inc: { leavesTaken: leave.totalDays }
+    });
+
+    // Send approval email (use the same email function from before)
+    const subject = `Leave Request Approved - Graphura Internship Program`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .status-approved { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
+          .details { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Leave Request Approved</h1>
+            <p>Graphura Internship Program</p>
+          </div>
+          <div class="content">
+            <div class="status-approved">
+              ✅ Your leave request has been approved
+            </div>
+            <div class="details">
+              <h3>Leave Details:</h3>
+              <p><strong>Intern Name:</strong> ${leave.internId.fullName}</p>
+              <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+              <p><strong>Duration:</strong> ${leave.totalDays} day(s)</p>
+              <p><strong>From:</strong> ${new Date(leave.startDate).toLocaleDateString()}</p>
+              <p><strong>To:</strong> ${new Date(leave.endDate).toLocaleDateString()}</p>
+              <p><strong>Reason:</strong> ${leave.reason}</p>
+              <p><strong>Approved On:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <p>Your leave has been approved by the Admin. Please ensure a smooth handover of your work before proceeding on leave.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated notification from Graphura Internship Program.</p>
+            <p>© ${new Date().getFullYear()} Graphura India Private Limited. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await sendEmail(leave.internId.email, subject, htmlContent);
+
+    res.json({
+      success: true,
+      message: 'Leave approved successfully and email sent to intern'
+    });
+  } catch (error) {
+    console.error('Error approving leave:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to approve leave'
+    });
+  }
+}
+
+
+
+export const rejectLeave = async (req, res) => {
+  try {
+    const { leaveId } = req.params;
+    
+    const leave = await Leave.findById(leaveId).populate('internId');
+    
+    if (!leave) {
+      return res.status(404).json({
+        success: false,
+        message: 'Leave request not found'
+      });
+    }
+
+    // Update leave status
+    leave.status = 'Rejected';
+    await leave.save();
+
+    // Send rejection email
+    const subject = `Leave Request Update - Graphura Internship Program`;
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .status-rejected { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; text-align: center; font-weight: bold; }
+          .details { background: white; padding: 20px; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Leave Request Update</h1>
+            <p>Graphura Internship Program</p>
+          </div>
+          <div class="content">
+            <div class="status-rejected">
+              ❌ Your leave request has been rejected
+            </div>
+            <div class="details">
+              <h3>Leave Details:</h3>
+              <p><strong>Intern Name:</strong> ${leave.internId.fullName}</p>
+              <p><strong>Leave Type:</strong> ${leave.leaveType}</p>
+              <p><strong>Duration:</strong> ${leave.totalDays} day(s)</p>
+              <p><strong>From:</strong> ${new Date(leave.startDate).toLocaleDateString()}</p>
+              <p><strong>To:</strong> ${new Date(leave.endDate).toLocaleDateString()}</p>
+              <p><strong>Reason:</strong> ${leave.reason}</p>
+              <p><strong>Status Updated On:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <p>Your leave request has been rejected by the Admin. Please contact the admin office for more details or clarification.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated notification from Graphura Internship Program.</p>
+            <p>© ${new Date().getFullYear()} Graphura India Private Limited. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await sendEmail(leave.internId.email, subject, htmlContent);
+
+    res.json({
+      success: true,
+      message: 'Leave rejected successfully and email sent to intern'
+    });
+  } catch (error) {
+    console.error('Error rejecting leave:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reject leave'
+    });
+  }
+}
