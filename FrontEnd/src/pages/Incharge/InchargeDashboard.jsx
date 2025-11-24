@@ -1504,32 +1504,36 @@ const LeavesModal = ({
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex lg:flex-col gap-2 lg:gap-3">
-                      <button
-                        onClick={() => onLeaveAction(leave._id, 'approve', leave.internId?.fullName)}
-                        disabled={actionLoading}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex-1 lg:flex-none justify-center"
-                      >
-                        {actionLoading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <CheckCircle size={18} />
-                        )}
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => onLeaveAction(leave._id, 'reject', leave.internId?.fullName)}
-                        disabled={actionLoading}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex-1 lg:flex-none justify-center"
-                      >
-                        {actionLoading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          <XCircle size={18} />
-                        )}
-                        Reject
-                      </button>
-                    </div>
+                    {leave.status === "Pending" && (
+                      <div className="flex lg:flex-col gap-2 lg:gap-3">
+                        <button
+                          onClick={() => onLeaveAction(leave._id, "approve", leave.internId?.fullName)}
+                          disabled={actionLoading}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex-1 lg:flex-none justify-center"
+                        >
+                          {actionLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <CheckCircle size={18} />
+                          )}
+                          Approve
+                        </button>
+
+                        <button
+                          onClick={() => onLeaveAction(leave._id, "reject", leave.internId?.fullName)}
+                          disabled={actionLoading}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex-1 lg:flex-none justify-center"
+                        >
+                          {actionLoading ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <XCircle size={18} />
+                          )}
+                          Reject
+                        </button>
+                      </div>
+                    )}
+
                   </div>
                 </div>
               ))}

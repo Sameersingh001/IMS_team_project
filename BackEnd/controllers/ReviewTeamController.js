@@ -715,3 +715,29 @@ export const updateCertificateStatus = async (req, res) => {
 };
 
 
+export const deleteFeedback = async (req, res) => {
+  try {
+    const { id } = req.params; // feedbackId from URL
+
+    // Check exists
+    const feedback = await Feedback.findById(id);
+    if (!feedback) {
+      return res.status(404).json({ message: "Feedback not found" });
+    }
+
+    // Delete
+    await Feedback.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Feedback deleted successfully",
+      deletedId: id
+    });
+
+  } catch (error) {
+    console.error("Delete Feedback Error:", error);
+    return res.status(500).json({
+      message: "Server error while deleting feedback",
+      error: error.message
+    });
+  }
+};
