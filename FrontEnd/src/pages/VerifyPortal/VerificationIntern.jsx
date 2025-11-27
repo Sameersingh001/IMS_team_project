@@ -388,28 +388,6 @@ const InternVerificationPortal = () => {
               </div>
             </div>
 
-            <div class="section">
-              <h2>Meeting Statistics</h2>
-              <div class="stats-grid">
-                <div class="stat-card">
-                  <div class="stat-label">Total Meetings</div>
-                  <div class="stat-value">${internData.totalMeetings || 0}</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">Meetings Attended</div>
-                  <div class="stat-value">${internData.meetingsAttended || 0}</div>
-                </div>
-                <div class="stat-card">
-                  <div class="stat-label">Attendance Rate</div>
-                  <div class="stat-value">
-                    ${internData.totalMeetings > 0
-                      ? Math.round((internData.meetingsAttended / internData.totalMeetings) * 100)
-                      : 0}%
-                  </div>
-                </div>
-              </div>
-            </div>
-
             ${monthlyPerformance.length > 0 ? `
               <div class="section">
                 <h2>Monthly Performance</h2>
@@ -872,27 +850,7 @@ const InternVerificationPortal = () => {
             </div>
 
             {/* Meeting Statistics Card */}
-            <div className="bg-white rounded-xl md:rounded-2xl shadow-lg md:shadow-xl p-4 md:p-8">
-              <h2 className="text-xl md:text-3xl font-bold text-gray-900 mb-4 md:mb-6">Meeting Statistics</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6">
-                <div className="text-center p-4 md:p-6 bg-blue-50 rounded-lg md:rounded-xl border border-blue-200">
-                  <p className="text-xs md:text-sm font-medium text-blue-700">Total Meetings</p>
-                  <p className="text-2xl md:text-4xl font-bold text-blue-600 mt-1 md:mt-2">{internData.totalMeetings || 0}</p>
-                </div>
-                <div className="text-center p-4 md:p-6 bg-green-50 rounded-lg md:rounded-xl border border-green-200">
-                  <p className="text-xs md:text-sm font-medium text-green-700">Meetings Attended</p>
-                  <p className="text-2xl md:text-4xl font-bold text-green-600 mt-1 md:mt-2">{internData.meetingsAttended || 0}</p>
-                </div>
-                <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg md:rounded-xl border border-purple-200">
-                  <p className="text-xs md:text-sm font-medium text-purple-700">Attendance Rate</p>
-                  <p className="text-2xl md:text-4xl font-bold text-purple-600 mt-1 md:mt-2">
-                    {internData.totalMeetings > 0
-                      ? Math.round((internData.meetingsAttended / internData.totalMeetings) * 100)
-                      : 0}%
-                  </p>
-                </div>
-              </div>
-            </div>
+
 
             {/* Monthly Performance Table with Remarks */}
             {monthlyPerformance.length > 0 && (
