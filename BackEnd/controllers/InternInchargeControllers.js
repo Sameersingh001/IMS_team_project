@@ -1060,9 +1060,11 @@ export const updateInternPerformance = async (req, res) => {
 export const LeaveRequests = async (req, res) => {
   try {
     const incharge = req.user;
+     const today = new Date();
 
     const leaves = await Leave.find({
-      status: { $in: ['Pending', 'Approved'] }
+      status: { $in: ['Pending', 'Approved'] },
+      endDate: { $gte: today } 
     })
       .populate('internId', 'fullName uniqueId domain mobile email')
       .sort({ createdAt: -1 });
