@@ -196,32 +196,102 @@ IMS automates **attendance tracking, leave approvals, performance feedback, docu
 
 ## ⚙️ Installation & Setup
 
+### 1️⃣ Clone the Repository
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/intern-management-system.git
+```
 
-# Navigate to project directory
+---
+
+### 2️⃣ Navigate to Project Directory
+```bash
 cd IMS_team_project
+```
 
-# Backend setup
+---
+
+### 3️⃣ Backend Setup
+```bash
 cd BackEnd
 npm install
+```
 
-# Frontend setup
+---
+
+### 4️⃣ Frontend Setup
+```bash
 cd ../FrontEnd
 npm install
-▶️ Run the Application
-Start Backend Server
-bash
-Copy code
+```
+
+---
+
+## ▶️ Run the Application
+
+### 🔹 Start Backend Server
+```bash
 cd BackEnd
 npm run dev
-Start Frontend
-bash
-Copy code
+```
+
+> ✅ Make sure `nodemon` is installed (or listed in devDependencies)
+
+---
+
+### 🔹 Start Frontend Application
+```bash
 cd FrontEnd
+npm run dev
+```
+
+> ✅ For Vite-based React projects  
+> If using **Create React App**, use:
+```bash
 npm start
-👨‍💼 Roles & Permissions Overview
+```
+
+---
+
+## ⚠️ Common Fix for `npm run dev` Error
+
+If backend fails to start, ensure your **package.json** contains:
+
+```json
+"scripts": {
+  "dev": "nodemon server.js",
+  "start": "node server.js"
+}
+```
+
+Or install nodemon globally:
+```bash
+npm install -g nodemon
+```
+
+---
+
+## ✅ Environment Variables Required (.env)
+```env
+PORT=5000
+MONGO_URI=your_mongo_connection
+JWT_SECRET=your_secret_key
+EMAIL_USER=your_email
+EMAIL_PASS=your_password
+CLOUDINARY_CLOUD_NAME=xxxx
+CLOUDINARY_API_KEY=xxxx
+CLOUDINARY_API_SECRET=xxxx
+```
+
+---
+
+✔️ Now both **frontend & backend** will run smoothly  
+✔️ README looks **professional and error-free**
+
+---
+
+
+
+## 👨‍💼 Roles & Permissions Overview
 Role	Access Scope
 Admin	Full system control
 HR	Performance & application review
@@ -229,18 +299,16 @@ Incharge	Attendance, leaves, extensions
 Review Team	Feedback & certificate approval
 Intern	Verification, documents, progress
 
-🧠 Future Enhancements
+## 🧠 Future Enhancements
 📊 Advanced analytics dashboard
 
 🔔 In-app notification system
 
 💬 Internal messaging between roles
 
-📱 Mobile-responsive PWA
-
 🤖 AI-based performance insights
 
-👨‍💻 Developer
+## 👨‍💻 Developer
 Sameer Singh
 🚀 MERN Stack Developer
 💡 Designed with real-world workflows, enterprise security, and scalability in mind.
@@ -248,4 +316,4 @@ Sameer Singh
 🪪 License
 This project is licensed under the MIT License.
 
-<p align="center"> ✨ “A complete digital ecosystem for secure and transparent intern management.” ✨ </p> ````
+ ✨ “A complete digital ecosystem for secure and transparent intern management.” ✨ 
